@@ -9,6 +9,7 @@ BEGIN
   DECLARE v_nombre_tratamiento  VARCHAR(255);
   DECLARE v_nombre_medico       VARCHAR(255);
   DECLARE v_nombre_clinica      VARCHAR(255);
+  DECLARE v_nombre_espacio      VARCHAR(255);
   DECLARE v_mensaje             TEXT;
   DECLARE v_fecha_envio         DATE;
   DECLARE v_hora_envio          TIME;
@@ -64,6 +65,12 @@ BEGIN
          WHERE id_clinica = NEW.id_clinica
          LIMIT 1;
 
+        IF NEW.id_espacio IS NOT NULL THEN
+          SELECT nombre INTO v_nombre_espacio FROM espacios WHERE id_espacio = NEW.id_espacio LIMIT 1;
+        ELSE
+          SET v_nombre_espacio = NULL;
+        END IF;
+
         IF NEW.id_clinica = 64 AND DAYOFWEEK(NEW.fecha_cita) = 2 THEN
           SET v_fecha_envio = DATE(NEW.fecha_cita - INTERVAL 3 DAY);
           SET v_hora_envio  = NEW.hora_inicio;
@@ -92,7 +99,8 @@ BEGIN
           'treatment_name', v_nombre_tratamiento,
           'visit_date', DATE_FORMAT(NEW.fecha_cita, '%Y-%m-%d'),
           'visit_init_time', TIME_FORMAT(NEW.hora_inicio, '%H:%i:%s'),
-          'visit_end_time', TIME_FORMAT(NEW.hora_fin, '%H:%i:%s')
+          'visit_end_time', TIME_FORMAT(NEW.hora_fin, '%H:%i:%s'),
+          'visit_space_name', v_nombre_espacio
         );
 
         IF NEW.id_clinica = 66 THEN
