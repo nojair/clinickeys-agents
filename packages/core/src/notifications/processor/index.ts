@@ -9,11 +9,18 @@ import { getRelevantFields } from '../../config';
 import { logger } from '../../utils/logger';
 
 const PAYLOAD_FIELD_MAP: any = {
-  visitTreatment: 'treatment_name',
+  clinicName: 'clinic_name',
+  firstName: 'patient_firstname',
+  lastName: 'patient_lastname',
   visitProvider: 'medic_full_name',
-  visitStartTime: 'visit_init_time',
+  visitTreatment: 'treatment_name',
   visitDate: 'visit_date',
+  visitStartTime: 'visit_init_time',
+  visitEndTime: 'visit_end_time',
+  visitWeekDay: 'visit_week_day_name',
+  visitSpace: 'visit_space_name',
 };
+
 
 export default async function processClinicBatch(clinicCfg: any, batch: any) {
   const tz = clinicCfg.timezone;

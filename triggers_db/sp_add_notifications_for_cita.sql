@@ -11,12 +11,14 @@ BEGIN
   DECLARE v_id_estado_cita     INT;
   DECLARE v_id_tratamiento     BIGINT;
   DECLARE v_id_medico          BIGINT;
+  DECLARE v_id_espacio         BIGINT;
 
   DECLARE v_nombre_paciente    VARCHAR(100);
   DECLARE v_apellido_paciente  VARCHAR(100);
   DECLARE v_nombre_tratamiento VARCHAR(255);
   DECLARE v_nombre_medico      VARCHAR(255);
   DECLARE v_nombre_clinica     VARCHAR(255);
+  DECLARE v_nombre_espacio     VARCHAR(255);
 
   DECLARE v_mensaje            TEXT;
   DECLARE v_fecha_envio        DATE;
@@ -35,7 +37,8 @@ BEGIN
          hora_fin,
          id_estado_cita,
          id_tratamiento,
-         id_medico
+         id_medico,
+         id_espacio
     INTO v_id_paciente,
          v_id_clinica,
          v_id_super_clinica,
@@ -44,7 +47,8 @@ BEGIN
          v_hora_fin,
          v_id_estado_cita,
          v_id_tratamiento,
-         v_id_medico
+         v_id_medico,
+         v_id_espacio
     FROM citas
    WHERE id_cita = p_id_cita;
 
@@ -77,6 +81,12 @@ BEGIN
       FROM clinicas
      WHERE id_clinica = v_id_clinica
      LIMIT 1;
+
+    IF v_id_espacio IS NOT NULL THEN
+      SELECT nombre INTO v_nombre_espacio FROM espacios WHERE id_espacio = v_id_espacio LIMIT 1;
+    ELSE
+      SET v_nombre_espacio = NULL;
+    END IF;
 
     IF v_id_clinica = 64 AND DAYOFWEEK(v_fecha_cita) = 2 THEN
       SET v_fecha_envio = DATE(v_fecha_cita - INTERVAL 3 DAY);
@@ -205,7 +215,8 @@ BEGIN
       'treatment_name', v_nombre_tratamiento,
       'visit_date', DATE_FORMAT(v_fecha_cita, '%Y-%m-%d'),
       'visit_init_time', TIME_FORMAT(v_hora_inicio, '%H:%i:%s'),
-      'visit_end_time', TIME_FORMAT(v_hora_fin, '%H:%i:%s')
+      'visit_end_time', TIME_FORMAT(v_hora_fin, '%H:%i:%s'),
+      'visit_space_name', v_nombre_espacio
     );
 
     INSERT INTO notificaciones (
