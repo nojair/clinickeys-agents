@@ -10,7 +10,7 @@ import {
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { loadClinicFieldMappings, getLeadFieldId, getContactFieldData } from './fields';
 import { getRelevantFields } from '../config';
-import { formatVisitDate, formatVisitStartTime } from '../utils/date';
+import { formatVisitDate, formatVisitTime } from '../utils/date';
 
 // Mapeo de field_name Kommo -> clave en el payload
 const PAYLOAD_FIELD_MAP: any = {
@@ -134,7 +134,7 @@ export async function ensureLead({ clinicCfg, patient, mensaje, id_notificacion,
           else if (PAYLOAD_FIELD_MAP[f.field_name] && payload && payload[PAYLOAD_FIELD_MAP[f.field_name]] !== undefined) {
             let raw = payload[PAYLOAD_FIELD_MAP[f.field_name]];
             if (f.field_name === 'visitDate') value = formatVisitDate(raw);
-            else if (f.field_name === 'visitStartTime') value = formatVisitStartTime(raw);
+            else if (f.field_name === 'visitStartTime') value = formatVisitTime(raw);
             else value = `${raw}`;
           }
           else return undefined;

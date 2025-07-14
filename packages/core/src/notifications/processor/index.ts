@@ -1,6 +1,6 @@
 // packages/core/src/notifications/processor/index.ts
 
-import { clinicNow, parseClinicDate, formatVisitDate, formatVisitStartTime } from '../../utils/date';
+import { clinicNow, parseClinicDate, formatVisitDate, formatVisitTime } from '../../utils/date';
 import { ensureLead } from '../../kommo/service';
 import { patchLead, runSalesbot } from '../../kommo/api';
 import { mark } from '../repository';
@@ -85,7 +85,8 @@ export default async function processClinicBatch(clinicCfg: any, batch: any) {
           else if (PAYLOAD_FIELD_MAP[f.field_name] && n.payload && n.payload[PAYLOAD_FIELD_MAP[f.field_name]] !== undefined) {
             let raw = n.payload[PAYLOAD_FIELD_MAP[f.field_name]];
             if (f.field_name === 'visitDate') value = formatVisitDate(raw);
-            else if (f.field_name === 'visitStartTime') value = formatVisitStartTime(raw);
+            else if (f.field_name === 'visitStartTime') value = formatVisitTime(raw);
+            else if (f.field_name === 'visitEndTime') value = formatVisitTime(raw);
             else value = `${raw}`;
           }
           else return undefined;

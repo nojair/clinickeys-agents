@@ -16,7 +16,7 @@ export function formatVisitDate(dateStr: any) {
   return [d, m, y].join('/');
 }
 
-export function formatVisitStartTime(timeStr: any) {
+export function formatVisitTime(timeStr: any) {
   // timeStr: 'HH:MM:SS' => 'HH:MM'
   if (!timeStr) return '';
   const [h, m] = timeStr.split(':');
