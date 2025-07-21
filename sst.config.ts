@@ -26,12 +26,13 @@ export default $config({
   },
   async run() {
     const databases = await import("./infra/database");
+    const apiGateway = await import("./infra/apigateway");
     await import("./infra/cron");
     await import("./infra/frontend");
-    await import("./infra/lambdas");
 
     return {
-      ClinicsTable: databases.clinicsConfigTable.name,
+      BotConfigTable: databases.botConfigTable.name,
+      Gateway: apiGateway.botConfigApiGateway.url,
     };
   },
 });

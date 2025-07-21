@@ -107,7 +107,7 @@ export default function ClinicForm({ initialValues, onClose }: Props) {
       name: selectedOption.label,
       ...data,
       fields_profile: "default_esp",
-      entity: "CLINIC",
+      entity: "BOT_CONFIG",
     };
 
     const cb = { onSuccess: onClose };

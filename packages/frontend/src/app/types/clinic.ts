@@ -14,7 +14,7 @@ export interface KommoLeadCustomField {
 }
 
 export interface Clinic {
-  /** ID de la clínica en el SAAS */
+  /** ID de la clínica */
   id_clinica: string;
   /** Nombre visible de la clínica */
   name: string;
@@ -85,7 +85,7 @@ export const clinicSchema = z.object({
 
   entity: z
     .string()
-    .default("CLINIC"),
+    .default("BOT_CONFIG"),
 });
 
 /* Derivado útil para formularios */

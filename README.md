@@ -58,9 +58,9 @@ This template uses [npm Workspaces](https://docs.npmjs.com/cli/v8/using-npm/work
    npm test
    ```
 
-2. `functions/`
+2. `interfaces/`
 
-   This is for your Lambda functions and it uses the `core` package as a local dependency.
+   This is for your interfaces to expose lambda uris and api gateways and it uses the `core` package as a local dependency.
 
 3. `scripts/`
 
@@ -82,6 +82,6 @@ In the template, we have an `api.ts`, and `storage.ts`. These export the created
 
 # MAKEFILE COMMANDS
 
-make live
+make local
 make deploy
 make remove

@@ -56,7 +56,7 @@ export function createClinic(data: ClinicInput): Promise<Clinic> {
       ...data,
       // Siempre enviar fields_profile fijo
       fields_profile: "default_esp",
-      entity: "CLINIC",
+      entity: "BOT_CONFIG",
     }),
   });
 }
@@ -70,7 +70,7 @@ export function updateClinic(
     body: JSON.stringify({
       ...data,
       fields_profile: "default_esp",
-      entity: "CLINIC",
+      entity: "BOT_CONFIG",
     }),
   });
 }
