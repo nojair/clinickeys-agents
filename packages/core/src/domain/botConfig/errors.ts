@@ -1,4 +1,4 @@
-// packages/core/src/domain/BotConfig/errors.ts
+// packages/core/src/domain/botConfig/errors.ts
 
 /**
  * Errores específicos del dominio BotConfig

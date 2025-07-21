@@ -2,7 +2,7 @@
 
 import { createMySQLPool, createDynamoDocumentClient, getEnvVar } from "@clinickeys-agents/core/infrastructure/config";
 import { SendRemindersJob } from "@clinickeys-agents/core/infrastructure/job";
-import { invokeSelf } from '@clinickeys-agents/core/utils/lambda';
+import { invokeSelf } from '@clinickeys-agents/core/utils';
 import { APIGatewayProxyResult as R } from "aws-lambda";
 import type { Handler } from 'aws-lambda';
 

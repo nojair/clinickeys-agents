@@ -3,7 +3,7 @@
 import type { Handler, APIGatewayProxyResult as R } from "aws-lambda";
 import { BotConfigController } from "../controllers/BotConfigController";
 import { createDynamoDocumentClient, getEnvVar } from "@clinickeys-agents/core/infrastructure/config";
-import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/BotConfig";
+import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/botConfig";
 
 // Use‑cases
 import {

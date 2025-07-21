@@ -1,7 +1,7 @@
 // packages/core/src/application/usecases/AddBotConfigUseCase.ts
 
 import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig/dtos";
-import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/BotConfig/BotConfigRepositoryDynamo";
+import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/botConfig";
 
 /**
  * Campos necesarios para crear un BotConfig.

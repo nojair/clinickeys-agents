@@ -5,16 +5,16 @@
  * Puedes expandirlo o modificarlo según las necesidades de negocio/campos Kommo.
  */
 export const PAYLOAD_FIELD_MAP: Record<string, string> = {
+  visitDate: 'visit_date',
   clinicName: 'clinic_name',
-  firstName: 'patient_firstname',
   lastName: 'patient_lastname',
+  firstName: 'patient_firstname',
+  visitEndTime: 'visit_end_time',
+  visitSpace: 'visit_space_name',
   visitProvider: 'medic_full_name',
   visitTreatment: 'treatment_name',
-  visitDate: 'visit_date',
   visitStartTime: 'visit_init_time',
-  visitEndTime: 'visit_end_time',
   visitWeekDay: 'visit_week_day_name',
-  visitSpace: 'visit_space_name',
 };
 
 export const profiles = {

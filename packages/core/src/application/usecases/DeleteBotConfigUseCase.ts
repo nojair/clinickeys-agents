@@ -1,6 +1,6 @@
 // packages/core/src/application/usecases/DeleteBotConfigUseCase.ts
 
-import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/BotConfig/BotConfigRepositoryDynamo";
+import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/botConfig";
 
 export interface DeleteBotConfigUseCaseProps {
   botConfigRepository: BotConfigRepositoryDynamo;

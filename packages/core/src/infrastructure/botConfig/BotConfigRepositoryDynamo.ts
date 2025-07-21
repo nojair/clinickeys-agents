@@ -1,4 +1,4 @@
-// packages/core/src/infrastructure/BotConfig/BotConfigRepositoryDynamo.ts
+// packages/core/src/infrastructure/botConfig/BotConfigRepositoryDynamo.ts
 
 import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";

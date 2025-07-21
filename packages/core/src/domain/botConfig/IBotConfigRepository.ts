@@ -1,7 +1,7 @@
-// packages/core/src/domain/BotConfig/IBotConfigRepository.ts
+// packages/core/src/domain/botConfig/IBotConfigRepository.ts
 
 import { BotConfigDTO } from "./dtos";
-import { UpdateBotConfigPayload } from "@clinickeys-agents/core/application/usecases/UpdateBotConfigUseCase";
+import { UpdateBotConfigPayload } from "@clinickeys-agents/core/application/usecases";
 
 /**
  * Contrato para cualquier repositorio capaz de persistir BotConfig.

@@ -1,4 +1,4 @@
-// packages/core/src/domain/BotConfig/BotConfig.ts
+// packages/core/src/domain/botConfig/botConfig.ts
 
 import { BotConfigDTO } from "./dtos";
 

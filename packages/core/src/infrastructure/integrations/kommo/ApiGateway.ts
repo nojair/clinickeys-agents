@@ -1,4 +1,4 @@
-import { ok, hdr } from "@clinickeys-agents/core/utils/helpers";
+import { ok, hdr } from "@clinickeys-agents/core/utils";
 
 export interface KommoApiGatewayOptions {
   apiKey: string;

@@ -1,7 +1,6 @@
 // packages/core/src/application/usecases/GetAllClinicsUseCase.ts
 
-import type { IClinicRepository } from "@clinickeys-agents/core/domain/clinic/IClinicRepository";
-import type { ClinicDTO } from "@clinickeys-agents/core/domain/clinic/dtos";
+import type { IClinicRepository, ClinicDTO } from "@clinickeys-agents/core/domain/clinic";
 
 /**
  * Use case para obtener todas las clínicas desde el repositorio MySQL.

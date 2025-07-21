@@ -1,7 +1,7 @@
 // packages/core/src/application/usecases/GetPendingNotificationsUseCase.ts
 
-import { INotificationRepository } from "@clinickeys-agents/core/domain/notification/INotificationRepository";
-import { NotificationDTO } from "@clinickeys-agents/core/domain/notification/dtos";
+import { INotificationRepository } from "@clinickeys-agents/core/domain/notification";
+import { NotificationDTO } from "@clinickeys-agents/core/domain/notification";
 
 export interface GetPendingNotificationsUseCaseProps {
   notificationRepository: INotificationRepository;
