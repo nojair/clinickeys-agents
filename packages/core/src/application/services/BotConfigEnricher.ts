@@ -1,9 +1,9 @@
 // packages/core/src/application/services/BotConfigEnricher.ts
 
-import { BotConfigDTO, BotConfigEnrichedDTO } from "../../domain/botConfig/dtos";
+import { BotConfigDTO, BotConfigEnrichedDTO } from "@clinickeys-agents/core/domain/botConfig";
+import { KommoApiGateway } from "@clinickeys-agents/core/infrastructure/integrations/kommo";
+import { KommoService } from "@clinickeys-agents/core/application/services";
 import { profiles } from "@clinickeys-agents/core/utils/constants";
-import { KommoApiGateway } from "../../infrastructure/integrations/kommo/ApiGateway";
-import { KommoService } from "./KommoService";
 
 /**
  * Service para enriquecer un BotConfigDTO con los campos de Kommo y el estado de preparación.

@@ -1,9 +1,13 @@
 // packages/core/src/infrastructure/notification/NotificationRepositoryMySQL.ts
 
 import { Pool, RowDataPacket, OkPacket } from "mysql2/promise";
-import { NotificationDTO, NotificationState } from "../../domain/notification/dtos";
-import { INotificationRepository } from "../../domain/notification/INotificationRepository";
-import { NotificationNotFoundError, NotificationStateUpdateError } from "../../domain/notification/errors";
+import {
+  NotificationDTO,
+  NotificationState,
+  INotificationRepository,
+  NotificationNotFoundError,
+  NotificationStateUpdateError
+} from "@clinickeys-agents/core/domain/notification";
 
 /**
  * Implementación de INotificationRepository usando MySQL.

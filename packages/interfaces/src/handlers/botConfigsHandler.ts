@@ -1,17 +1,18 @@
 // packages/core/src/interface/handlers/botConfigsHandler.ts
 
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import type { Handler, APIGatewayProxyResult as R } from "aws-lambda";
 import { BotConfigController } from "../controllers/BotConfigController";
-import { createDynamoDocumentClient } from "@clinickeys-agents/core/infrastructure/config/dynamoFactory";
-import { getEnvVar } from "@clinickeys-agents/core/infrastructure/config/env";
-import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/BotConfig/BotConfigRepositoryDynamo";
+import { createDynamoDocumentClient, getEnvVar } from "@clinickeys-agents/core/infrastructure/config";
+import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/BotConfig";
 
 // Use‑cases
-import { AddBotConfigUseCase } from "@clinickeys-agents/core/application/usecases/AddBotConfigUseCase";
-import { UpdateBotConfigUseCase } from "@clinickeys-agents/core/application/usecases/UpdateBotConfigUseCase";
-import { DeleteBotConfigUseCase } from "@clinickeys-agents/core/application/usecases/DeleteBotConfigUseCase";
-import { GetBotConfigUseCase } from "@clinickeys-agents/core/application/usecases/GetBotConfigUseCase";
-import { ListGlobalBotConfigsUseCase } from "@clinickeys-agents/core/application/usecases/ListGlobalBotConfigsUseCase";
+import {
+  AddBotConfigUseCase,
+  UpdateBotConfigUseCase,
+  DeleteBotConfigUseCase,
+  GetBotConfigUseCase,
+  ListGlobalBotConfigsUseCase
+} from "@clinickeys-agents/core/application/usecases";
 
 // -------------------- DI --------------------
 const docClient = createDynamoDocumentClient({ region: getEnvVar("AWS_REGION") });
@@ -29,46 +30,46 @@ const controller = new BotConfigController({
 });
 
 // -------------------- Handler --------------------
-export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+export const handler: Handler = async (event): Promise<R> => {
   try {
-    const { httpMethod: method, resource, path, queryStringParameters } = event;
-    const route = resource || path; // depends on API Gateway settings
+    const { http: { method, path } } = event.requestContext;
+    const qs = event.qs ?? {};
     const body = event.body ? JSON.parse(event.body) : undefined;
 
     // --- CREATE -------------------------------------------------------------
-    if (method === "POST" && route.endsWith("/bot-config")) {
+    if (method === "POST" && path == "/bot-config") {
       await controller.addBotConfig(body);
       return { statusCode: 201, body: JSON.stringify({ ok: true }) };
     }
 
     // --- UPDATE (PATCH) -----------------------------------------------------
-    if (method === "PATCH" && route.endsWith("/bot-config")) {
+    if (method === "PATCH" && path == "/bot-config") {
       await controller.updateBotConfig(body);
       return { statusCode: 200, body: JSON.stringify({ ok: true }) };
     }
 
     // --- DELETE -------------------------------------------------------------
-    if (method === "DELETE" && route.endsWith("/bot-config")) {
+    if (method === "DELETE" && path.startsWith("/bot-config")) {
       const { bot_config_id, clinic_source, clinic_id } = body ?? {};
       await controller.deleteBotConfig(bot_config_id, clinic_source, clinic_id);
       return { statusCode: 204, body: "" };
     }
 
     // --- GET ONE ------------------------------------------------------------
-    if (method === "GET" && /\/bot-config\/?$/.test(route)) {
-      const { bot_config_id, clinic_source, clinic_id } = queryStringParameters || {};
+    if (method === "GET" && /\/bot-config\/?$/.test(path)) {
+      const { bot_config_id, clinic_source, clinic_id } = qs || {};
       const config = await controller.getBotConfig(
         bot_config_id!,
         clinic_source!,
-        clinic_id!
+        Number(clinic_id)!
       );
       return { statusCode: 200, body: JSON.stringify(config) };
     }
 
     // --- LIST GLOBAL --------------------------------------------------------
-    if (method === "GET" && route.endsWith("/bot-config/all")) {
-      const limit = queryStringParameters?.limit ? Number(queryStringParameters.limit) : undefined;
-      const cursor = queryStringParameters?.cursor ? JSON.parse(queryStringParameters.cursor) : undefined;
+    if (method === "GET" && path == "/bot-config/all") {
+      const limit = qs?.limit ? Number(qs.limit) : undefined;
+      const cursor = qs?.cursor ? JSON.parse(qs.cursor) : undefined;
       const result = await controller.listGlobalBotConfigs({ limit, cursor });
       return { statusCode: 200, body: JSON.stringify(result) };
     }

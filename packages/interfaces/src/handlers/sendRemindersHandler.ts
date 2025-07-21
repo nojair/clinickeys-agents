@@ -1,11 +1,9 @@
 // packages/core/src/interface/handlers/sendRemindersHandler.ts
 
-import { SendRemindersJob } from "@clinickeys-agents/core/infrastructure/job/SendRemindersJob";
-import { createMySQLPool } from "@clinickeys-agents/core/infrastructure/config/mysqlFactory";
-import { createDynamoDocumentClient } from "@clinickeys-agents/core/infrastructure/config/dynamoFactory";
-import { getEnvVar } from "@clinickeys-agents/core/infrastructure/config/env";
-import { APIGatewayProxyResult as R } from "aws-lambda";
+import { createMySQLPool, createDynamoDocumentClient, getEnvVar } from "@clinickeys-agents/core/infrastructure/config";
+import { SendRemindersJob } from "@clinickeys-agents/core/infrastructure/job";
 import { invokeSelf } from '@clinickeys-agents/core/utils/lambda';
+import { APIGatewayProxyResult as R } from "aws-lambda";
 import type { Handler } from 'aws-lambda';
 
 export const handler: Handler = async (event, context): Promise<R> => {
@@ -16,7 +14,7 @@ export const handler: Handler = async (event, context): Promise<R> => {
     user: getEnvVar("CLINICS_DATA_DB_USER"),
     password: getEnvVar("CLINICS_DATA_DB_PASSWORD"),
     database: getEnvVar("CLINICS_DATA_DB_NAME"),
-    port: getEnvVar("CLINICS_DATA_DB_port") ? Number(getEnvVar("CLINICS_DATA_DB_port")) : 3306,
+    port: getEnvVar("CLINICS_DATA_DB_PORT") ? Number(getEnvVar("CLINICS_DATA_DB_PORT")) : 3306,
     waitForConnections: true,
     connectionLimit: 2,
     queueLimit: 0,
@@ -57,5 +55,4 @@ export const handler: Handler = async (event, context): Promise<R> => {
     await mysqlPool.end();
     console.log('Lambda execution end');
   }
-
 }

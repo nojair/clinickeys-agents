@@ -1,10 +1,10 @@
 // packages/core/src/infrastructure/job/SendRemindersJob.ts
 
-import { NotificationRepositoryMySQL } from "../notification/NotificationRepositoryMySQL";
-import { BotConfigRepositoryDynamo } from "../BotConfig/BotConfigRepositoryDynamo";
-import { KommoApiGateway } from "../integrations/kommo/ApiGateway";
-import { KommoService } from "../../application/services/KommoService";
-import { Logger } from "../external/Logger";
+import { NotificationRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/notification";
+import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/BotConfig";
+import { KommoApiGateway } from "@clinickeys-agents/core/infrastructure/integrations/kommo";
+import { KommoService } from "@clinickeys-agents/core/application/services";
+import { Logger } from "@clinickeys-agents/core/infrastructure/external";
 import { Pool } from "mysql2/promise";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { clinicNow, safeISODate, parseClinicDate } from "@clinickeys-agents/core/utils/date";

@@ -1,7 +1,7 @@
 // packages/core/src/application/usecases/UpdateBotConfigUseCase.ts
 
-import { BotConfigDTO } from "../../domain/botConfig/dtos";
-import { BotConfigRepositoryDynamo } from "../../infrastructure/BotConfig/BotConfigRepositoryDynamo";
+import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig/dtos";
+import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/BotConfig/BotConfigRepositoryDynamo";
 
 // Campos que se permiten actualizar vía PATCH
 export type UpdateBotConfigPayload = Partial<Pick<
@@ -20,7 +20,7 @@ export type UpdateBotConfigPayload = Partial<Pick<
 export interface UpdateBotConfigInput {
   bot_config_id: string;
   clinic_source: string;
-  clinic_id: string;
+  clinic_id: number;
   updates: UpdateBotConfigPayload;
 }
 

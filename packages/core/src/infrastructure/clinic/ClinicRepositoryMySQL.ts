@@ -1,9 +1,8 @@
 // packages/core/src/infrastructure/clinic/ClinicRepositoryMySQL.ts
 
+import { IClinicRepository, ClinicRepositoryError, ClinicNotFoundError } from "@clinickeys-agents/core/domain/clinic";
+import { ClinicDTO } from "@clinickeys-agents/core/domain/clinic";
 import { Pool, RowDataPacket } from "mysql2/promise";
-import { ClinicDTO } from "../../domain/clinic/dtos";
-import { IClinicRepository } from "../../domain/clinic/IClinicRepository";
-import { ClinicRepositoryError, ClinicNotFoundError } from "../../domain/clinic/errors";
 
 /**
  * Repositorio MySQL para clínicas.

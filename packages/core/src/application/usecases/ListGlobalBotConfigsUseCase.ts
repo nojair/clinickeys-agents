@@ -1,7 +1,7 @@
 // packages/core/src/application/usecases/ListGlobalBotConfigsUseCase.ts
 
-import { BotConfigDTO } from "../../domain/botConfig/dtos";
-import { BotConfigRepositoryDynamo } from "../../infrastructure/BotConfig/BotConfigRepositoryDynamo";
+import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig/dtos";
+import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/BotConfig/BotConfigRepositoryDynamo";
 
 export interface ListGlobalBotConfigsInput {
   /** Máximo de ítems a devolver. Default 100 */

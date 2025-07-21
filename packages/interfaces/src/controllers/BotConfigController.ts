@@ -1,10 +1,15 @@
 // packages/core/src/interface/controllers/BotConfigController.ts
 
-import { AddBotConfigUseCase, AddBotConfigInput } from "@clinickeys-agents/core/application/usecases/AddBotConfigUseCase";
-import { UpdateBotConfigUseCase, UpdateBotConfigInput } from "@clinickeys-agents/core/application/usecases/UpdateBotConfigUseCase";
-import { DeleteBotConfigUseCase } from "@clinickeys-agents/core/application/usecases/DeleteBotConfigUseCase";
-import { GetBotConfigUseCase } from "@clinickeys-agents/core/application/usecases/GetBotConfigUseCase";
-import { ListGlobalBotConfigsUseCase, ListGlobalBotConfigsInput } from "@clinickeys-agents/core/application/usecases/ListGlobalBotConfigsUseCase";
+import {
+  AddBotConfigUseCase,
+  AddBotConfigInput,
+  UpdateBotConfigUseCase,
+  UpdateBotConfigInput,
+  DeleteBotConfigUseCase,
+  GetBotConfigUseCase,
+  ListGlobalBotConfigsUseCase,
+  ListGlobalBotConfigsInput
+} from "@clinickeys-agents/core/application/usecases";
 
 export interface BotConfigControllerProps {
   addUseCase: AddBotConfigUseCase;
@@ -42,11 +47,11 @@ export class BotConfigController {
     await this.update.execute(input);
   }
 
-  async deleteBotConfig(botConfigId: string, clinicSource: string, clinicId: string): Promise<void> {
+  async deleteBotConfig(botConfigId: string, clinicSource: string, clinicId: number): Promise<void> {
     await this.del.execute(botConfigId, clinicSource, clinicId);
   }
 
-  async getBotConfig(botConfigId: string, clinicSource: string, clinicId: string) {
+  async getBotConfig(botConfigId: string, clinicSource: string, clinicId: number) {
     return this.get.execute(botConfigId, clinicSource, clinicId);
   }
 

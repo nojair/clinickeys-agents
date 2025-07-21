@@ -11,7 +11,7 @@ import { SUFFIX } from "./config";
  *  GSIs disponibles:
  *   • byCrm → listado/lookup por CRM + subdominio
  */
-export const botConfigTable = new sst.aws.Dynamo(`BotConfigDynamo${SUFFIX}`, {
+export const botConfigDynamo = new sst.aws.Dynamo(`BotConfigDynamo${SUFFIX}`, {
   fields: {
     // Claves primarias
     pk: "string", // "CLINIC#<clinic_source>#<clinic_id>"

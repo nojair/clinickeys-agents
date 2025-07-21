@@ -1,6 +1,6 @@
 // packages/core/src/infrastructure/clinic/ClinicRepositoryFactory.ts
 
-import { IClinicRepository } from "../../domain/clinic/IClinicRepository";
+import { IClinicRepository } from "@clinickeys-agents/core/domain/clinic/IClinicRepository";
 
 /**
  * Factoría de repositorios de clínica basada en `clinic_source`.

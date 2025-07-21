@@ -1,7 +1,7 @@
 // packages/core/src/interface/controllers/ClinicController.ts
 
-import type { ClinicService } from "@clinickeys-agents/core/application/services/ClinicService";
-import type { ClinicDTO } from "@clinickeys-agents/core/domain/clinic/dtos";
+import type { ClinicService } from "@clinickeys-agents/core/application/services";
+import type { ClinicDTO } from "@clinickeys-agents/core/domain/clinic";
 
 /**
  * Controller para manejar operaciones HTTP/REST relacionadas a clínicas.

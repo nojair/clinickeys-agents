@@ -1,6 +1,6 @@
 // packages/core/src/domain/BotConfig/dtos.ts
 
-import { KommoLeadCustomField } from "../../infrastructure/integrations/kommo/types";
+import { KommoLeadCustomField } from "@clinickeys-agents/core/infrastructure/integrations/kommo/types";
 
 /**
  * DTO para la configuración de un Bot.

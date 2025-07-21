@@ -15,7 +15,7 @@ export class BotConfig {
   // Identidad y multi‑tenant
   readonly bot_config_id: string;
   readonly clinic_source: string;
-  readonly clinic_id: string;
+  readonly clinic_id: number;
 
   // Datos del CRM
   readonly crm_type: string;

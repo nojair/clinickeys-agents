@@ -1,6 +1,8 @@
 // packages/core/src/infrastructure/BotConfig/BotConfigRepositoryDynamo.ts
 
+import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+import crc32 from "crc-32";
 import {
   GetCommand,
   PutCommand,
@@ -8,8 +10,6 @@ import {
   UpdateCommand,
   DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
-import crc32 from "crc-32";
-import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig/dtos";
 
 export interface BotConfigRepositoryDynamoProps {
   tableName: string;
