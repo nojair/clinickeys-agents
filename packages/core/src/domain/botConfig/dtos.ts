@@ -7,26 +7,26 @@ import { KommoCustomFieldExistence } from "@clinickeys-agents/core/application/s
  * Corresponde a los ítems almacenados en DynamoDB.
  */
 export interface BotConfigDTO {
-  /** Partition Key → "CLINIC#<clinic_source>#<clinic_id>" */
+  /** Partition Key → "CLINIC#<clinicSource>#<clinicId>" */
   pk: string;
-  /** Sort Key       → "BOT_CONFIG#<bot_config_id>" */
+  /** Sort Key       → "BOT_CONFIG#<botConfigId>" */
   sk: string;
 
-  /** Shard bucket (hash(bot_config_id) % N) */
+  /** Shard bucket (hash(botConfigId) % N) */
   bucket: number;
 
   // Identidad y multi‑tenant
-  bot_config_id: string;   // UUID v4, único global
-  clinic_source: string;   // "legacy", "v2", ...
-  clinic_id: number;       // ID en el sistema correspondiente
+  botConfigId: string;   // UUID v4, único global
+  clinicSource: string;   // "legacy", "v2", ...
+  clinicId: number;       // ID en el sistema correspondiente
 
   // Datos de CRM (multiplataforma)
-  crm_type: "kommo" | "hubspot" | string; // Permite nuevos CRMs
-  crm_subdomain?: string;  // ej. "clinicA.kommo.com"
+  crmType: "kommo" | "hubspot" | string; // Permite nuevos CRMs
+  crmSubdomain?: string;  // ej. "clinicA.kommo.com"
   crm_api_key: string;
 
   // Datos específicos de Kommo
-  kommo_salesbot_id?: string;     // ID del salesbot de Kommo, si aplica
+  kommoSalesbotId?: string;     // ID del salesbot de Kommo, si aplica
 
   // Configuración regional
   default_country: string; // ISO 3166‑1 alpha‑2, ej. "PE"
@@ -50,8 +50,8 @@ export interface BotConfigDTO {
 /**
  * Composición de llaves:
  *
- *  PK = `CLINIC#${clinic_source}#${clinic_id}` // agrupa por clínica + sistema
- *  SK = `BOT_CONFIG#${bot_config_id}`           // ordena por bot dentro de la clínica
+ *  PK = `CLINIC#${clinicSource}#${clinicId}` // agrupa por clínica + sistema
+ *  SK = `BOT_CONFIG#${botConfigId}`           // ordena por bot dentro de la clínica
  */
 
 /**

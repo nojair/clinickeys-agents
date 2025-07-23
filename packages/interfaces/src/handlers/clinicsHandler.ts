@@ -14,7 +14,7 @@ export const handler: Handler = async (event): Promise<R> => {
     const { http: { method, path } } = event.requestContext;
     const qs = event.queryStringParameters ?? {};
     const pathParams = event.pathParameters ?? {};
-    const clinicSource = qs.clinic_source || pathParams.clinic_source || "legacy";
+    const clinicSource = qs.clinicSource || pathParams.clinicSource || "legacy";
     const clinicId = qs.id_clinic || pathParams.id_clinic;
     console.log("Listing clinics with source:", clinicSource);
 

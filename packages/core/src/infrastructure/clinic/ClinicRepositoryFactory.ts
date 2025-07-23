@@ -3,7 +3,7 @@ import { ClinicRepositoryMySQL } from "./ClinicRepositoryMySQL";
 import { createMySQLPool, getEnvVar } from "@clinickeys-agents/core/infrastructure/config";
 
 /**
- * Factoría de repositorios de clínica basada en `clinic_source`.
+ * Factoría de repositorios de clínica basada en `clinicSource`.
  * Por ahora solo registra la implementación MySQL (source = "legacy"),
  * pero permite añadir nuevas fuentes sin tocar el resto del código.
  */

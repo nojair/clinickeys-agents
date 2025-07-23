@@ -15,9 +15,9 @@ export class GetBotConfigUseCase {
   }
 
   /**
-   * Obtiene la configuración de un bot por bot_config_id y clinicId.
+   * Obtiene la configuración de un bot por botConfigId y clinicId.
    */
-  async execute(bot_config_id: string, source_clinica: string, clinicId: number): Promise<BotConfigDTO | null> {
-    return this.botConfigRepository.findByBotConfig(bot_config_id, source_clinica, clinicId);
+  async execute(botConfigId: string, source_clinica: string, clinicId: number): Promise<BotConfigDTO | null> {
+    return this.botConfigRepository.findByBotConfig(botConfigId, source_clinica, clinicId);
   }
 }

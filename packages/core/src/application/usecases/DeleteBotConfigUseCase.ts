@@ -16,7 +16,7 @@ export class DeleteBotConfigUseCase {
   /**
    * Elimina la configuración de un bot de notificaciones para una clínica.
    */
-  async execute(bot_config_id: string, clinic_source: string, clinicId: number): Promise<void> {
-    await this.botConfigRepository.delete(bot_config_id, clinic_source, clinicId);
+  async execute(botConfigId: string, clinicSource: string, clinicId: number): Promise<void> {
+    await this.botConfigRepository.delete(botConfigId, clinicSource, clinicId);
   }
 }

@@ -30,7 +30,7 @@ export class SendRemindersJob {
 
   /**
    * Ejecuta el envío de recordatorios para todas las configuraciones activas.
-   * Procesa todas las fuentes (`clinic_source`) usando paginación por bucket.
+   * Procesa todas las fuentes (`clinicSource`) usando paginación por bucket.
    */
   async execute(): Promise<void> {
     try {
@@ -48,14 +48,14 @@ export class SendRemindersJob {
 
         for (const cfg of configs) {
           // Solo procesamos CRMs Kommo por ahora
-          if (cfg.crm_type !== "kommo") continue;
+          if (cfg.crmType !== "kommo") continue;
 
-          const clinicId = cfg.clinic_id;
-          const clinicSource = cfg.clinic_source;
+          const clinicId = cfg.clinicId;
+          const clinicSource = cfg.clinicSource;
 
           const apiKey = cfg.crm_api_key;
-          const subdomain = cfg.crm_subdomain;
-          const kommoSalesbotId = cfg.kommo_salesbot_id;
+          const subdomain = cfg.crmSubdomain;
+          const kommoSalesbotId = cfg.kommoSalesbotId;
 
           if (!subdomain || !kommoSalesbotId || !apiKey) {
             Logger.error("[JOB] Config incompleta", { clinicId, clinicSource, subdomain, kommoSalesbotId, apiKey });

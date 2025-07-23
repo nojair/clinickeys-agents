@@ -13,15 +13,15 @@ export class BotConfig {
   readonly bucket: number;
 
   // Identidad y multi‑tenant
-  readonly bot_config_id: string;
-  readonly clinic_source: string;
-  readonly clinic_id: number;
+  readonly botConfigId: string;
+  readonly clinicSource: string;
+  readonly clinicId: number;
 
   // Datos del CRM
-  readonly crm_type: string;
-  readonly crm_subdomain?: string;
+  readonly crmType: string;
+  readonly crmSubdomain?: string;
   readonly crm_api_key: string;
-  readonly kommo_salesbot_id?: string;
+  readonly kommoSalesbotId?: string;
 
   // Configuración regional
   readonly default_country: string;
@@ -45,17 +45,17 @@ export class BotConfig {
     this.bucket = dto.bucket;
 
     // Identidad
-    this.bot_config_id = dto.bot_config_id;
-    this.clinic_source = dto.clinic_source;
-    this.clinic_id = dto.clinic_id;
+    this.botConfigId = dto.botConfigId;
+    this.clinicSource = dto.clinicSource;
+    this.clinicId = dto.clinicId;
 
     // CRM
-    this.crm_type = dto.crm_type;
-    this.crm_subdomain = dto.crm_subdomain;
+    this.crmType = dto.crmType;
+    this.crmSubdomain = dto.crmSubdomain;
     this.crm_api_key = dto.crm_api_key;
 
     // Kommo específico
-    this.kommo_salesbot_id = dto.kommo_salesbot_id;
+    this.kommoSalesbotId = dto.kommoSalesbotId;
 
     // Config regional
     this.default_country = dto.default_country;

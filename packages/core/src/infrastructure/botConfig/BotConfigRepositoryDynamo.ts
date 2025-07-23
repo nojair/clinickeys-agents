@@ -55,9 +55,9 @@ export class BotConfigRepositoryDynamo {
     const now = Date.now();
     const item: BotConfigDTO = {
       ...dto,
-      pk: this.pkOf(dto.clinic_source, dto.clinic_id),
-      sk: this.skOf(dto.bot_config_id),
-      bucket: this.bucketOf(dto.bot_config_id),
+      pk: this.pkOf(dto.clinicSource, dto.clinicId),
+      sk: this.skOf(dto.botConfigId),
+      bucket: this.bucketOf(dto.botConfigId),
       createdAt: now,
       updatedAt: now,
     } as BotConfigDTO;
@@ -109,7 +109,7 @@ export class BotConfigRepositoryDynamo {
   }
 
   /**
-   * Listar BotConfig por fuente (clinic_source) usando GSI bySourceCreated.
+   * Listar BotConfig por fuente (clinicSource) usando GSI bySourceCreated.
    */
   async listBySource(
     clinicSource: string,
@@ -120,7 +120,7 @@ export class BotConfigRepositoryDynamo {
       new QueryCommand({
         TableName: this.tableName,
         IndexName: "bySourceCreated",
-        KeyConditionExpression: "clinic_source = :src",
+        KeyConditionExpression: "clinicSource = :src",
         ExpressionAttributeValues: { ":src": clinicSource },
         ScanIndexForward: false,
         Limit: limit,
@@ -169,7 +169,7 @@ export class BotConfigRepositoryDynamo {
   }
 
   /**
-   * Actualizar parcialmente un BotConfig. No se permite cambiar clinic_id ni clinic_source.
+   * Actualizar parcialmente un BotConfig. No se permite cambiar clinicId ni clinicSource.
    */
   async patch(
     botConfigId: string,
@@ -181,10 +181,10 @@ export class BotConfigRepositoryDynamo {
       | "name"
       | "timezone"
       | "default_country"
-      | "kommo_salesbot_id"
+      | "kommoSalesbotId"
       | "crm_api_key"
-      | "crm_subdomain"
-      | "crm_type"
+      | "crmSubdomain"
+      | "crmType"
     >>
   ): Promise<void> {
     const pk = this.pkOf(clinicSource, clinicId);
@@ -207,10 +207,10 @@ export class BotConfigRepositoryDynamo {
     add("name", update.name);
     add("timezone", update.timezone);
     add("default_country", update.default_country);
-    add("kommo_salesbot_id", update.kommo_salesbot_id);
+    add("kommoSalesbotId", update.kommoSalesbotId);
     add("crm_api_key", update.crm_api_key);
-    add("crm_subdomain", update.crm_subdomain);
-    add("crm_type", update.crm_type);
+    add("crmSubdomain", update.crmSubdomain);
+    add("crmType", update.crmType);
 
     if (exp.length === 1) return; // sólo updatedAt → nada que cambiar
 

@@ -14,7 +14,7 @@ export class PatientRepositoryMySQL implements IPatientRepository {
   }
 
   /**
-   * Actualiza el campo kommo_lead_id de un paciente específico.
+   * Actualiza el campo kommoLeadId de un paciente específico.
    * @param patientId - ID del paciente
    * @param kommoLeadId - ID de lead Kommo asignado
    */
@@ -26,16 +26,16 @@ export class PatientRepositoryMySQL implements IPatientRepository {
   }
 
   /**
-   * Obtiene el kommo_lead_id guardado en BD de un paciente específico.
+   * Obtiene el kommoLeadId guardado en BD de un paciente específico.
    * @param patientId - ID del paciente
    * @returns Promise<string | undefined>
    */
   async getKommoLeadId(patientId: number): Promise<string | undefined> {
     const [rows] = await this.pool.query(
-      "SELECT kommo_lead_id FROM pacientes WHERE id_paciente = ?",
+      "SELECT kommo_lead_id AS kommoLeadId FROM pacientes WHERE id_paciente = ?",
       [patientId]
     );
-    const row = (rows as { kommo_lead_id?: string }[])[0];
-    return row?.kommo_lead_id;
+    const row = (rows as { kommoLeadId?: string }[])[0];
+    return row?.kommoLeadId;
   }
 }

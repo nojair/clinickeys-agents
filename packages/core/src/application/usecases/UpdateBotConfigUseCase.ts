@@ -11,16 +11,16 @@ export type UpdateBotConfigPayload = Partial<Pick<
   | "name"
   | "timezone"
   | "default_country"
-  | "kommo_salesbot_id"
+  | "kommoSalesbotId"
   | "crm_api_key"
-  | "crm_subdomain"
-  | "crm_type"
+  | "crmSubdomain"
+  | "crmType"
 >>;
 
 export interface UpdateBotConfigInput {
-  bot_config_id: string;
-  clinic_source: string;
-  clinic_id: number;
+  botConfigId: string;
+  clinicSource: string;
+  clinicId: number;
   updates: UpdateBotConfigPayload;
 }
 
@@ -38,9 +38,9 @@ export class UpdateBotConfigUseCase {
   async execute(input: UpdateBotConfigInput): Promise<void> {
     if (!Object.keys(input.updates).length) return; // nada que hacer
     await this.repo.patch(
-      input.bot_config_id,
-      input.clinic_source,
-      input.clinic_id,
+      input.botConfigId,
+      input.clinicSource,
+      input.clinicId,
       input.updates
     );
   }

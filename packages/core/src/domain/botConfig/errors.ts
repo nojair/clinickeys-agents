@@ -5,8 +5,8 @@
  */
 
 export class BotConfigNotFoundError extends Error {
-  constructor(bot_config_id: string, clinicId: number) {
-    super(`No se encontró configuración del bot para bot_config_id: ${bot_config_id} y clínica: ${clinicId}`);
+  constructor(botConfigId: string, clinicId: number) {
+    super(`No se encontró configuración del bot para botConfigId: ${botConfigId} y clínica: ${clinicId}`);
     this.name = 'BotConfigNotFoundError';
   }
 }
@@ -19,8 +19,8 @@ export class BotConfigRepositoryError extends Error {
 }
 
 export class BotConfigUpdateError extends Error {
-  constructor(bot_config_id: string, clinicId: number) {
-    super(`No se pudo actualizar configuración del bot para bot_config_id: ${bot_config_id} y clínica: ${clinicId}`);
+  constructor(botConfigId: string, clinicId: number) {
+    super(`No se pudo actualizar configuración del bot para botConfigId: ${botConfigId} y clínica: ${clinicId}`);
     this.name = 'BotConfigUpdateError';
   }
 }

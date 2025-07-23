@@ -5,7 +5,7 @@ import { Pool, RowDataPacket } from "mysql2/promise";
 
 /**
  * Repositorio MySQL para clínicas.
- * Atiende exclusivamente al `clinic_source = "legacy"`.
+ * Atiende exclusivamente al `clinicSource = "legacy"`.
  */
 export class ClinicRepositoryMySQL implements IClinicRepository {
   private readonly pool: Pool;

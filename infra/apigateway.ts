@@ -18,9 +18,9 @@ const routes = [
   ["GET /clinic/{id_clinic}", PATH_TO_CLINICS_HANDLER],
   ["POST /bot-config", PATH_TO_BOT_CONFIG_HANDLER],
   ["GET /bot-config/all", PATH_TO_BOT_CONFIG_HANDLER],
-  ["GET /bot-config/{bot_config_id}", PATH_TO_BOT_CONFIG_HANDLER],
-  ["PUT /bot-config/{bot_config_id}", PATH_TO_BOT_CONFIG_HANDLER],
-  ["DELETE /bot-config/{bot_config_id}", PATH_TO_BOT_CONFIG_HANDLER],
+  ["GET /bot-config/{botConfigId}", PATH_TO_BOT_CONFIG_HANDLER],
+  ["PUT /bot-config/{botConfigId}", PATH_TO_BOT_CONFIG_HANDLER],
+  ["DELETE /bot-config/{botConfigId}", PATH_TO_BOT_CONFIG_HANDLER],
 ];
 
 for (const [route, handler] of routes) {

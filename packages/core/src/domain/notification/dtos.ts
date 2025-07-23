@@ -18,7 +18,7 @@ export type NotificationPayload = {
   patient_first_name: string;
   patient_last_name: string;
   patient_phone: string;
-  clinic_id: number;
+  clinicId: number;
   clinic_name: string;
   appointment_date: string; // YYYY-MM-DD
   appointment_start_time: string; // HH:mm:ss

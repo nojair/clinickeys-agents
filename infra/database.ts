@@ -5,8 +5,8 @@ import { SUFFIX } from "./config";
 /**
  * BotConfig table
  *
- *  PK → "CLINIC#<clinic_source>#<clinic_id>"
- *  SK → "BOT_CONFIG#<bot_config_id>"
+ *  PK → "CLINIC#<clinicSource>#<clinicId>"
+ *  SK → "BOT_CONFIG#<botConfigId>"
  *
  *  GSIs disponibles:
  *   • byCrm → listado/lookup por CRM + subdominio
@@ -14,22 +14,22 @@ import { SUFFIX } from "./config";
 export const botConfigDynamo = new sst.aws.Dynamo(`BotConfigDynamo${SUFFIX}`, {
   fields: {
     // Claves primarias
-    pk: "string", // "CLINIC#<clinic_source>#<clinic_id>"
-    sk: "string", // "BOT_CONFIG#<bot_config_id>"
+    pk: "string", // "CLINIC#<clinicSource>#<clinicId>"
+    sk: "string", // "BOT_CONFIG#<botConfigId>"
 
     // Shard bucket para feed global
-    bucket: "number", // hash(bot_config_id) % N (0‑9)
+    bucket: "number", // hash(botConfigId) % N (0‑9)
 
     // Identidad del bot
-    // bot_config_id: "string",
+    // botConfigId: "string",
 
     // Clínica multi‑fuente (desnormalizado)
-    // clinic_id: "string",
-    clinic_source: "string", // "legacy", "v2", ...
+    // clinicId: "string",
+    clinicSource: "string", // "legacy", "v2", ...
 
     // CRM genérico
-    crm_type: "string",      // "kommo", "hubspot", ...
-    crm_subdomain: "string", // "clinicA.kommo.com"
+    crmType: "string",      // "kommo", "hubspot", ...
+    crmSubdomain: "string", // "clinicA.kommo.com"
 
     // Estado y metadatos
     // isActive: "binary",
@@ -49,8 +49,8 @@ export const botConfigDynamo = new sst.aws.Dynamo(`BotConfigDynamo${SUFFIX}`, {
   globalIndexes: {
     /** Lookup y listado por CRM + subdominio */
     byCrm: {
-      hashKey: "crm_type",
-      rangeKey: "crm_subdomain",
+      hashKey: "crmType",
+      rangeKey: "crmSubdomain",
       projection: "all",
     },
 
@@ -63,7 +63,7 @@ export const botConfigDynamo = new sst.aws.Dynamo(`BotConfigDynamo${SUFFIX}`, {
 
     /** Feed por fuente */
     bySourceCreated: {
-      hashKey: "clinic_source",
+      hashKey: "clinicSource",
       rangeKey: "createdAt",
       projection: "all",
     },

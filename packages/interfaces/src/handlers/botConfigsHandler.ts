@@ -50,18 +50,18 @@ export const handler: Handler = async (event): Promise<R> => {
 
     // --- DELETE -------------------------------------------------------------
     if (method === "DELETE" && path.startsWith("/bot-config")) {
-      const { bot_config_id, clinic_source, clinic_id } = body ?? {};
-      await controller.deleteBotConfig(bot_config_id, clinic_source, clinic_id);
+      const { botConfigId, clinicSource, clinicId } = body ?? {};
+      await controller.deleteBotConfig(botConfigId, clinicSource, clinicId);
       return { statusCode: 204, body: "" };
     }
 
     // --- GET ONE ------------------------------------------------------------
     if (method === "GET" && /\/bot-config\/?$/.test(path)) {
-      const { bot_config_id, clinic_source, clinic_id } = qs || {};
+      const { botConfigId, clinicSource, clinicId } = qs || {};
       const config = await controller.getBotConfig(
-        bot_config_id!,
-        clinic_source!,
-        Number(clinic_id)!
+        botConfigId!,
+        clinicSource!,
+        Number(clinicId)!
       );
       return { statusCode: 200, body: JSON.stringify(config) };
     }

@@ -6,7 +6,7 @@
  */
 export interface IPatientRepository {
   /**
-   * Actualiza el campo kommo_lead_id de un paciente específico.
+   * Actualiza el campo kommoLeadId de un paciente específico.
    *
    * @param patientId - ID único del paciente (number).
    * @param kommoLeadId - ID de lead Kommo asignado (string).
@@ -15,7 +15,7 @@ export interface IPatientRepository {
   updateKommoLeadId(patientId: number, kommoLeadId: string): Promise<void>;
 
   /**
-   * Obtiene el kommo_lead_id guardado en BD de un paciente específico.
+   * Obtiene el kommoLeadId guardado en BD de un paciente específico.
    *
    * @param patientId - ID único del paciente (number).
    * @returns Promise<string | undefined> - ID si existe, undefined si no.

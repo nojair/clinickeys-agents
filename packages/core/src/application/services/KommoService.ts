@@ -64,13 +64,13 @@ export class KommoService {
     })();
     console.log('[KommoService.ensureLead] teléfono normalizado', { original: payload.patient_phone, normalizado: phoneIntl });
 
-    // --- PASO 1: Consultar kommo_lead_id guardado en BD (como el antiguo) ---
+    // --- PASO 1: Consultar kommoLeadId guardado en BD (como el antiguo) ---
     let kommoLeadIdEnBD: string | undefined = undefined;
     try {
       kommoLeadIdEnBD = await this.patientRepository.getKommoLeadId(payload.patient_id); // Debe devolver string | undefined
       console.log('[KommoService.ensureLead] lead ID en BD', { bd_lead_id: kommoLeadIdEnBD });
     } catch (e: any) {
-      console.error('[KommoService.ensureLead][ERROR] al consultar kommo_lead_id en patientRepository', { error: e.message, stack: e.stack });
+      console.error('[KommoService.ensureLead][ERROR] al consultar kommoLeadId en patientRepository', { error: e.message, stack: e.stack });
       // Si falla, sigue el flujo normal (como fallback)
     }
 

@@ -67,7 +67,7 @@ export class KommoApiGateway {
 
   async runSalesbot({ botId, leadId }: { botId: string, leadId: string }) {
     const url = `https://${this.subdomain}.kommo.com/api/v2/salesbot/run`;
-    const body = [{ bot_config_id: botId, entity_id: leadId, entity_type: '2' }];
+    const body = [{ botConfigId: botId, entity_id: leadId, entity_type: '2' }];
     console.log('runSalesbot url and body', { url, body });
     return ok(await fetch(url, { method: 'POST', headers: hdr(this.apiKey), body: JSON.stringify(body) }), url);
   }
