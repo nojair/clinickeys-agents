@@ -1,11 +1,9 @@
 // packages/core/src/utils/helpers.ts
 
+import type { NotificationDTO, NotificationPayload } from '@clinickeys-agents/core/domain/notification';
+import type { LeadMap, ContactMap } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
+import { profiles, PAYLOAD_FIELD_MAP } from '@clinickeys-agents/core/utils';
 import { DateTime, IANAZone } from 'luxon';
-import { profiles } from '@clinickeys-agents/core/utils/constants';
-import {
-  KommoLeadCustomFieldDefinition,
-  KommoContactCustomFieldDefinition
-} from '@clinickeys-agents/core/infrastructure/integrations/kommo/models';
 
 export const json = (r: Response) => r.json();
 export const ok = async (r: Response, url: string) => {
@@ -101,4 +99,63 @@ export function formatVisitTime(timeStr: string) {
   if (!timeStr) return '';
   const [h, m] = timeStr.split(':');
   return `${h}:${m}`;
+}
+
+function isLeadFieldConfig(field: LeadFieldConfig | ContactFieldConfig): field is LeadFieldConfig {
+  return (field as LeadFieldConfig).field_name !== undefined;
+}
+
+function isContactFieldConfig(field: LeadFieldConfig | ContactFieldConfig): field is ContactFieldConfig {
+  return (field as ContactFieldConfig).field_code !== undefined;
+}
+
+export function buildCustomFieldsValues({
+  fields,
+  fieldMap,
+  notification,
+  payload,
+  type
+}: {
+  fields: (LeadFieldConfig | ContactFieldConfig)[];
+  fieldMap: LeadMap | ContactMap;
+  notification: NotificationDTO;
+  payload: NotificationPayload;
+  type: 'lead' | 'contact';
+}) {
+  return fields.map((f) => {
+    let field_id: string | undefined = undefined;
+
+    if (type === 'lead' && isLeadFieldConfig(f)) {
+      const leadMap = fieldMap as LeadMap;
+      field_id = (leadMap as Record<string, any>)[f.field_name]?.field_id;
+      if (!field_id) return undefined;
+      let value = '';
+      if (f.field_name === 'appointmentMessage') value = `${notification.message}`;
+      else if (f.field_name === 'idNotification') value = `${notification.notificacionId}`;
+      else if (PAYLOAD_FIELD_MAP[f.field_name] && payload && payload[PAYLOAD_FIELD_MAP[f.field_name]] !== undefined) {
+        let raw = payload[PAYLOAD_FIELD_MAP[f.field_name]];
+        if (f.field_name === 'appointmentDate') value = formatVisitDate(raw);
+        else if (f.field_name === 'appointmentStartTime') value = formatVisitTime(raw);
+        else if (f.field_name === 'appointmentEndTime') value = formatVisitTime(raw);
+        else value = `${raw}`;
+      } else return undefined;
+      return { field_id, values: [{ value }] };
+    }
+
+    if (type === 'contact' && isContactFieldConfig(f)) {
+      const contactMap = fieldMap as ContactMap;
+      field_id = (contactMap as Record<string, any>)[f.field_code]?.field_id;
+      if (!field_id) return undefined;
+      if (f.field_code === 'PHONE') {
+        const enum_id = (contactMap as Record<string, any>)['PHONE']?.enum_id;
+        const value = payload.patient_phone ?? '';
+        return {
+          field_id,
+          values: [{ value, ...(enum_id ? { enum_id } : {}) }],
+        };
+      }
+      return undefined;
+    }
+    return undefined;
+  }).filter(Boolean);
 }

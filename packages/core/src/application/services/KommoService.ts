@@ -1,16 +1,11 @@
-// packages/core/src/application/services/KommoService.ts
-
-import { formatVisitDate, formatVisitTime, getKommoMapFields, getKommoRelevantFields, PAYLOAD_FIELD_MAP } from '@clinickeys-agents/core/utils';
+import { getKommoMapFields, getKommoRelevantFields, buildCustomFieldsValues } from '@clinickeys-agents/core/utils';
 import { KommoCustomFieldExistence } from '@clinickeys-agents/core/application/services/types/KommoCustomFieldExistence';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import {
   KommoApiGateway,
-  getLeadFieldId,
-  getContactFieldData,
   KommoContactCustomFieldDefinition,
   KommoLeadCustomFieldDefinition,
 } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
-
 import type { NotificationDTO, NotificationPayload } from '@clinickeys-agents/core/domain/notification/dtos';
 import type { BotConfigDTO } from '@clinickeys-agents/core/domain/botConfig';
 import type { profiles } from '@clinickeys-agents/core/utils';
@@ -67,7 +62,7 @@ export class KommoService {
     // --- PASO 1: Consultar kommoLeadId guardado en BD (como el antiguo) ---
     let kommoLeadIdEnBD: string | undefined = undefined;
     try {
-      kommoLeadIdEnBD = await this.patientRepository.getKommoLeadId(payload.patientId); // Debe devolver string | undefined
+      kommoLeadIdEnBD = await this.patientRepository.getKommoLeadId(payload.patientId);
       console.log('[KommoService.ensureLead] lead ID en BD', { bd_lead_id: kommoLeadIdEnBD });
     } catch (e: any) {
       console.error('[KommoService.ensureLead][ERROR] al consultar kommoLeadId en patientRepository', { error: e.message, stack: e.stack });
@@ -109,14 +104,13 @@ export class KommoService {
       const contactPayload = [
         {
           name: `${payload.patientFirstName} ${payload.patientLastName}`,
-          custom_fields_values: addingKommoContactFields.map((f: ContactFieldConfig) => {
-            const fieldData = getContactFieldData(contactMap, f);
-            if (!fieldData) return undefined;
-            return {
-              field_id: fieldData.field_id,
-              values: [{ value: phoneIntl, enum_id: fieldData.enum_id }]
-            };
-          }).filter(Boolean),
+          custom_fields_values: buildCustomFieldsValues({
+            fields: addingKommoContactFields,
+            fieldMap: contactMap,
+            notification,
+            payload,
+            type: 'contact'
+          })
         },
       ];
       let contactRes;
@@ -139,21 +133,13 @@ export class KommoService {
         {
           name: `${payload.patientFirstName} ${payload.patientLastName}`,
           _embedded: { contacts: [{ id: contactId, is_main: true }] },
-          custom_fields_values: kommoLeadCustomFields.map((f: LeadFieldConfig) => {
-            const field_id = getLeadFieldId(leadMap, f);
-            if (!field_id) return undefined;
-            let value = '';
-            if (f.field_name === 'appointmentMessage') value = `${notification.message}`;
-            else if (f.field_name === 'idNotification') value = `${notification.notificacionId}`;
-            else if (PAYLOAD_FIELD_MAP[f.field_name] && payload && payload[PAYLOAD_FIELD_MAP[f.field_name]] !== undefined) {
-              let raw = payload[PAYLOAD_FIELD_MAP[f.field_name]];
-              if (f.field_name === 'appointmentDate') value = formatVisitDate(raw);
-              else if (f.field_name === 'appointmentStartTime') value = formatVisitTime(raw);
-              else if (f.field_name === 'appointmentEndTime') value = formatVisitTime(raw);
-              else value = `${raw}`;
-            } else return undefined;
-            return { field_id, values: [{ value }] };
-          }).filter(Boolean),
+          custom_fields_values: buildCustomFieldsValues({
+            fields: kommoLeadCustomFields,
+            fieldMap: leadMap,
+            notification,
+            payload,
+            type: 'lead'
+          })
         },
       ];
       let leadRes;
@@ -170,7 +156,6 @@ export class KommoService {
       console.log('[KommoService.ensureLead] lead creado', { leadId });
     }
 
-    // --- PASO 6: Guardar/actualizar leadId en la BD ---
     try {
       await this.patientRepository.updateKommoLeadId(payload.patientId, leadId!);
       console.log('[KommoService.ensureLead] BD actualizada con nuevo leadId', { leadId });
@@ -193,25 +178,18 @@ export class KommoService {
   }) {
     const { leadMap } = await this.loadClinicFieldMappings(botConfig);
     const { kommoLeadCustomFields } = getKommoRelevantFields(botConfig.fieldsProfile as keyof typeof profiles);
-    const payload: NotificationPayload | undefined = notification.payload;
+    if (!notification.payload) {
+      throw new Error('Notification payload is required');
+    }
+    const payload: NotificationPayload = notification.payload;
 
-    const custom_fields_values = kommoLeadCustomFields
-      .map((f: LeadFieldConfig) => {
-        const field_id = getLeadFieldId(leadMap, f);
-        if (!field_id) return undefined;
-        let value = '';
-        if (f.field_name === 'appointmentMessage') value = `${notification.message}`;
-        else if (f.field_name === 'idNotification') value = `${notification.notificacionId}`;
-        else if (PAYLOAD_FIELD_MAP[f.field_name] && payload && payload[PAYLOAD_FIELD_MAP[f.field_name]] !== undefined) {
-          let raw = payload[PAYLOAD_FIELD_MAP[f.field_name]];
-          if (f.field_name === 'appointmentDate') value = formatVisitDate(raw);
-          else if (f.field_name === 'appointmentStartTime') value = formatVisitTime(raw);
-          else if (f.field_name === 'appointmentEndTime') value = formatVisitTime(raw);
-          else value = `${raw}`;
-        } else return undefined;
-        return { field_id, values: [{ value }] };
-      })
-      .filter(Boolean);
+    const custom_fields_values = buildCustomFieldsValues({
+      fields: kommoLeadCustomFields,
+      fieldMap: leadMap,
+      notification,
+      payload,
+      type: 'lead'
+    });
 
     if (custom_fields_values.length > 0) {
       await this.gateway.patchLead({
