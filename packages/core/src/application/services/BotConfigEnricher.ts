@@ -13,9 +13,9 @@ export class BotConfigEnricher {
    * Enriquecer un solo DTO de BotConfig con info de campos custom y estado ready.
    */
   static async enrich(dto: BotConfigDTO): Promise<BotConfigEnrichedDTO> {
-    // 1. Tomar el perfil configurado, si no existe usar "default_esp"
+    // 1. Tomar el perfil configurado, si no existe usar "default_kommo_profile"
     const profileKey =
-      (dto.fields_profile as keyof typeof profiles) || "default_esp";
+      (dto.fields_profile as keyof typeof profiles) || "default_kommo_profile";
     const config = profiles[profileKey]?.lead?.custom_field_config || [];
     const fieldNames = config.map((c) => c.field_name);
 
@@ -34,11 +34,11 @@ export class BotConfigEnricher {
     const requiredProps = [
       "id_clinica",
       "name",
-      "kommo_subdomain",
+      "crm_subdomain",
       "timezone",
       "default_country",
       "kommo_salesbot_id",
-      "kommo_api_key",
+      "crm_api_key",
       "fields_profile",
     ];
 

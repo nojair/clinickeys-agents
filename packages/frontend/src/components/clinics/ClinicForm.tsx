@@ -106,7 +106,7 @@ export default function ClinicForm({ initialValues, onClose }: Props) {
       id_clinica: selectedOption.value,
       name: selectedOption.label,
       ...data,
-      fields_profile: "default_esp",
+      fields_profile: "default_kommo_profile",
       entity: "BOT_CONFIG",
     };
 

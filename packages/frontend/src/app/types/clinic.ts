@@ -30,7 +30,7 @@ export interface Clinic {
   api_key: string;
   /**
    * Campo oculto para el UI; el frontend siempre envía
-   * el valor fijo “default_esp”
+   * el valor fijo “default_kommo_profile”
    */
   fields_profile: string;
   /** Campos personalizados de leads en Kommo */
@@ -81,7 +81,7 @@ export const clinicSchema = z.object({
 
   fields_profile: z
     .string()
-    .default("default_esp"),
+    .default("default_kommo_profile"),
 
   entity: z
     .string()

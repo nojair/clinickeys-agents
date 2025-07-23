@@ -40,7 +40,7 @@ export interface BotConfigDTO {
   isActive?: boolean;
   
   // Perfil de campos personalizados
-  fields_profile: string; // Perfil de campos personalizados, ej. "default_esp"
+  fields_profile: string; // Perfil de campos personalizados, ej. "default_kommo_profile"
 
   // Auditoría
   createdAt: number;       // epoch millis

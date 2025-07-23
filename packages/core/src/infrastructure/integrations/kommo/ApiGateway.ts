@@ -1,6 +1,47 @@
 // packages/core/src/infrastructure/integrations/kommo/ApiGateway.ts
 
 import { ok, hdr } from "@clinickeys-agents/core/utils";
+import type {
+  KommoContactCustomFieldDefinition,
+  KommoLeadCustomFieldDefinition,
+} from "@clinickeys-agents/core/infrastructure/integrations/kommo/models";
+
+// ---------- TIPOS DE RESPUESTA KOMMO ----------
+
+export interface KommoContactLead {
+  id: string;
+  _embedded?: {
+    leads?: Array<{ id: string }>;
+  };
+}
+
+export interface KommoSearchContactResponse {
+  _embedded?: {
+    contacts?: KommoContactLead[];
+  };
+}
+
+export interface KommoGetLeadByIdResponse {
+  id: string;
+  custom_fields_values?: Array<any>; // Puedes tipar mejor si lo necesitas
+  _embedded?: {
+    contacts?: Array<{ id: string }>;
+  };
+}
+
+export interface KommoCreateContactResponse {
+  _embedded?: {
+    contacts?: Array<{ id: string }>;
+  };
+}
+
+export interface KommoCreateLeadResponse {
+  _embedded?: {
+    leads?: Array<{ id: string }>;
+  };
+}
+
+// ---------- GATEWAY KOMMO PROFESIONAL ----------
 
 export interface KommoApiGatewayOptions {
   apiKey: string;
@@ -11,7 +52,7 @@ export class KommoApiGateway {
   private apiKey: string;
   private subdomain: string;
   private baseUrl: string;
-  private fieldCache: Record<string, any> = {};
+  private fieldCache: Record<string, KommoLeadCustomFieldDefinition[] | KommoContactCustomFieldDefinition[]> = {};
 
   constructor({ apiKey, subdomain }: KommoApiGatewayOptions) {
     this.apiKey = apiKey;
@@ -31,32 +72,34 @@ export class KommoApiGateway {
     return ok(await fetch(url, { method: 'POST', headers: hdr(this.apiKey), body: JSON.stringify(body) }), url);
   }
 
-  async createContact({ body }: { body: any }) {
+  async createContact({ body }: { body: any }): Promise<KommoCreateContactResponse> {
     const url = `${this.baseUrl}/contacts`;
-    return ok(await fetch(url, { method: 'POST', headers: hdr(this.apiKey), body: JSON.stringify(body) }), url);
+    return ok(await fetch(url, { method: 'POST', headers: hdr(this.apiKey), body: JSON.stringify(body) }), url) as Promise<KommoCreateContactResponse>;
   }
 
-  async createLead({ body }: { body: any }) {
+  async createLead({ body }: { body: any }): Promise<KommoCreateLeadResponse> {
     const url = `${this.baseUrl}/leads`;
-    return ok(await fetch(url, { method: 'POST', headers: hdr(this.apiKey), body: JSON.stringify(body) }), url);
+    return ok(await fetch(url, { method: 'POST', headers: hdr(this.apiKey), body: JSON.stringify(body) }), url) as Promise<KommoCreateLeadResponse>;
   }
 
-  async searchContactByPhone({ phone }: { phone: string }) {
+  async searchContactByPhone({ phone }: { phone: string }): Promise<KommoSearchContactResponse | null> {
     const query = encodeURIComponent(phone);
     const url = `${this.baseUrl}/contacts?query=${query}&with=leads,catalog_elements&order[updated_at]=desc`;
     const res = await fetch(url, { headers: hdr(this.apiKey) });
     if (res.status === 204) return null;
-    return ok(res, url);
+    return ok(res, url) as Promise<KommoSearchContactResponse>;
   }
 
-  async getLeadById({ leadId }: { leadId: string }) {
+  async getLeadById({ leadId }: { leadId: string }): Promise<KommoGetLeadByIdResponse | null> {
     const url = `${this.baseUrl}/leads/${leadId}?with=contacts`;
     const res = await fetch(url, { headers: hdr(this.apiKey) });
     if (res.status === 204) return null;
-    return ok(res, url);
+    return ok(res, url) as Promise<KommoGetLeadByIdResponse>;
   }
 
-  async fetchCustomFields(entityType: string) {
+  async fetchCustomFields(entityType: 'leads'): Promise<KommoLeadCustomFieldDefinition[]>;
+  async fetchCustomFields(entityType: 'contacts'): Promise<KommoContactCustomFieldDefinition[]>;
+  async fetchCustomFields(entityType: string): Promise<any[]> {
     if (this.fieldCache[entityType]) return this.fieldCache[entityType];
     const url = `${this.baseUrl}/${entityType}/custom_fields`;
     const res = await fetch(url, { headers: hdr(this.apiKey) });

@@ -19,7 +19,7 @@ export const PAYLOAD_FIELD_MAP: Record<string, string> = {
 
 // custom fields para crear en las cuentas de kommo de cada clínica
 export const profiles = {
-  default_esp: {
+  default_kommo_profile: {
     adding_contact: {
       custom_fields_config: [
         {
@@ -47,7 +47,7 @@ export const profiles = {
       ]
     }
   },
-  minimal: {
+  default_minimal_profile: {
     adding_contact: { custom_fields_config: [] },
     lead: { custom_field_config: [] }
   }
