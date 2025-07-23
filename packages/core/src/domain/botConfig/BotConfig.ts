@@ -20,11 +20,11 @@ export class BotConfig {
   // Datos del CRM
   readonly crmType: string;
   readonly crmSubdomain?: string;
-  readonly crm_api_key: string;
+  readonly crmApiKey: string;
   readonly kommoSalesbotId?: string;
 
   // Configuración regional
-  readonly default_country: string;
+  readonly defaultCountry: string;
   readonly timezone: string;
 
   // Metadatos de presentación
@@ -52,13 +52,13 @@ export class BotConfig {
     // CRM
     this.crmType = dto.crmType;
     this.crmSubdomain = dto.crmSubdomain;
-    this.crm_api_key = dto.crm_api_key;
+    this.crmApiKey = dto.crmApiKey;
 
     // Kommo específico
     this.kommoSalesbotId = dto.kommoSalesbotId;
 
     // Config regional
-    this.default_country = dto.default_country;
+    this.defaultCountry = dto.defaultCountry;
     this.timezone = dto.timezone;
 
     // Presentación

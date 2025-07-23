@@ -53,7 +53,7 @@ export class SendRemindersJob {
           const clinicId = cfg.clinicId;
           const clinicSource = cfg.clinicSource;
 
-          const apiKey = cfg.crm_api_key;
+          const apiKey = cfg.crmApiKey;
           const subdomain = cfg.crmSubdomain;
           const kommoSalesbotId = cfg.kommoSalesbotId;
 
@@ -78,17 +78,17 @@ export class SendRemindersJob {
 
           for (const n of notifications) {
             try {
-              const progDate = parseClinicDate(n.fecha_envio_programada, tz).toISODate();
+              const progDate = parseClinicDate(n.scheduledDate, tz).toISODate();
 
               Logger.info("[JOB] Analizando notificación", {
-                id_notificacion: n.id_notificacion,
+                id_notificacion: n.notificacionId,
                 telefono: n.payload?.patient_phone,
                 progDate,
                 hora_local: hourNow,
               });
 
               if (!canSendReminder(now, MIN_HOUR)) {
-                Logger.info("[JOB] Hora local < MIN_HOUR, pendiente", { hourNow, MIN_HOUR, id_notificacion: n.id_notificacion, tz });
+                Logger.info("[JOB] Hora local < MIN_HOUR, pendiente", { hourNow, MIN_HOUR, id_notificacion: n.notificacionId, tz });
                 continue;
               }
 
@@ -106,11 +106,11 @@ export class SendRemindersJob {
               Logger.info("[JOB] Salesbot ejecutado", { botId: kommoSalesbotId, leadId });
 
               // 4. Marcar como enviado
-              await this.notificationsRepo.updateState(n.id_notificacion, "enviado");
+              await this.notificationsRepo.updateState(n.notificacionId, "enviado");
             } catch (err) {
-              await this.notificationsRepo.updateState(n.id_notificacion, "fallido");
+              await this.notificationsRepo.updateState(n.notificacionId, "fallido");
               Logger.error("Error enviando recordatorio", {
-                notificationId: n.id_notificacion,
+                notificationId: n.notificacionId,
                 clinicId,
                 error: err,
               });

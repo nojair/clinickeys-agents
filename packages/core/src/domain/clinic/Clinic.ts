@@ -9,7 +9,7 @@ import { ClinicDTO } from "./dtos";
 export class Clinic {
   // Identificación multi‑fuente
   readonly clinicSource: string; // "legacy", "v2", ...
-  readonly id: string;           // ID dentro de esa fuente
+  readonly clinicId: string;           // ID dentro de esa fuente
   readonly superClinicId?: string;
 
   // Datos generales
@@ -27,8 +27,8 @@ export class Clinic {
   readonly legalRepNif?: string;
 
   constructor(dto: ClinicDTO) {
+    this.clinicId = dto.clinicId;
     this.clinicSource = dto.clinicSource;
-    this.id = dto.id;
     this.superClinicId = dto.superClinicId;
 
     this.name = dto.name;

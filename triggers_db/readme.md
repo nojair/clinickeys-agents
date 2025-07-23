@@ -135,20 +135,20 @@ CREATE TABLE `citas` (
 CAMBIOS EN PAYLOAD:
 
 JSON_OBJECT(
-  'patient_id', v_id_paciente,
-  'patient_first_name', v_nombre_paciente,
-  'patient_last_name', v_apellido_paciente,
+  'patientId', v_id_paciente,
+  'patientFirstName', v_nombre_paciente,
+  'patientLastName', v_apellido_paciente,
   'patient_lead_id', V_kommo_lead_id,
   'clinicId', v_id_clinica,
-  'clinic_name', v_nombre_clinica,
-  'appointment_date', DATE_FORMAT(NEW.fecha_cita, '%Y-%m-%d'),
-  'appointment_start_time', TIME_FORMAT(NEW.hora_inicio, '%H:%i:%s'),
-  'appointment_end_time', TIME_FORMAT(NEW.hora_fin, '%H:%i:%s'),
-  'appointment_weekday_name', v_dia_semana,
+  'clinicName', v_nombre_clinica,
+  'appointmentDate', DATE_FORMAT(NEW.fecha_cita, '%Y-%m-%d'),
+  'appointmentStartTime', TIME_FORMAT(NEW.hora_inicio, '%H:%i:%s'),
+  'appointmentEndTime', TIME_FORMAT(NEW.hora_fin, '%H:%i:%s'),
+  'appointmentWeekdayName', v_dia_semana,
   'doctor_id', v_id_medico,
-  'doctor_full_name', v_nombre_medico,
+  'doctorFullName', v_nombre_medico,
   'treatment_id', v_id_tratamiento,
-  'treatment_name', v_nombre_tratamiento,
+  'treatmentName', v_nombre_tratamiento,
   'space_id', v_id_visit_space,
-  'space_name', v_nombre_espacio
+  'spaceName', v_nombre_espacio
 )

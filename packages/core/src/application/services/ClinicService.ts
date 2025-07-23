@@ -25,7 +25,7 @@ export class ClinicService {
    * Busca una clínica por su ID.
    * `clinicSource` es opcional y por defecto "legacy" para mantener compatibilidad.
    */
-  async getClinicById(id: string, clinicSource: string = "legacy"): Promise<ClinicDTO | null> {
-    return this.clinicRepository.findById(clinicSource, id);
+  async getClinicById(clinicId: string, clinicSource: string = "legacy"): Promise<ClinicDTO | null> {
+    return this.clinicRepository.findById(clinicSource, clinicId);
   }
 }

@@ -180,9 +180,9 @@ export class BotConfigRepositoryDynamo {
       | "description"
       | "name"
       | "timezone"
-      | "default_country"
+      | "defaultCountry"
       | "kommoSalesbotId"
-      | "crm_api_key"
+      | "crmApiKey"
       | "crmSubdomain"
       | "crmType"
     >>
@@ -206,9 +206,9 @@ export class BotConfigRepositoryDynamo {
     add("description", update.description);
     add("name", update.name);
     add("timezone", update.timezone);
-    add("default_country", update.default_country);
+    add("defaultCountry", update.defaultCountry);
     add("kommoSalesbotId", update.kommoSalesbotId);
-    add("crm_api_key", update.crm_api_key);
+    add("crmApiKey", update.crmApiKey);
     add("crmSubdomain", update.crmSubdomain);
     add("crmType", update.crmType);
 

@@ -25,7 +25,7 @@ export class ClinicController {
    * Devuelve los detalles de una clínica por su ID y fuente.
    * Si no se indica `clinicSource`, se asume "legacy".
    */
-  async getClinicById(id: string, clinicSource: string = "legacy"): Promise<ClinicDTO | null> {
-    return this.clinicService.getClinicById(id, clinicSource);
+  async getClinicById(clinicId: string, clinicSource: string = "legacy"): Promise<ClinicDTO | null> {
+    return this.clinicService.getClinicById(clinicId, clinicSource);
   }
 }

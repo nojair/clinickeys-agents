@@ -10,9 +10,9 @@ export type UpdateBotConfigPayload = Partial<Pick<
   | "description"
   | "name"
   | "timezone"
-  | "default_country"
+  | "defaultCountry"
   | "kommoSalesbotId"
-  | "crm_api_key"
+  | "crmApiKey"
   | "crmSubdomain"
   | "crmType"
 >>;

@@ -23,7 +23,7 @@ export interface Clinic {
   /** Zona horaria IANA, p. ej. “Europe/Madrid” */
   timezone: string;
   /** Código ISO-3166-1 alfa-2 del país por defecto, p. ej. “ES” */
-  default_country: string;
+  defaultCountry: string;
   /** ID del Salesbot en Kommo */
   id_salesbot: number;
   /** Clave de API para integraciones internas */
@@ -32,7 +32,7 @@ export interface Clinic {
    * Campo oculto para el UI; el frontend siempre envía
    * el valor fijo “default_kommo_profile”
    */
-  fields_profile: string;
+  fieldsProfile: string;
   /** Campos personalizados de leads en Kommo */
   kommo_leads_custom_fields: KommoLeadCustomField[];
   /** Indica si la clínica está lista para usar */
@@ -64,7 +64,7 @@ export const clinicSchema = z.object({
     .trim()
     .min(1, { message: "La zona horaria es obligatoria" }),
 
-  default_country: z
+  defaultCountry: z
     .string()
     .trim()
     .length(2, { message: "Usa el código ISO-3166-1 (p. ej. ES)" }),
@@ -79,7 +79,7 @@ export const clinicSchema = z.object({
     .trim()
     .min(1, { message: "El token de kommo es obligatorio" }),
 
-  fields_profile: z
+  fieldsProfile: z
     .string()
     .default("default_kommo_profile"),
 

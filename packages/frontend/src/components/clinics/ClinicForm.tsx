@@ -38,7 +38,7 @@ const COUNTRIES = Object.keys(ct.getAllCountries())
 const formSchema = z.object({
   subdomain: z.string().trim().min(1, "El subdominio es obligatorio"),
   timezone: z.string().trim().min(1, "La zona horaria es obligatoria"),
-  default_country: z.string().trim().length(2, "Código ISO-3166-1 (p. ej. ES)"),
+  defaultCountry: z.string().trim().length(2, "Código ISO-3166-1 (p. ej. ES)"),
   id_salesbot: z
     .coerce.number()
     .int("Debe ser un número entero")
@@ -85,7 +85,7 @@ export default function ClinicForm({ initialValues, onClose }: Props) {
       initialValues ?? {
         subdomain: "",
         timezone: "Europe/Madrid",
-        default_country: "ES",
+        defaultCountry: "ES",
         id_salesbot: 0,
         api_key: "",
       },
@@ -106,7 +106,7 @@ export default function ClinicForm({ initialValues, onClose }: Props) {
       clinicId: selectedOption.value,
       name: selectedOption.label,
       ...data,
-      fields_profile: "default_kommo_profile",
+      fieldsProfile: "default_kommo_profile",
       entity: "BOT_CONFIG",
     };
 
@@ -158,14 +158,14 @@ export default function ClinicForm({ initialValues, onClose }: Props) {
       </Field>
 
       <Field>
-        <Label htmlFor="default_country">Código de país por defecto para teléfonos</Label>
-        <Input id="default_country" list="country-options" {...form.register("default_country")} />
+        <Label htmlFor="defaultCountry">Código de país por defecto para teléfonos</Label>
+        <Input id="defaultCountry" list="country-options" {...form.register("defaultCountry")} />
         <datalist id="country-options">
           {COUNTRIES.map((code) => (
             <option key={code} value={code} />
           ))}
         </datalist>
-        <Error name="default_country" />
+        <Error name="defaultCountry" />
       </Field>
 
       <Field>

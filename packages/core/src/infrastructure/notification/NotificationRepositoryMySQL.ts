@@ -28,7 +28,7 @@ export class NotificationRepositoryMySQL implements INotificationRepository {
       const [rows] = await this.pool.query<RowDataPacket[]>(
         `SELECT * FROM notificaciones
          WHERE estado = 'pendiente'
-         AND clinicId = ?
+         AND id_clinica = ?
          AND fecha_envio_programada = ?`,
         [clinicId, fecha_envio_programada]
       );
@@ -37,23 +37,23 @@ export class NotificationRepositoryMySQL implements INotificationRepository {
       }
       // Mapea los resultados para transformar el payload a tipo NotificationPayload
       return rows.map((row: any) => ({
-        id_notificacion: row.id_notificacion,
-        tipo_notificacion: row.tipo_notificacion,
-        id_entidad_destino: row.id_entidad_destino,
-        id_tipo_destinatario: row.id_tipo_destinatario,
-        entidad_destino: row.entidad_destino,
-        mensaje: row.mensaje,
+        state: row.estado,
+        message: row.mensaje,
+        createdAt: row.creado_el,
+        clinicId: row.id_clinica,
+        type: row.tipo_notificacion,
+        updatedAt: row.actualizado_el,
+        realSendDate: row.fecha_envio_real,
+        notificacionId: row.id_notificacion,
+        superClinicId: row.id_super_clinica,
+        destinationEntity: row.entidad_destino,
+        scheduledTime: row.hora_envio_programada,
+        scheduledDate: row.fecha_envio_programada,
+        typeRecipientId: row.id_tipo_destinatario,
+        triggerEntity: row.entidad_desencadenadora,
+        entityDestinationId: row.id_entidad_destino,
+        triggerEntityId: row.id_entidad_desencadenadora,
         payload: row.payload ? JSON.parse(row.payload) : undefined,
-        fecha_envio_programada: row.fecha_envio_programada,
-        hora_envio_programada: row.hora_envio_programada,
-        fecha_envio_real: row.fecha_envio_real,
-        estado: row.estado,
-        creado_el: row.creado_el,
-        actualizado_el: row.actualizado_el,
-        entidad_desencadenadora: row.entidad_desencadenadora,
-        id_entidad_desencadenadora: row.id_entidad_desencadenadora,
-        clinicId: row.clinicId,
-        id_super_clinica: row.id_super_clinica,
       }));
     } catch (error: any) {
       if (error instanceof NotificationNotFoundError) throw error;

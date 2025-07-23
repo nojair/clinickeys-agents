@@ -5,8 +5,8 @@
  */
 
 export class ClinicNotFoundError extends Error {
-  constructor(id: number | string) {
-    super(`No se encontró la clínica con id: ${id}`);
+  constructor(clinicId: number | string) {
+    super(`No se encontró la clínica con id: ${clinicId}`);
     this.name = 'ClinicNotFoundError';
   }
 }

@@ -23,13 +23,13 @@ export interface BotConfigDTO {
   // Datos de CRM (multiplataforma)
   crmType: "kommo" | "hubspot" | string; // Permite nuevos CRMs
   crmSubdomain?: string;  // ej. "clinicA.kommo.com"
-  crm_api_key: string;
+  crmApiKey: string;
 
   // Datos específicos de Kommo
   kommoSalesbotId?: string;     // ID del salesbot de Kommo, si aplica
 
   // Configuración regional
-  default_country: string; // ISO 3166‑1 alpha‑2, ej. "PE"
+  defaultCountry: string; // ISO 3166‑1 alpha‑2, ej. "PE"
   timezone: string;        // IANA TZ, ej. "America/Lima"
 
   // Metadatos de presentación
@@ -40,7 +40,7 @@ export interface BotConfigDTO {
   isActive?: boolean;
   
   // Perfil de campos personalizados
-  fields_profile: string; // Perfil de campos personalizados, ej. "default_kommo_profile"
+  fieldsProfile: string; // Perfil de campos personalizados, ej. "default_kommo_profile"
 
   // Auditoría
   createdAt: number;       // epoch millis

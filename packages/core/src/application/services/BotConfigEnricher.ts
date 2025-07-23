@@ -15,13 +15,13 @@ export class BotConfigEnricher {
   static async enrich(dto: BotConfigDTO): Promise<BotConfigEnrichedDTO> {
     // 1. Tomar el perfil configurado, si no existe usar "default_kommo_profile"
     const profileKey =
-      (dto.fields_profile as keyof typeof profiles) || "default_kommo_profile";
+      (dto.fieldsProfile as keyof typeof profiles) || "default_kommo_profile";
     const config = profiles[profileKey]?.lead?.custom_field_config || [];
     const fieldNames = config.map((c) => c.field_name);
 
     // 2. Instanciar el gateway y service con credenciales del bot
     const gateway = new KommoApiGateway({
-      apiKey: dto.crm_api_key,
+      apiKey: dto.crmApiKey,
       subdomain: dto.crmSubdomain || ""
     });
     // El KommoService ahora requiere el patientRepository, pero para obtener campos custom solo usa el gateway
@@ -37,10 +37,10 @@ export class BotConfigEnricher {
       "name",
       "timezone",
       "clinicId",
-      "crm_api_key",
+      "crmApiKey",
       "crmSubdomain",
-      "fields_profile",
-      "default_country",
+      "fieldsProfile",
+      "defaultCountry",
       "kommoSalesbotId",
     ];
 
