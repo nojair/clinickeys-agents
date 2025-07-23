@@ -2,7 +2,6 @@
 
 import { createMySQLPool, createDynamoDocumentClient, getEnvVar } from "@clinickeys-agents/core/infrastructure/config";
 import { SendRemindersJob } from "@clinickeys-agents/core/infrastructure/job";
-import { invokeSelf } from '@clinickeys-agents/core/utils';
 import { APIGatewayProxyResult as R } from "aws-lambda";
 import type { Handler } from 'aws-lambda';
 
@@ -30,16 +29,7 @@ export const handler: Handler = async (event, context): Promise<R> => {
     botConfigTable: getEnvVar("BOT_CONFIG_TABLE")
   });
 
-  try {    
-    if (context.getRemainingTimeInMillis() < 15_000) {
-      console.log('Re-invoking Lambda asynchronously to re-check at ≥10:00');
-      await invokeSelf(event, context);
-      return {
-        statusCode: 202,
-        body: JSON.stringify({ ok: true, reinvoked: true }),
-      };
-    }
-
+  try {
     await job.execute();
 
     return {
