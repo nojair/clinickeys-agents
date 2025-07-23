@@ -1,34 +1,30 @@
 // packages/core/src/infrastructure/job/SendRemindersJob.ts
 
-import { NotificationRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/notification";
-import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/botConfig";
+import { INotificationRepository } from "@clinickeys-agents/core/domain/notification";
+import { IBotConfigRepository } from "@clinickeys-agents/core/domain/botConfig";
+import { IPatientRepository } from "@clinickeys-agents/core/domain/patient/IPatientRepository";
 import { KommoApiGateway } from "@clinickeys-agents/core/infrastructure/integrations/kommo";
 import { clinicNow, safeISODate, parseClinicDate, canSendReminder } from "@clinickeys-agents/core/utils";
 import { KommoService } from "@clinickeys-agents/core/application/services";
 import { Logger } from "@clinickeys-agents/core/infrastructure/external";
-import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
-import { Pool } from "mysql2/promise";
 
 export interface SendRemindersJobProps {
-  mysqlPool: Pool;
-  dynamoClient: DynamoDBDocumentClient;
-  botConfigTable: string;
+  notificationsRepo: INotificationRepository;
+  botConfigRepo: IBotConfigRepository;
+  patientRepo: IPatientRepository;
   pageSize?: number; // lote de configs por página (default 100)
 }
 
 export class SendRemindersJob {
-  private readonly notificationsRepo: NotificationRepositoryMySQL;
-  private readonly botConfigRepo: BotConfigRepositoryDynamo;
-  private readonly mysqlPool: Pool;
+  private readonly notificationsRepo: INotificationRepository;
+  private readonly botConfigRepo: IBotConfigRepository;
+  private readonly patientRepo: IPatientRepository;
   private readonly pageSize: number;
 
   constructor(props: SendRemindersJobProps) {
-    this.notificationsRepo = new NotificationRepositoryMySQL(props.mysqlPool);
-    this.botConfigRepo = new BotConfigRepositoryDynamo({
-      tableName: props.botConfigTable,
-      docClient: props.dynamoClient,
-    });
-    this.mysqlPool = props.mysqlPool;
+    this.notificationsRepo = props.notificationsRepo;
+    this.botConfigRepo = props.botConfigRepo;
+    this.patientRepo = props.patientRepo;
     this.pageSize = props.pageSize ?? 100;
   }
 
@@ -73,7 +69,7 @@ export class SendRemindersJob {
           Logger.info(`[JOB] Clínica ${clinicId} (${clinicSource}) – ${notifications.length} notificaciones para ${fechaEnvioProgramada}`);
 
           const kommoGateway = new KommoApiGateway({ apiKey, subdomain });
-          const kommoService = new KommoService(kommoGateway, this.mysqlPool);
+          const kommoService = new KommoService(kommoGateway, this.patientRepo);
 
           const tz = cfg.timezone;
           const now = clinicNow(tz);

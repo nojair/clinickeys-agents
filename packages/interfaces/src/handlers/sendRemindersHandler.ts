@@ -1,13 +1,16 @@
 // packages/core/src/interface/handlers/sendRemindersHandler.ts
 
 import { createMySQLPool, createDynamoDocumentClient, getEnvVar } from "@clinickeys-agents/core/infrastructure/config";
+import { NotificationRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/notification";
+import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/botConfig";
+import { PatientRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/patient/PatientRepositoryMySQL";
 import { SendRemindersJob } from "@clinickeys-agents/core/infrastructure/job";
 import { APIGatewayProxyResult as R } from "aws-lambda";
 import type { Handler } from 'aws-lambda';
 
 export const handler: Handler = async (event, context): Promise<R> => {
   console.log('Lambda execution start');
-  // Leer variables de entorno
+  // Crear pools y clientes de infraestructura
   const mysqlPool = createMySQLPool({
     host: getEnvVar("CLINICS_DATA_DB_HOST"),
     user: getEnvVar("CLINICS_DATA_DB_USER"),
@@ -23,10 +26,20 @@ export const handler: Handler = async (event, context): Promise<R> => {
     region: getEnvVar("AWS_REGION"),
   });
 
+  // Crear repositorios concretos (infrastructure)
+  const notificationsRepo = new NotificationRepositoryMySQL(mysqlPool);
+  const botConfigRepo = new BotConfigRepositoryDynamo({
+    tableName: getEnvVar("BOT_CONFIG_TABLE"),
+    docClient,
+  });
+  const patientRepo = new PatientRepositoryMySQL(mysqlPool);
+
+  // Inyectar los repositorios al Job
   const job = new SendRemindersJob({
-    mysqlPool,
-    dynamoClient: docClient,
-    botConfigTable: getEnvVar("BOT_CONFIG_TABLE")
+    notificationsRepo,
+    botConfigRepo,
+    patientRepo,
+    pageSize: 100,
   });
 
   try {
@@ -45,4 +58,4 @@ export const handler: Handler = async (event, context): Promise<R> => {
     await mysqlPool.end();
     console.log('Lambda execution end');
   }
-}
+};

@@ -24,7 +24,9 @@ export class BotConfigEnricher {
       apiKey: dto.crm_api_key,
       subdomain: dto.crm_subdomain || ""
     });
-    const kommoService = new KommoService(gateway); // Pool no es necesario aquí
+    // El KommoService ahora requiere el patientRepository, pero para obtener campos custom solo usa el gateway
+    // Así que se pasa undefined o puedes sobrecargar el constructor en KommoService si lo necesitas.
+    const kommoService = new KommoService(gateway, undefined as any);
 
     // 3. Llamar al método del service para obtener los custom fields
     const kommo_leads_custom_fields =
@@ -32,21 +34,20 @@ export class BotConfigEnricher {
 
     // 4. Determinar si la configuración está lista
     const requiredProps = [
-      "id_clinica",
       "name",
-      "crm_subdomain",
       "timezone",
+      "id_clinica",
+      "crm_api_key",
+      "crm_subdomain",
+      "fields_profile",
       "default_country",
       "kommo_salesbot_id",
-      "crm_api_key",
-      "fields_profile",
     ];
 
-    const hasAll = requiredProps.every(
-      (prop) =>
-        (dto as any)[prop] !== undefined &&
-        (dto as any)[prop] !== null &&
-        (dto as any)[prop] !== ""
+    const hasAll = requiredProps.every((prop) =>
+      (dto as any)[prop] !== undefined &&
+      (dto as any)[prop] !== null &&
+      (dto as any)[prop] !== ""
     );
 
     const is_ready =

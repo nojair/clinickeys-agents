@@ -1,6 +1,6 @@
-// packages/core/src/infrastructure/clinic/ClinicRepositoryFactory.ts
-
 import { IClinicRepository } from "@clinickeys-agents/core/domain/clinic";
+import { ClinicRepositoryMySQL } from "./ClinicRepositoryMySQL";
+import { createMySQLPool, getEnvVar } from "@clinickeys-agents/core/infrastructure/config";
 
 /**
  * Factoría de repositorios de clínica basada en `clinic_source`.
@@ -10,8 +10,21 @@ import { IClinicRepository } from "@clinickeys-agents/core/domain/clinic";
 export class ClinicRepositoryFactory {
   private readonly registry: Record<string, IClinicRepository>;
 
-  constructor(registry: Record<string, IClinicRepository>) {
-    this.registry = registry;
+  constructor() {
+    const mysqlPool = createMySQLPool({
+      host: getEnvVar("CLINICS_DATA_DB_HOST"),
+      user: getEnvVar("CLINICS_DATA_DB_USER"),
+      password: getEnvVar("CLINICS_DATA_DB_PASSWORD"),
+      database: getEnvVar("CLINICS_DATA_DB_NAME"),
+      port: Number(getEnvVar("CLINICS_DATA_DB_PORT")),
+      waitForConnections: true,
+      connectionLimit: 2,
+      queueLimit: 0,
+    });
+
+    this.registry = {
+      legacy: new ClinicRepositoryMySQL(mysqlPool),
+    };
   }
 
   /**
