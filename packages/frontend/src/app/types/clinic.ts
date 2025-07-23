@@ -15,7 +15,7 @@ export interface KommoLeadCustomField {
 
 export interface Clinic {
   /** ID de la clínica */
-  id_clinica: string;
+  clinicId: string;
   /** Nombre visible de la clínica */
   name: string;
   /** Subdominio de la cuenta en Kommo */
@@ -44,7 +44,7 @@ export interface Clinic {
  * ────────────────────────────────────────────────────────────────────────── */
 
 export const clinicSchema = z.object({
-  id_clinica: z
+  clinicId: z
     .string()
     .trim()
     .min(1, { message: "El ID de la clínica es obligatorio" }),

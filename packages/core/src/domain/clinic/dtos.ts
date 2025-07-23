@@ -7,7 +7,7 @@
 
 export interface ClinicDTO {
   clinicSource: string; // "legacy", "v2", ...
-  id: string;                // id_clinica
+  id: string;                // clinicId
   superClinicId?: string;    // id_super_clinica
   name: string;              // nombre_clinica
   cif?: string;              // cif

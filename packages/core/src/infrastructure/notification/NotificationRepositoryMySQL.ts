@@ -21,19 +21,19 @@ export class NotificationRepositoryMySQL implements INotificationRepository {
   }
 
   async findPendingByClinic(
-    id_clinica: number,
+    clinicId: number,
     fecha_envio_programada: string
   ): Promise<NotificationDTO[]> {
     try {
       const [rows] = await this.pool.query<RowDataPacket[]>(
         `SELECT * FROM notificaciones
          WHERE estado = 'pendiente'
-         AND id_clinica = ?
+         AND clinicId = ?
          AND fecha_envio_programada = ?`,
-        [id_clinica, fecha_envio_programada]
+        [clinicId, fecha_envio_programada]
       );
       if (!rows.length) {
-        throw new NotificationNotFoundError(id_clinica);
+        throw new NotificationNotFoundError(clinicId);
       }
       // Mapea los resultados para transformar el payload a tipo NotificationPayload
       return rows.map((row: any) => ({
@@ -52,7 +52,7 @@ export class NotificationRepositoryMySQL implements INotificationRepository {
         actualizado_el: row.actualizado_el,
         entidad_desencadenadora: row.entidad_desencadenadora,
         id_entidad_desencadenadora: row.id_entidad_desencadenadora,
-        id_clinica: row.id_clinica,
+        clinicId: row.clinicId,
         id_super_clinica: row.id_super_clinica,
       }));
     } catch (error: any) {

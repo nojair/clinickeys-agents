@@ -23,7 +23,7 @@ export class ClinicRepositoryMySQL implements IClinicRepository {
     try {
       const [rows] = await this.pool.query<RowDataPacket[]>(
         `SELECT 
-          id_clinica        AS id,
+          clinicId        AS id,
           id_super_clinica  AS superClinicId,
           nombre_clinica    AS name,
           cif,
@@ -38,7 +38,7 @@ export class ClinicRepositoryMySQL implements IClinicRepository {
           rep_legal         AS legalRep,
           nif_rep_legal     AS legalRepNif
         FROM clinicas
-        WHERE id_clinica = ?
+        WHERE clinicId = ?
         LIMIT 1`,
         [clinicId]
       );
@@ -60,7 +60,7 @@ export class ClinicRepositoryMySQL implements IClinicRepository {
     try {
       const [rows] = await this.pool.query<RowDataPacket[]>(
         `SELECT 
-          id_clinica        AS id,
+          clinicId        AS id,
           id_super_clinica  AS superClinicId,
           nombre_clinica    AS name,
           cif,

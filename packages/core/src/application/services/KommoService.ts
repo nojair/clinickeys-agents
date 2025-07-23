@@ -64,12 +64,31 @@ export class KommoService {
     })();
     console.log('[KommoService.ensureLead] teléfono normalizado', { original: payload.patient_phone, normalizado: phoneIntl });
 
-    // Aquí deberías tener un método en PatientRepository para obtener el kommo_lead_id (puedes implementarlo si lo necesitas).
-    // Por simplicidad, aquí se omite y solo se actualiza cuando hay nuevo lead.
+    // --- PASO 1: Consultar kommo_lead_id guardado en BD (como el antiguo) ---
+    let kommoLeadIdEnBD: string | undefined = undefined;
+    try {
+      kommoLeadIdEnBD = await this.patientRepository.getKommoLeadId(payload.patient_id); // Debe devolver string | undefined
+      console.log('[KommoService.ensureLead] lead ID en BD', { bd_lead_id: kommoLeadIdEnBD });
+    } catch (e: any) {
+      console.error('[KommoService.ensureLead][ERROR] al consultar kommo_lead_id en patientRepository', { error: e.message, stack: e.stack });
+      // Si falla, sigue el flujo normal (como fallback)
+    }
 
+    if (kommoLeadIdEnBD) {
+      // --- PASO 2: Verificar que el lead exista en Kommo ---
+      console.log('[KommoService.ensureLead] verificando existencia del lead en Kommo…');
+      const okLead = await this.gateway.getLeadById({ leadId: kommoLeadIdEnBD });
+      if (okLead) {
+        console.log('[KommoService.ensureLead] lead válido en Kommo — FIN', { leadId: kommoLeadIdEnBD });
+        return kommoLeadIdEnBD;
+      }
+      console.log('[KommoService.ensureLead] lead NO existe en Kommo — se recreará');
+      // Si no existe, sigue para crearlo de nuevo
+    }
+
+    // --- PASO 3: Buscar contacto por teléfono en Kommo ---
     let contactId: string | undefined;
     let leadId: string | undefined;
-
     const found = await this.gateway.searchContactByPhone({ phone: phoneIntl });
     if (found && found._embedded?.contacts?.length) {
       const contact = found._embedded.contacts[0];
@@ -85,6 +104,7 @@ export class KommoService {
     const { leadMap, contactMap } = await this.loadClinicFieldMappings(botConfig);
     const { addingKommoContactFields, kommoLeadCustomFields } = getKommoRelevantFields(botConfig.fields_profile as keyof typeof profiles);
 
+    // --- PASO 4: Crear contacto si no existe ---
     if (!contactId) {
       const contactPayload = [
         {
@@ -113,6 +133,7 @@ export class KommoService {
       console.log('[KommoService.ensureLead] contacto creado', { contactId });
     }
 
+    // --- PASO 5: Crear lead si no existe ---
     if (!leadId) {
       const leadPayload = [
         {
@@ -149,6 +170,7 @@ export class KommoService {
       console.log('[KommoService.ensureLead] lead creado', { leadId });
     }
 
+    // --- PASO 6: Guardar/actualizar leadId en la BD ---
     try {
       await this.patientRepository.updateKommoLeadId(payload.patient_id, leadId!);
       console.log('[KommoService.ensureLead] BD actualizada con nuevo leadId', { leadId });

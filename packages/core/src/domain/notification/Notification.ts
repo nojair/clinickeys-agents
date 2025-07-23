@@ -33,7 +33,7 @@ export class Notification {
     this.message = dto.mensaje;
     this.scheduledDate = dto.fecha_envio_programada;
     this.scheduledTime = dto.hora_envio_programada;
-    this.clinicId = dto.id_clinica;
+    this.clinicId = dto.clinicId;
     this.superClinicId = dto.id_super_clinica;
     this.state = dto.estado;
     this.idEntityDestination = dto.id_entidad_destino;

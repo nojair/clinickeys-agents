@@ -49,6 +49,6 @@ export interface NotificationDTO {
   actualizado_el: string; // ISO DateTime
   entidad_desencadenadora?: string;
   id_entidad_desencadenadora?: number;
-  id_clinica: number;
+  clinicId: number;
   id_super_clinica: number;
 }

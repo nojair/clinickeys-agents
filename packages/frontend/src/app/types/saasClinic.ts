@@ -5,7 +5,7 @@
 
 export interface SaasClinic {
   /** Identificador único de la clínica en la BD */
-  id_clinica: string;
+  clinicId: string;
   /** Nombre visible de la clínica */
   nombre_clinica: string;
 }

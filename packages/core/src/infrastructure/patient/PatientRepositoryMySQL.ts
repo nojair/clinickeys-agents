@@ -24,4 +24,18 @@ export class PatientRepositoryMySQL implements IPatientRepository {
       [kommoLeadId, patientId]
     );
   }
+
+  /**
+   * Obtiene el kommo_lead_id guardado en BD de un paciente específico.
+   * @param patientId - ID del paciente
+   * @returns Promise<string | undefined>
+   */
+  async getKommoLeadId(patientId: number): Promise<string | undefined> {
+    const [rows] = await this.pool.query(
+      "SELECT kommo_lead_id FROM pacientes WHERE id_paciente = ?",
+      [patientId]
+    );
+    const row = (rows as { kommo_lead_id?: string }[])[0];
+    return row?.kommo_lead_id;
+  }
 }

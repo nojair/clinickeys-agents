@@ -87,7 +87,7 @@ export default function ClinicsTable() {
             </tr>
           ) : (
             clinics.map((c) => (
-              <tr key={c.id_clinica} className="border-b">
+              <tr key={c.clinicId} className="border-b">
                 <Td>{c.name}</Td>
                 <Td>{c.subdomain}</Td>
                 <Td>
@@ -109,7 +109,7 @@ export default function ClinicsTable() {
                   <div className="flex gap-2">
                     {/* Diálogo de edición */}
                     <Dialog
-                      open={mode === "edit" && selected?.id_clinica === c.id_clinica}
+                      open={mode === "edit" && selected?.clinicId === c.clinicId}
                       onOpenChange={(open: any) => {
                         if (!open) {
                           setMode(null);
@@ -142,7 +142,7 @@ export default function ClinicsTable() {
 
                     {/* Diálogo de eliminación */}
                     <Dialog
-                      open={deleteTarget?.id_clinica === c.id_clinica}
+                      open={deleteTarget?.clinicId === c.clinicId}
                       onOpenChange={(open: any) => {
                         if (!open) setDeleteTarget(null);
                       }}
@@ -176,7 +176,7 @@ export default function ClinicsTable() {
                             variant="destructive"
                             onClick={() =>
                               remove.mutate(
-                                { id: c.id_clinica },
+                                { id: c.clinicId },
                                 { onSuccess: () => setDeleteTarget(null) }
                               )
                             }

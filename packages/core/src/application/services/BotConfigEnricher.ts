@@ -36,7 +36,7 @@ export class BotConfigEnricher {
     const requiredProps = [
       "name",
       "timezone",
-      "id_clinica",
+      "clinicId",
       "crm_api_key",
       "crm_subdomain",
       "fields_profile",

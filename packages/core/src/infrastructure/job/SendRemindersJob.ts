@@ -55,10 +55,10 @@ export class SendRemindersJob {
 
           const apiKey = cfg.crm_api_key;
           const subdomain = cfg.crm_subdomain;
-          const salesbotId = cfg.kommo_salesbot_id;
+          const kommoSalesbotId = cfg.kommo_salesbot_id;
 
-          if (!subdomain || !salesbotId || !apiKey) {
-            Logger.error("[JOB] Config incompleta", { clinicId, clinicSource, subdomain, salesbotId, apiKey });
+          if (!subdomain || !kommoSalesbotId || !apiKey) {
+            Logger.error("[JOB] Config incompleta", { clinicId, clinicSource, subdomain, kommoSalesbotId, apiKey });
             continue;
           }
 
@@ -102,8 +102,8 @@ export class SendRemindersJob {
               await kommoService.updateLeadCustomFields({ botConfig: cfg, leadId, notification: n });
 
               // 3. Ejecutar salesbot
-              await kommoGateway.runSalesbot({ botId: salesbotId, leadId });
-              Logger.info("[JOB] Salesbot ejecutado", { botId: salesbotId, leadId });
+              await kommoGateway.runSalesbot({ botId: kommoSalesbotId, leadId });
+              Logger.info("[JOB] Salesbot ejecutado", { botId: kommoSalesbotId, leadId });
 
               // 4. Marcar como enviado
               await this.notificationsRepo.updateState(n.id_notificacion, "enviado");

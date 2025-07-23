@@ -207,7 +207,7 @@ export class BotConfigRepositoryDynamo {
     add("name", update.name);
     add("timezone", update.timezone);
     add("default_country", update.default_country);
-    add("crm_bot_id", update.kommo_salesbot_id);
+    add("kommo_salesbot_id", update.kommo_salesbot_id);
     add("crm_api_key", update.crm_api_key);
     add("crm_subdomain", update.crm_subdomain);
     add("crm_type", update.crm_type);

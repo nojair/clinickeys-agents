@@ -9,7 +9,7 @@ export interface INotificationRepository {
   /**
    * Obtiene todas las notificaciones pendientes de envío para una clínica específica.
    */
-  findPendingByClinic(id_clinica: number, fecha_envio_programada: string): Promise<NotificationDTO[]>;
+  findPendingByClinic(clinicId: number, fecha_envio_programada: string): Promise<NotificationDTO[]>;
 
   /**
    * Actualiza el estado de una notificación.

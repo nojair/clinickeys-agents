@@ -64,17 +64,17 @@ export default function ClinicForm({ initialValues, onClose }: Props) {
 
   const [selectedOption, setSelectedOption] = React.useState<Option | null>(
     initialValues
-      ? { value: initialValues.id_clinica, label: initialValues.name }
+      ? { value: initialValues.clinicId, label: initialValues.name }
       : null,
   );
 
   React.useEffect(() => {
     if (!selectedOption && initialValues && saasClinics.length) {
       const match = saasClinics.find(
-        (c) => String(c.id_clinica) === String(initialValues.id_clinica),
+        (c) => String(c.clinicId) === String(initialValues.clinicId),
       );
       if (match) {
-        setSelectedOption({ value: String(match.id_clinica), label: match.nombre_clinica });
+        setSelectedOption({ value: String(match.clinicId), label: match.nombre_clinica });
       }
     }
   }, [saasClinics, initialValues, selectedOption]);
@@ -96,14 +96,14 @@ export default function ClinicForm({ initialValues, onClose }: Props) {
       toast.error("Debes seleccionar una clínica del SAAS");
       return;
     }
-    const clinic = saasClinics.find((c) => String(c.id_clinica) === selectedOption.value);
+    const clinic = saasClinics.find((c) => String(c.clinicId) === selectedOption.value);
     if (!clinic) {
       toast.error("La clínica seleccionada ya no está disponible");
       return;
     }
 
     const payload: ClinicInput = {
-      id_clinica: selectedOption.value,
+      clinicId: selectedOption.value,
       name: selectedOption.label,
       ...data,
       fields_profile: "default_kommo_profile",
@@ -112,14 +112,14 @@ export default function ClinicForm({ initialValues, onClose }: Props) {
 
     const cb = { onSuccess: onClose };
     isEdit
-      ? update.mutate({ id: initialValues!.id_clinica, data: payload }, cb)
+      ? update.mutate({ id: initialValues!.clinicId, data: payload }, cb)
       : create.mutate(payload, cb);
   };
 
   const isPending = create.isPending || update.isPending;
 
   const saasOptions: Option[] = saasClinics.map((c) => ({
-    value: String(c.id_clinica),
+    value: String(c.clinicId),
     label: c.nombre_clinica,
   }));
 
