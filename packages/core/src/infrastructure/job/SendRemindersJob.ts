@@ -86,7 +86,7 @@ export class SendRemindersJob {
 
               Logger.info("[JOB] Analizando notificación", {
                 id_notificacion: n.id_notificacion,
-                telefono: n.telefono,
+                telefono: n.payload?.patient_phone,
                 progDate,
                 hora_local: hourNow,
               });
@@ -98,15 +98,12 @@ export class SendRemindersJob {
 
               // 1. Asegurar lead en Kommo
               const leadId = await kommoService.ensureLead({
-                clinicCfg: cfg,
-                patient: n,
-                mensaje: n.mensaje,
-                id_notificacion: n.id_notificacion,
-                payload: n.payload,
+                botConfig: cfg,
+                notification: n,
               });
 
               // 2. Actualizar custom fields dinámicos
-              await kommoService.updateLeadCustomFields({ clinicCfg: cfg, leadId, notification: n });
+              await kommoService.updateLeadCustomFields({ botConfig: cfg, leadId, notification: n });
 
               // 3. Ejecutar salesbot
               await kommoGateway.runSalesbot({ botId: salesbotId, leadId });

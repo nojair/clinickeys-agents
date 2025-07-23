@@ -1,3 +1,5 @@
+// packages/core/src/infrastructure/integrations/kommo/Mappers.ts
+
 export function getLeadFieldId(
   leadMap: { byName: Record<string, any>; byCode: Record<string, any> },
   configItem: { field_name?: string; field_code?: string; enum_code?: string }

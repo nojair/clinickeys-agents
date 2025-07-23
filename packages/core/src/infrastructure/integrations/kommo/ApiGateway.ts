@@ -1,3 +1,5 @@
+// packages/core/src/infrastructure/integrations/kommo/ApiGateway.ts
+
 import { ok, hdr } from "@clinickeys-agents/core/utils";
 
 export interface KommoApiGatewayOptions {

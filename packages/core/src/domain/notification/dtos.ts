@@ -13,6 +13,26 @@ export type NotificationState =
   | 'error_config'
   | 'omitido';
 
+export type NotificationPayload = {
+  patient_id: number;
+  patient_first_name: string;
+  patient_last_name: string;
+  patient_phone: string;
+  clinic_id: number;
+  clinic_name: string;
+  appointment_date: string; // YYYY-MM-DD
+  appointment_start_time: string; // HH:mm:ss
+  appointment_end_time: string; // HH:mm:ss
+  appointment_weekday_name: string;
+  doctor_id: number;
+  doctor_full_name: string;
+  treatment_id: number;
+  treatment_name: string;
+  space_id: number;
+  space_name: string;
+  [key: string]: any;
+};
+
 export interface NotificationDTO {
   id_notificacion: number;
   tipo_notificacion: string;
@@ -20,7 +40,7 @@ export interface NotificationDTO {
   id_tipo_destinatario?: number;
   entidad_destino: string;
   mensaje: string;
-  payload?: any; // JSON
+  payload?: NotificationPayload;
   fecha_envio_programada: string; // ISO Date
   hora_envio_programada: string; // HH:mm:ss
   fecha_envio_real?: string; // ISO DateTime
@@ -31,6 +51,4 @@ export interface NotificationDTO {
   id_entidad_desencadenadora?: number;
   id_clinica: number;
   id_super_clinica: number;
-  kommo_lead_id?: string; // ID del lead en Kommo
-  telefono?: string; // Teléfono del paciente
 }

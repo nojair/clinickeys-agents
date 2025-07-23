@@ -130,3 +130,24 @@ CREATE TABLE `citas` (
   CONSTRAINT `citas_ibfk_8` FOREIGN KEY (`id_super_clinica`) REFERENCES `super_clinicas` (`id_super_clinica`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_citas_espacios` FOREIGN KEY (`id_espacio`) REFERENCES `espacios` (`id_espacio`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=423102 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+
+CAMBIOS EN PAYLOAD:
+
+JSON_OBJECT(
+  'patient_id', v_id_paciente,
+  'patient_first_name', v_nombre_paciente,
+  'patient_last_name', v_apellido_paciente,
+  'clinic_id', v_id_clinica,
+  'clinic_name', v_nombre_clinica,
+  'appointment_date', DATE_FORMAT(NEW.fecha_cita, '%Y-%m-%d'),
+  'appointment_start_time', TIME_FORMAT(NEW.hora_inicio, '%H:%i:%s'),
+  'appointment_end_time', TIME_FORMAT(NEW.hora_fin, '%H:%i:%s'),
+  'appointment_weekday_name', v_dia_semana,
+  'doctor_id', v_id_medico,
+  'doctor_full_name', v_nombre_medico,
+  'treatment_id', v_id_tratamiento,
+  'treatment_name', v_nombre_tratamiento,
+  'space_id', v_id_visit_space,
+  'space_name', v_nombre_espacio
+)

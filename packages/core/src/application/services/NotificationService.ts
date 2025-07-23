@@ -23,11 +23,4 @@ export class NotificationService {
   async markAsFailed(id_notificacion: number): Promise<void> {
     await this.notificationRepository.updateState(id_notificacion, "fallido");
   }
-
-  /**
-   * Devuelve notificaciones pendientes para una clínica.
-   */
-  async getPendingNotifications(id_clinica: number, fecha_envio_programada: string): Promise<NotificationDTO[]> {
-    return this.notificationRepository.findPendingByClinic(id_clinica, fecha_envio_programada);
-  }
 }

@@ -1,17 +1,18 @@
 // packages/core/src/application/services/KommoService.ts
 
 import { formatVisitDate, formatVisitTime, getKommoMapFields, getKommoRelevantFields, PAYLOAD_FIELD_MAP } from '@clinickeys-agents/core/utils';
+import type { profiles } from '@clinickeys-agents/core/utils';
 import { KommoApiGateway, getLeadFieldId, getContactFieldData } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import type { KommoLeadCustomField } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
+import type { CountryCode } from 'libphonenumber-js';
 import type { Pool } from 'mysql2/promise';
+import type { NotificationDTO, NotificationPayload } from '@clinickeys-agents/core/domain/notification/dtos';
+import type { BotConfigDTO } from '@clinickeys-agents/core/domain/botConfig';
 
 interface EnsureLeadParams {
-  clinicCfg: any; // Considera definir un tipo específico si es posible
-  patient: any;
-  mensaje: string;
-  id_notificacion: number;
-  payload: any;
+  botConfig: BotConfigDTO;
+  notification: NotificationDTO;
 }
 
 export class KommoService {
@@ -24,7 +25,7 @@ export class KommoService {
     this.pool = pool;
   }
 
-  private async loadClinicFieldMappings(clinicCfg: { subdomain: string; api_key: string }) {
+  private async loadClinicFieldMappings(botConfig: BotConfigDTO) {
     if (this.clinicFieldCache) return this.clinicFieldCache;
     const [leadFields, contactFields] = await Promise.all([
       this.gateway.fetchCustomFields('leads'),
@@ -36,28 +37,33 @@ export class KommoService {
     return this.clinicFieldCache;
   }
 
-  public async getClinicFieldMappings(clinicCfg: { subdomain: string; api_key: string }): Promise<{ leadMap: any; contactMap: any }> {
-    return this.loadClinicFieldMappings(clinicCfg);
+  public async getClinicFieldMappings(botConfig: BotConfigDTO): Promise<{ leadMap: any; contactMap: any }> {
+    return this.loadClinicFieldMappings(botConfig);
   }
 
   /**
    * Asegura que el lead y contacto existan en Kommo y la BD, o los crea si faltan.
    */
-  async ensureLead({ clinicCfg, patient, mensaje, id_notificacion, payload }: EnsureLeadParams): Promise<string> {
+  async ensureLead({ botConfig, notification }: EnsureLeadParams): Promise<string> {
     if (!this.pool) {
       throw new Error("MySQL pool is required for ensureLead");
     }
+    const payload: NotificationPayload | undefined = notification.payload;
+    if (!payload) {
+      throw new Error('Notification payload is required');
+    }
+
     const phoneIntl = (() => {
-      const p = parsePhoneNumberFromString(patient.telefono ?? '', clinicCfg.default_country);
-      const num = p ? p.number : patient.telefono;
-      console.log('[ensureLead] teléfono normalizado', { original: patient.telefono, normalizado: num });
+      const p = parsePhoneNumberFromString(payload.patient_phone ?? '', botConfig.default_country as CountryCode);
+      const num = p ? p.number : payload.patient_phone;
+      console.log('[ensureLead] teléfono normalizado', { original: payload.patient_phone, normalizado: num });
       return num;
     })();
-    console.log('[KommoService.ensureLead] teléfono normalizado', { original: patient.telefono, normalizado: phoneIntl });
+    console.log('[KommoService.ensureLead] teléfono normalizado', { original: payload.patient_phone, normalizado: phoneIntl });
 
     const [rows] = await this.pool.query(
       'SELECT kommo_lead_id FROM pacientes WHERE id_paciente=?',
-      [patient.id_paciente],
+      [payload.patient_id],
     );
     const row = (rows as { kommo_lead_id?: string }[])[0] ?? null;
     console.log('[KommoService.ensureLead] lead ID en BD', { bd_lead_id: row?.kommo_lead_id });
@@ -86,13 +92,13 @@ export class KommoService {
       console.log('[KommoService.ensureLead] contacto NO encontrado');
     }
 
-    const { leadMap, contactMap } = await this.loadClinicFieldMappings(clinicCfg);
-    const { addingKommoContactFields, kommoLeadCustomFields } = getKommoRelevantFields(clinicCfg.fields_profile);
+    const { leadMap, contactMap } = await this.loadClinicFieldMappings(botConfig);
+    const { addingKommoContactFields, kommoLeadCustomFields } = getKommoRelevantFields(botConfig.fields_profile as keyof typeof profiles);
 
     if (!contactId) {
       const contactPayload = [
         {
-          name: `${patient.nombre} ${patient.apellido}`,
+          name: `${payload.patient_first_name} ${payload.patient_last_name}`,
           custom_fields_values: addingKommoContactFields.map((f: any) => {
             const fieldData = getContactFieldData(contactMap, f);
             if (!fieldData) return undefined;
@@ -120,19 +126,19 @@ export class KommoService {
     if (!leadId) {
       const leadPayload = [
         {
-          name: `${patient.nombre} ${patient.apellido}`,
+          name: `${payload.patient_first_name} ${payload.patient_last_name}`,
           _embedded: { contacts: [{ id: contactId, is_main: true }] },
           custom_fields_values: kommoLeadCustomFields.map((f: any) => {
             const field_id = getLeadFieldId(leadMap, f);
             if (!field_id) return undefined;
             let value = '';
-            if (f.field_name === 'visitMessage') value = `${mensaje}`;
-            else if (f.field_name === 'idNotification') value = `${id_notificacion}`;
+            if (f.field_name === 'appointmentMessage') value = `${notification.mensaje}`;
+            else if (f.field_name === 'idNotification') value = `${notification.id_notificacion}`;
             else if (PAYLOAD_FIELD_MAP[f.field_name] && payload && payload[PAYLOAD_FIELD_MAP[f.field_name]] !== undefined) {
               let raw = payload[PAYLOAD_FIELD_MAP[f.field_name]];
-              if (f.field_name === 'visitDate') value = formatVisitDate(raw);
-              else if (f.field_name === 'visitStartTime') value = formatVisitTime(raw);
-              else if (f.field_name === 'visitEndTime') value = formatVisitTime(raw);
+              if (f.field_name === 'appointmentDate') value = formatVisitDate(raw);
+              else if (f.field_name === 'appointmentStartTime') value = formatVisitTime(raw);
+              else if (f.field_name === 'appointmentEndTime') value = formatVisitTime(raw);
               else value = `${raw}`;
             } else return undefined;
             return { field_id, values: [{ value }] };
@@ -156,7 +162,7 @@ export class KommoService {
     try {
       await this.pool.execute(
         'UPDATE pacientes SET kommo_lead_id=? WHERE id_paciente=?',
-        [leadId, patient.id_paciente],
+        [leadId, payload.patient_id],
       );
       console.log('[KommoService.ensureLead] BD actualizada con nuevo leadId', { leadId });
     } catch (e: any) {
@@ -170,24 +176,33 @@ export class KommoService {
   /**
    * Actualiza los custom fields dinámicos de un lead en Kommo.
    */
-  async updateLeadCustomFields({ clinicCfg, leadId, notification }: { clinicCfg: any, leadId: string, notification: any }) {
-    const { leadMap } = await this.loadClinicFieldMappings(clinicCfg);
-    const { kommoLeadCustomFields } = getKommoRelevantFields(clinicCfg.fields_profile);
+  async updateLeadCustomFields({
+    botConfig,
+    leadId,
+    notification
+  }: {
+    botConfig: BotConfigDTO,
+    leadId: string,
+    notification: NotificationDTO
+  }) {
+    const { leadMap } = await this.loadClinicFieldMappings(botConfig);
+    const { kommoLeadCustomFields } = getKommoRelevantFields(botConfig.fields_profile as keyof typeof profiles);
+    const payload: NotificationPayload | undefined = notification.payload;
+
     const custom_fields_values = kommoLeadCustomFields
       .map((f: any) => {
         const field_id = getLeadFieldId(leadMap, f);
         if (!field_id) return undefined;
         let value = '';
-        if (f.field_name === 'visitMessage') value = `${notification.mensaje}`;
+        if (f.field_name === 'appointmentMessage') value = `${notification.mensaje}`;
         else if (f.field_name === 'idNotification') value = `${notification.id_notificacion}`;
-        else if (PAYLOAD_FIELD_MAP[f.field_name] && notification.payload && notification.payload[PAYLOAD_FIELD_MAP[f.field_name]] !== undefined) {
-          let raw = notification.payload[PAYLOAD_FIELD_MAP[f.field_name]];
-          if (f.field_name === 'visitDate') value = formatVisitDate(raw);
-          else if (f.field_name === 'visitStartTime') value = formatVisitTime(raw);
-          else if (f.field_name === 'visitEndTime') value = formatVisitTime(raw);
+        else if (PAYLOAD_FIELD_MAP[f.field_name] && payload && payload[PAYLOAD_FIELD_MAP[f.field_name]] !== undefined) {
+          let raw = payload[PAYLOAD_FIELD_MAP[f.field_name]];
+          if (f.field_name === 'appointmentDate') value = formatVisitDate(raw);
+          else if (f.field_name === 'appointmentStartTime') value = formatVisitTime(raw);
+          else if (f.field_name === 'appointmentEndTime') value = formatVisitTime(raw);
           else value = `${raw}`;
-        }
-        else return undefined;
+        } else return undefined;
         return { field_id, values: [{ value }] };
       })
       .filter(Boolean);
@@ -202,7 +217,7 @@ export class KommoService {
   }
 
   async getKommoLeadsCustomFields(configFields: string[]): Promise<KommoLeadCustomField[]> {
-    const fetchedFields = await this.gateway.fetchCustomFields('leads')
+    const fetchedFields = await this.gateway.fetchCustomFields('leads');
     const namesSet = new Set(fetchedFields.map((field: any) => field.name));
     return configFields.map((name) => ({ field_name: name, exists: namesSet.has(name) }));
   }
