@@ -6,10 +6,11 @@ import {
   profiles,
   NOTIFICATION_PAYLOAD_FIELD_MAP,
   // Custom field constants:
-  ID_NOTIFICATION,
-  APPOINTMENT_DATE,
   APPOINTMENT_START_TIME,
   APPOINTMENT_END_TIME,
+  APPOINTMENT_DATE,
+  ID_NOTIFICATION,
+  PATIENT_MESSAGE,
   PATIENT_PHONE,
 } from '@clinickeys-agents/core/utils';
 import { DateTime, IANAZone } from 'luxon';
@@ -166,4 +167,67 @@ export function buildCustomFieldsValues({
     }
     return undefined;
   }).filter(Boolean);
+}
+
+// --- 1. Obtener el valor de un custom field desde custom_fields_values de Kommo --- //
+export function getCustomFieldValue(
+  customFields: { field_id?: number | string; field_name?: string; values?: { value: string }[] }[],
+  fieldName: string,
+  key: "field_name" | "field_id" = "field_name"
+): string {
+  const field = customFields.find((item) => item[key] === fieldName);
+  return field?.values?.[0]?.value || "";
+}
+
+// --- 2. Fusiona los custom fields definidos con los valores actuales de un lead/contacto --- //
+export function mergeCustomFields(
+  leadCF: any[],
+  allCF: { id: string | number; name: string }[]
+) {
+  if (!leadCF) leadCF = [];
+  const leadMap: Record<string, any> = {};
+  leadCF.forEach((cf) => {
+    const key = cf.field_id || cf.field_name;
+    leadMap[key] = cf;
+  });
+  return allCF.map((cf) => {
+    const key = cf.id;
+    return {
+      ...cf,
+      value: leadMap[key] ? leadMap[key].values[0]?.value || "" : ""
+    };
+  });
+}
+
+// --- 3. Obtiene el valor de un campo a partir del array fusionado --- //
+export function getMergedFieldValue(
+  mergedCF: { name: string; value: string }[],
+  fieldName: string
+): string {
+  const field = mergedCF.find((item) => item.name === fieldName);
+  return field ? field.value : "";
+}
+
+// --- 4. Helper profesional y DDD para esperar y verificar si un campo cambió en Kommo --- //
+type ShouldLambdaContinueParams = {
+  latestLead: { custom_fields_values: any[] };
+  initialValue: string;
+  fieldName?: string;
+  delayMs?: number;
+};
+
+export async function shouldLambdaContinue({
+  latestLead,
+  initialValue,
+  fieldName = PATIENT_MESSAGE,
+  delayMs = 10000
+}: ShouldLambdaContinueParams): Promise<boolean> {
+  // Espera el tiempo indicado
+  if (delayMs && delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
+  // Compara el valor actual con el inicial
+  const current = getCustomFieldValue(
+    latestLead.custom_fields_values || [],
+    fieldName
+  );
+  return current === initialValue;
 }

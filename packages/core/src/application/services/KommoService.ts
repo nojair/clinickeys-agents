@@ -1,17 +1,15 @@
-import { getKommoMapFields, getKommoRelevantFields, buildCustomFieldsValues } from '@clinickeys-agents/core/utils';
-import { KommoCustomFieldExistence } from '@clinickeys-agents/core/application/services/types/KommoCustomFieldExistence';
+import { KommoApiGateway, KommoContactCustomFieldDefinition, KommoLeadCustomFieldDefinition } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
+import { getKommoMapFields, getKommoRelevantFields, buildCustomFieldsValues, getCustomFieldValue, shouldLambdaContinue } from '@clinickeys-agents/core/utils';
+import { KommoCustomFieldExistence } from '@clinickeys-agents/core/application/services/types';
+import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
-import {
-  KommoApiGateway,
-  KommoContactCustomFieldDefinition,
-  KommoLeadCustomFieldDefinition,
-} from '@clinickeys-agents/core/infrastructure/integrations/kommo';
-import type { NotificationDTO, NotificationPayload } from '@clinickeys-agents/core/domain/notification/dtos';
+
+import type { NotificationDTO, NotificationPayload } from '@clinickeys-agents/core/domain/notification/';
+import type { LeadMap, ContactMap } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
+import type { IPatientRepository } from '@clinickeys-agents/core/domain/patient/IPatientRepository';
 import type { BotConfigDTO } from '@clinickeys-agents/core/domain/botConfig';
 import type { profiles } from '@clinickeys-agents/core/utils';
 import type { CountryCode } from 'libphonenumber-js';
-import type { LeadMap, ContactMap } from '@clinickeys-agents/core/infrastructure/integrations/kommo/Mappers';
-import type { IPatientRepository } from '@clinickeys-agents/core/domain/patient/IPatientRepository';
 
 interface EnsureLeadParams {
   botConfig: BotConfigDTO;
@@ -203,5 +201,94 @@ export class KommoService {
     const fetchedFields: KommoLeadCustomFieldDefinition[] = await this.gateway.fetchCustomFields('leads');
     const namesSet = new Set(fetchedFields.map((field) => field.name));
     return configFields.map((name) => ({ field_name: name, exists: namesSet.has(name) }));
+  }
+
+  public async replyToLead({
+    leadId,
+    customFields, // objeto: { [fieldName]: value }
+    mergedCustomFields, // array de campos fusionados: [{ id, name, ... }]
+    delayMs = 10000,
+    salesbotId
+  }: {
+    botConfig: BotConfigDTO;
+    leadId: string;
+    notification: NotificationDTO;
+    customFields: Record<string, string>;
+    mergedCustomFields: { id: string | number; name: string; value: string }[];
+    delayMs?: number;
+    salesbotId: number;
+  }) {
+    // 1. Obtener el lead actual
+    const latestLead = await this.gateway.getLeadById({ leadId });
+    if (!latestLead) {
+      throw new Error('latestLead is null');
+    }
+    const initialUserMessage = getCustomFieldValue(latestLead.custom_fields_values || [], 'patientMessage');
+
+    // 2. Esperar y verificar si el mensaje sigue igual
+    const shouldProceed = await shouldLambdaContinue({
+      latestLead,
+      initialValue: initialUserMessage,
+      fieldName: 'patientMessage',
+      delayMs
+    });
+    if (!shouldProceed) {
+      Logger.info(`[replyToLead] Abortado para lead ${leadId}: patientMessage cambió`);
+      return { aborted: true };
+    }
+
+    // 3. Armar payload patch de lead (solo campos actualizados)
+    const custom_fields_values = mergedCustomFields
+      .map((cf) => {
+        if (!(cf.name in customFields)) return null;
+        return {
+          field_id: cf.id,
+          values: [{ value: customFields[cf.name] }],
+        };
+      })
+      .filter(Boolean);
+
+    Logger.info('[replyToLead] custom_fields_values:', custom_fields_values);
+
+    // 4. PATCH lead en Kommo
+    await this.gateway.patchLead({
+      leadId,
+      payload: { custom_fields_values }
+    });
+
+    // 5. Ejecutar salesbot
+    await this.gateway.runSalesbot({
+      leadId: leadId,
+      botId: salesbotId
+    });
+
+    return { success: true };
+  }
+
+  public async createKommoTask({
+    leadId,
+    message,
+    minutesSinceNow = 10,
+    responsibleUserId
+  }: {
+    leadId: string | number;
+    message: string;
+    minutesSinceNow?: number;
+    responsibleUserId: number | string;
+  }) {
+    // Calcula la fecha de vencimiento en epoch (segundos)
+    const completeTill = Math.floor(Date.now() / 1000) + minutesSinceNow * 60;
+    const taskPayload = [
+      {
+        text: message,
+        entity_id: leadId,
+        entity_type: 'leads',
+        complete_till: completeTill,
+        responsible_user_id: responsibleUserId
+      }
+    ];
+    await this.gateway.createTask({ body: taskPayload });
+    Logger.info('[createKommoTask] Tarea creada para lead', { leadId, message, completeTill });
+    return { success: true };
   }
 }

@@ -23,7 +23,7 @@ export interface KommoSearchContactResponse {
 
 export interface KommoGetLeadByIdResponse {
   id: string;
-  custom_fields_values?: Array<any>; // Puedes tipar mejor si lo necesitas
+  custom_fields_values: Array<any>; // Puedes tipar mejor si lo necesitas
   _embedded?: {
     contacts?: Array<{ id: string }>;
   };
@@ -65,7 +65,7 @@ export class KommoApiGateway {
     return ok(await fetch(url, { method: 'PATCH', headers: hdr(this.apiKey), body: JSON.stringify(payload) }), url);
   }
 
-  async runSalesbot({ botId, leadId }: { botId: string, leadId: string }) {
+  async runSalesbot({ botId, leadId }: { botId: number, leadId: string }) {
     const url = `https://${this.subdomain}.kommo.com/api/v2/salesbot/run`;
     const body = [{ botConfigId: botId, entity_id: leadId, entity_type: '2' }];
     console.log('runSalesbot url and body', { url, body });
@@ -109,5 +109,10 @@ export class KommoApiGateway {
     const data: any = await res.json();
     this.fieldCache[entityType] = data._embedded?.custom_fields || [];
     return this.fieldCache[entityType];
+  }
+
+  async createTask({ body }: { body: any }) {
+    const url = `${this.baseUrl}/tasks`;
+    return ok(await fetch(url, { method: 'POST', headers: hdr(this.apiKey), body: JSON.stringify(body) }), url);
   }
 }
