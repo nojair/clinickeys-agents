@@ -2,7 +2,16 @@
 
 import type { NotificationDTO, NotificationPayload } from '@clinickeys-agents/core/domain/notification';
 import type { LeadMap, ContactMap } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
-import { profiles, PAYLOAD_FIELD_MAP } from '@clinickeys-agents/core/utils';
+import {
+  profiles,
+  NOTIFICATION_PAYLOAD_FIELD_MAP,
+  // Custom field constants:
+  ID_NOTIFICATION,
+  APPOINTMENT_DATE,
+  APPOINTMENT_START_TIME,
+  APPOINTMENT_END_TIME,
+  PATIENT_PHONE,
+} from '@clinickeys-agents/core/utils';
 import { DateTime, IANAZone } from 'luxon';
 
 export const json = (r: Response) => r.json();
@@ -130,13 +139,12 @@ export function buildCustomFieldsValues({
       field_id = (leadMap as Record<string, any>)[f.field_name]?.field_id;
       if (!field_id) return undefined;
       let value = '';
-      if (f.field_name === 'appointmentMessage') value = `${notification.message}`;
-      else if (f.field_name === 'idNotification') value = `${notification.notificacionId}`;
-      else if (PAYLOAD_FIELD_MAP[f.field_name] && payload && payload[PAYLOAD_FIELD_MAP[f.field_name]] !== undefined) {
-        let raw = payload[PAYLOAD_FIELD_MAP[f.field_name]];
-        if (f.field_name === 'appointmentDate') value = formatVisitDate(raw);
-        else if (f.field_name === 'appointmentStartTime') value = formatVisitTime(raw);
-        else if (f.field_name === 'appointmentEndTime') value = formatVisitTime(raw);
+      if (f.field_name === ID_NOTIFICATION) value = `${notification.notificacionId}`;
+      else if (NOTIFICATION_PAYLOAD_FIELD_MAP[f.field_name] && payload && payload[NOTIFICATION_PAYLOAD_FIELD_MAP[f.field_name]] !== undefined) {
+        let raw = payload[NOTIFICATION_PAYLOAD_FIELD_MAP[f.field_name]];
+        if (f.field_name === APPOINTMENT_DATE) value = formatVisitDate(raw);
+        else if (f.field_name === APPOINTMENT_START_TIME) value = formatVisitTime(raw);
+        else if (f.field_name === APPOINTMENT_END_TIME) value = formatVisitTime(raw);
         else value = `${raw}`;
       } else return undefined;
       return { field_id, values: [{ value }] };
@@ -146,9 +154,9 @@ export function buildCustomFieldsValues({
       const contactMap = fieldMap as ContactMap;
       field_id = (contactMap as Record<string, any>)[f.field_code]?.field_id;
       if (!field_id) return undefined;
-      if (f.field_code === 'PHONE') {
+      if (f.field_code === 'PHONE') { // podrías reemplazar 'PHONE' por una constante si lo prefieres
         const enum_id = (contactMap as Record<string, any>)['PHONE']?.enum_id;
-        const value = payload.patient_phone ?? '';
+        const value = payload[PATIENT_PHONE] ?? '';
         return {
           field_id,
           values: [{ value, ...(enum_id ? { enum_id } : {}) }],

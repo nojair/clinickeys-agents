@@ -11,7 +11,6 @@ import type { BotConfigDTO } from '@clinickeys-agents/core/domain/botConfig';
 import type { profiles } from '@clinickeys-agents/core/utils';
 import type { CountryCode } from 'libphonenumber-js';
 import type { LeadMap, ContactMap } from '@clinickeys-agents/core/infrastructure/integrations/kommo/Mappers';
-import type { ContactFieldConfig, LeadFieldConfig } from '@clinickeys-agents/core/utils/helpers';
 import type { IPatientRepository } from '@clinickeys-agents/core/domain/patient/IPatientRepository';
 
 interface EnsureLeadParams {

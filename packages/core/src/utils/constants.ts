@@ -1,23 +1,69 @@
 // packages/core/src/utils/constants.ts
 
-/**
- * Mapeo de nombres lógicos de fields → keys usados en el payload de notificaciones.
- * Puedes expandirlo o modificarlo según las necesidades de negocio/campos Kommo.
- */
-export const PAYLOAD_FIELD_MAP: Record<string, string> = {
-  spaceName: 'spaceName',
-  clinicName: 'clinicName',
-  treatmentName: 'treatmentName',
-  doctorFullName: 'doctorFullName',
-  appointmentDate: 'appointmentDate',
-  patientLastName: 'patientLastName',
-  patientFirstName: 'patientFirstName',
-  appointmentEndTime: 'appointmentEndTime',
-  appointmentStartTime: 'appointmentStartTime',
-  appointmentWeekdayName: 'appointmentWeekdayName',
+// --- Custom Field Constants --- //
+export const PATIENT_FIRST_NAME = "patientFirstName";
+export const PATIENT_LAST_NAME = "patientLastName";
+export const PATIENT_LEAD_ID = "patientLeadId";
+export const PATIENT_PHONE = "patientPhone";
+export const PATIENT_ID = "patientId";
+
+export const CLINIC_NAME = "clinicName";
+export const CLINIC_ID = "clinicId";
+
+export const APPOINTMENT_WEEKDAY_NAME = "appointmentWeekdayName";
+export const APPOINTMENT_START_TIME = "appointmentStartTime";
+export const APPOINTMENT_END_TIME = "appointmentEndTime";
+export const APPOINTMENT_DATE = "appointmentDate";
+
+export const DOCTOR_FULL_NAME = "doctorFullName";
+export const DOCTOR_ID = "doctorId";
+
+export const TREATMENT_NAME = "treatmentName";
+export const TREATMENT_ID = "treatmentId";
+
+export const SPACE_NAME = "spaceName";
+export const SPACE_ID = "spaceId";
+
+export const REMINDER_MESSAGE = "reminderMessage";
+
+// Otros campos usados directamente en los perfiles:
+export const TRIGGERED_BY_MACHINE = "triggeredByMachine";
+export const PLEASE_WAIT_MESSAGE = "pleaseWaitMessage";
+export const ID_NOTIFICATION = "idNotification";
+export const PATIENT_MESSAGE = "patientMessage";
+export const SALESBOT_LOG = "salesbotLog";
+export const BOT_MESSAGE = "botMessage";
+export const THREAD_ID = "threadId";
+
+// --- Field Map --- //
+export const NOTIFICATION_PAYLOAD_FIELD_MAP: Record<string, string> = {
+  [PATIENT_FIRST_NAME]: PATIENT_FIRST_NAME,
+  [PATIENT_LAST_NAME]: PATIENT_LAST_NAME,
+  [PATIENT_LEAD_ID]: PATIENT_LEAD_ID,
+  [PATIENT_PHONE]: PATIENT_PHONE,
+  [PATIENT_ID]: PATIENT_ID,
+
+  [CLINIC_NAME]: CLINIC_NAME,
+  [CLINIC_ID]: CLINIC_ID,
+
+  [APPOINTMENT_WEEKDAY_NAME]: APPOINTMENT_WEEKDAY_NAME,
+  [APPOINTMENT_START_TIME]: APPOINTMENT_START_TIME,
+  [APPOINTMENT_END_TIME]: APPOINTMENT_END_TIME,
+  [APPOINTMENT_DATE]: APPOINTMENT_DATE,
+
+  [DOCTOR_FULL_NAME]: DOCTOR_FULL_NAME,
+  [DOCTOR_ID]: DOCTOR_ID,
+
+  [TREATMENT_NAME]: TREATMENT_NAME,
+  [TREATMENT_ID]: TREATMENT_ID,
+
+  [SPACE_NAME]: SPACE_NAME,
+  [SPACE_ID]: SPACE_ID,
+
+  [REMINDER_MESSAGE]: REMINDER_MESSAGE,
 };
 
-// custom fields para crear en las cuentas de kommo de cada clínica
+// --- Profiles --- //
 export const profiles = {
   default_kommo_profile: {
     adding_contact: {
@@ -30,20 +76,30 @@ export const profiles = {
     },
     lead: {
       custom_field_config: [
-        { field_name: "appointmentWeekdayName" },
-        { field_name: "appointmentStartTime" },
-        { field_name: "appointmentEndTime" },
-        { field_name: "appointmentMessage" },
-        { field_name: "triggeredByMachine" },
-        { field_name: "patientFirstName" },
-        { field_name: "patientLastName" },
-        { field_name: "appointmentDate" },
-        { field_name: "doctorFullName" },
-        { field_name: "idNotification" },
-        { field_name: "treatmentName" },
-        { field_name: "salesbotLog" },
-        { field_name: "clinicName" },
-        { field_name: "spaceName" },
+        { field_name: APPOINTMENT_WEEKDAY_NAME },
+        { field_name: APPOINTMENT_START_TIME },
+        { field_name: APPOINTMENT_END_TIME },
+        { field_name: APPOINTMENT_DATE },
+
+        { field_name: REMINDER_MESSAGE },
+
+        { field_name: PATIENT_FIRST_NAME },
+        { field_name: PATIENT_LAST_NAME },
+        { field_name: PATIENT_PHONE },
+        { field_name: PATIENT_ID },
+
+        { field_name: DOCTOR_FULL_NAME },
+        { field_name: SPACE_NAME },
+
+        { field_name: TRIGGERED_BY_MACHINE },
+        { field_name: PLEASE_WAIT_MESSAGE },
+        { field_name: ID_NOTIFICATION },
+        { field_name: PATIENT_MESSAGE },
+        { field_name: TREATMENT_NAME },
+        { field_name: SALESBOT_LOG },
+        { field_name: BOT_MESSAGE },
+        { field_name: CLINIC_NAME },
+        { field_name: THREAD_ID },
       ]
     }
   },
@@ -51,4 +107,4 @@ export const profiles = {
     adding_contact: { custom_fields_config: [] },
     lead: { custom_field_config: [] }
   }
-}
+};
