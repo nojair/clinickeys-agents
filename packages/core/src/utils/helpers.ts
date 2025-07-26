@@ -15,12 +15,57 @@ import {
 } from '@clinickeys-agents/core/utils';
 import { DateTime, IANAZone } from 'luxon';
 
-export const json = (r: Response) => r.json();
-export const ok = async (r: Response, url: string) => {
-  if (!r.ok) throw r;
-  return json(r);
+// packages/core/src/utils/helpers.ts
+
+/**
+ * Parsea la respuesta dependiendo del tipo de contenido (json, text, blob)
+ */
+export const parseResponse = async (r: Response) => {
+  const contentType = r.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    return await r.json();
+  } else if (contentType.startsWith('text/')) {
+    return await r.text();
+  } else {
+    return await r.blob();
+  }
 };
-export const hdr = (t: string) => ({ 'Authorization': `Bearer ${t}`, 'Content-Type': 'application/json' });
+
+/**
+ * Lanza un error si la respuesta no es OK y parsea el body automáticamente.
+ * Si la respuesta es un error, intenta extraer el mensaje del body.
+ */
+export const ok = async (r: Response, url: string) => {
+  if (!r.ok) {
+    let errorData: any = undefined;
+    try {
+      errorData = await parseResponse(r);
+    } catch (_) {
+      // Ignorar errores de parsing para casos donde no hay body
+    }
+    const message = errorData?.message || r.statusText || `Request failed: ${url}`;
+    const error: any = new Error(message);
+    error.status = r.status;
+    error.data = errorData;
+    error.url = url;
+    throw error;
+  }
+  return parseResponse(r);
+};
+
+/**
+ * Helper para construir headers con auth y JSON por defecto.
+ * Puedes combinar con otros headers si lo necesitas.
+ */
+export const hdr = (
+  token: string,
+  extraHeaders: Record<string, string> = {}
+): Record<string, string> => ({
+  Authorization: `Bearer ${token}`,
+  'Content-Type': 'application/json',
+  ...extraHeaders,
+});
+
 
 // --------- MAPEO DE FIELDS KOMMO (TIPADO FUERTE) ---------
 

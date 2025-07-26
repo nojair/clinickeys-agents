@@ -1,7 +1,7 @@
 // packages/core/src/application/usecases/ListGlobalBotConfigsUseCase.ts
 
 import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig";
-import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/botConfig";
+import { IBotConfigRepository } from "@clinickeys-agents/core/domain/botConfig";
 
 export interface ListGlobalBotConfigsInput {
   /** Máximo de ítems a devolver. Default 100 */
@@ -11,11 +11,11 @@ export interface ListGlobalBotConfigsInput {
 }
 
 export interface ListGlobalBotConfigsUseCaseProps {
-  botConfigRepository: BotConfigRepositoryDynamo;
+  botConfigRepository: Pick<IBotConfigRepository, "listGlobal">;
 }
 
 export class ListGlobalBotConfigsUseCase {
-  private readonly repo: BotConfigRepositoryDynamo;
+  private readonly repo: Pick<IBotConfigRepository, "listGlobal">;
 
   constructor(props: ListGlobalBotConfigsUseCaseProps) {
     this.repo = props.botConfigRepository;

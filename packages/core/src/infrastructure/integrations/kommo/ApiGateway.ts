@@ -1,6 +1,6 @@
 // packages/core/src/infrastructure/integrations/kommo/ApiGateway.ts
 
-import { ok, hdr } from "@clinickeys-agents/core/utils";
+import { HttpClient } from "@clinickeys-agents/core/infrastructure/external";
 import type {
   KommoContactCustomFieldDefinition,
   KommoLeadCustomFieldDefinition,
@@ -53,48 +53,75 @@ export class KommoApiGateway {
   private subdomain: string;
   private baseUrl: string;
   private fieldCache: Record<string, KommoLeadCustomFieldDefinition[] | KommoContactCustomFieldDefinition[]> = {};
+  private http: HttpClient;
 
   constructor({ apiKey, subdomain }: KommoApiGatewayOptions) {
     this.apiKey = apiKey;
     this.subdomain = subdomain;
     this.baseUrl = `https://${subdomain}.kommo.com/api/v4`;
+    this.http = new HttpClient();
   }
 
-  async patchLead({ leadId, payload }: { leadId: string, payload: any }) {
+  async patchLead({ leadId, payload }: { leadId: string; payload: any }) {
     const url = `${this.baseUrl}/leads/${leadId}`;
-    return ok(await fetch(url, { method: 'PATCH', headers: hdr(this.apiKey), body: JSON.stringify(payload) }), url);
+    const res = await this.http.request<any>(url, {
+      method: "PATCH",
+      body: payload,
+      token: this.apiKey,
+    });
+    return res.data;
   }
 
-  async runSalesbot({ botId, leadId }: { botId: number, leadId: string }) {
+  async runSalesbot({ botId, leadId }: { botId: number; leadId: string }) {
     const url = `https://${this.subdomain}.kommo.com/api/v2/salesbot/run`;
-    const body = [{ botConfigId: botId, entity_id: leadId, entity_type: '2' }];
-    console.log('runSalesbot url and body', { url, body });
-    return ok(await fetch(url, { method: 'POST', headers: hdr(this.apiKey), body: JSON.stringify(body) }), url);
+    const body = [
+      { botConfigId: botId, entity_id: leadId, entity_type: "2" },
+    ];
+    const res = await this.http.request<any>(url, {
+      method: "POST",
+      body,
+      token: this.apiKey,
+    });
+    return res.data;
   }
 
   async createContact({ body }: { body: any }): Promise<KommoCreateContactResponse> {
     const url = `${this.baseUrl}/contacts`;
-    return ok(await fetch(url, { method: 'POST', headers: hdr(this.apiKey), body: JSON.stringify(body) }), url) as Promise<KommoCreateContactResponse>;
+    const res = await this.http.request<KommoCreateContactResponse>(url, {
+      method: "POST",
+      body,
+      token: this.apiKey,
+    });
+    return res.data;
   }
 
   async createLead({ body }: { body: any }): Promise<KommoCreateLeadResponse> {
     const url = `${this.baseUrl}/leads`;
-    return ok(await fetch(url, { method: 'POST', headers: hdr(this.apiKey), body: JSON.stringify(body) }), url) as Promise<KommoCreateLeadResponse>;
+    const res = await this.http.request<KommoCreateLeadResponse>(url, {
+      method: "POST",
+      body,
+      token: this.apiKey,
+    });
+    return res.data;
   }
 
   async searchContactByPhone({ phone }: { phone: string }): Promise<KommoSearchContactResponse | null> {
     const query = encodeURIComponent(phone);
     const url = `${this.baseUrl}/contacts?query=${query}&with=leads,catalog_elements&order[updated_at]=desc`;
-    const res = await fetch(url, { headers: hdr(this.apiKey) });
+    const res = await this.http.request<KommoSearchContactResponse>(url, {
+      token: this.apiKey,
+    });
     if (res.status === 204) return null;
-    return ok(res, url) as Promise<KommoSearchContactResponse>;
+    return res.data;
   }
 
   async getLeadById({ leadId }: { leadId: string }): Promise<KommoGetLeadByIdResponse | null> {
     const url = `${this.baseUrl}/leads/${leadId}?with=contacts`;
-    const res = await fetch(url, { headers: hdr(this.apiKey) });
+    const res = await this.http.request<KommoGetLeadByIdResponse>(url, {
+      token: this.apiKey,
+    });
     if (res.status === 204) return null;
-    return ok(res, url) as Promise<KommoGetLeadByIdResponse>;
+    return res.data;
   }
 
   async fetchCustomFields(entityType: 'leads'): Promise<KommoLeadCustomFieldDefinition[]>;
@@ -102,17 +129,23 @@ export class KommoApiGateway {
   async fetchCustomFields(entityType: string): Promise<any[]> {
     if (this.fieldCache[entityType]) return this.fieldCache[entityType];
     const url = `${this.baseUrl}/${entityType}/custom_fields`;
-    const res = await fetch(url, { headers: hdr(this.apiKey) });
-    if (!res.ok) {
+    const res = await this.http.request<any>(url, {
+      token: this.apiKey,
+    });
+    if (!res.data || !res.data._embedded?.custom_fields) {
       throw new Error(`Error fetching ${entityType} custom fields: ${res.status}`);
     }
-    const data: any = await res.json();
-    this.fieldCache[entityType] = data._embedded?.custom_fields || [];
+    this.fieldCache[entityType] = res.data._embedded.custom_fields;
     return this.fieldCache[entityType];
   }
 
   async createTask({ body }: { body: any }) {
     const url = `${this.baseUrl}/tasks`;
-    return ok(await fetch(url, { method: 'POST', headers: hdr(this.apiKey), body: JSON.stringify(body) }), url);
+    const res = await this.http.request<any>(url, {
+      method: "POST",
+      body,
+      token: this.apiKey,
+    });
+    return res.data;
   }
 }

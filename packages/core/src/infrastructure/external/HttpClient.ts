@@ -1,10 +1,13 @@
 // packages/core/src/infrastructure/external/HttpClient.ts
 
+import { ok, hdr } from "@clinickeys-agents/core/utils/helpers";
+
 export interface HttpRequestOptions {
   method?: string;
   headers?: Record<string, string>;
   body?: any;
   signal?: AbortSignal;
+  token?: string;
 }
 
 export interface HttpResponse<T = any> {
@@ -18,9 +21,14 @@ export class HttpClient {
     url: string,
     options: HttpRequestOptions = {}
   ): Promise<HttpResponse<T>> {
+    let headers = options.headers || {};
+    if (options.token) {
+      headers = { ...hdr(options.token), ...headers };
+    }
+
     const fetchOptions: RequestInit = {
       method: options.method || "GET",
-      headers: options.headers,
+      headers,
       body: options.body
         ? typeof options.body === "string"
           ? options.body
@@ -28,18 +36,13 @@ export class HttpClient {
         : undefined,
       signal: options.signal,
     };
-    const response = await fetch(url, fetchOptions);
-    const contentType = response.headers.get("content-type");
-    let data: any;
-    if (contentType && contentType.includes("application/json")) {
-      data = await response.json();
-    } else {
-      data = await response.text();
-    }
+
+    const res = await fetch(url, fetchOptions);
+    const data = await ok(res, url) as T;
     return {
-      status: response.status,
+      status: res.status,
       data,
-      headers: response.headers,
+      headers: res.headers,
     };
   }
 }

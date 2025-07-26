@@ -17,8 +17,8 @@ export interface BotConfigDTO {
 
   // Identidad y multi‑tenant
   botConfigId: string;   // UUID v4, único global
-  clinicSource: string;   // "legacy", "v2", ...
-  clinicId: number;       // ID en el sistema correspondiente
+  clinicSource: string;  // "legacy", "v2", ...
+  clinicId: number;      // ID en el sistema correspondiente
 
   // Datos de CRM (multiplataforma)
   crmType: "kommo" | "hubspot" | string; // Permite nuevos CRMs
@@ -26,7 +26,18 @@ export interface BotConfigDTO {
   crmApiKey: string;
 
   // Datos específicos de Kommo
-  kommoSalesbotId?: string;     // ID del salesbot de Kommo, si aplica
+  kommoSalesbotId?: number;     // ID del salesbot de Kommo, si aplica
+
+  // Configuración de OpenAI
+  openai: {
+    /** Asistentes OpenAI registrados en la cuenta */
+    assistants: {
+      /** ID del assistant para conversación ("bot parlante") */
+      speakingBotId: string;
+      /** Otros asistentes pueden agregarse aquí si es necesario */
+      [key: string]: string;
+    };
+  };
 
   // Configuración regional
   defaultCountry: string; // ISO 3166‑1 alpha‑2, ej. "PE"
@@ -38,7 +49,7 @@ export interface BotConfigDTO {
 
   // Estado lógico (se puede activar más adelante)
   isActive?: boolean;
-  
+
   // Perfil de campos personalizados
   fieldsProfile: string; // Perfil de campos personalizados, ej. "default_kommo_profile"
 

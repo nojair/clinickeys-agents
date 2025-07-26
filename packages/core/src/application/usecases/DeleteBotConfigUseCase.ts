@@ -1,16 +1,12 @@
 // packages/core/src/application/usecases/DeleteBotConfigUseCase.ts
 
-import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/botConfig";
-
-export interface DeleteBotConfigUseCaseProps {
-  botConfigRepository: BotConfigRepositoryDynamo;
-}
+import { IBotConfigRepository } from "@clinickeys-agents/core/domain/botConfig";
 
 export class DeleteBotConfigUseCase {
-  private botConfigRepository: BotConfigRepositoryDynamo;
+  private botConfigRepository: Pick<IBotConfigRepository, "delete">;
 
-  constructor(props: DeleteBotConfigUseCaseProps) {
-    this.botConfigRepository = props.botConfigRepository;
+  constructor(props: Pick<IBotConfigRepository, "delete">) {
+    this.botConfigRepository = props;
   }
 
   /**

@@ -1,14 +1,14 @@
 // packages/core/src/application/usecases/GetBotConfigUseCase.ts
 
 import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig";
-import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/botConfig";
+import { IBotConfigRepository } from "@clinickeys-agents/core/domain/botConfig";
 
 export interface GetBotConfigUseCaseProps {
-  botConfigRepository: BotConfigRepositoryDynamo;
+  botConfigRepository: Pick<IBotConfigRepository, "findByBotConfig">;
 }
 
 export class GetBotConfigUseCase {
-  private botConfigRepository: BotConfigRepositoryDynamo;
+  private botConfigRepository: Pick<IBotConfigRepository, "findByBotConfig">;
 
   constructor(props: GetBotConfigUseCaseProps) {
     this.botConfigRepository = props.botConfigRepository;

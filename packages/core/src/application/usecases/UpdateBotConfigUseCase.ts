@@ -1,11 +1,10 @@
 // packages/core/src/application/usecases/UpdateBotConfigUseCase.ts
 
 import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig";
-import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/botConfig";
+import { IBotConfigRepository } from "@clinickeys-agents/core/domain/botConfig";
 
 // Campos que se permiten actualizar vía PATCH
-export type UpdateBotConfigPayload = Partial<Pick<
-  BotConfigDTO,
+export type UpdateBotConfigPayload = Partial<Pick<BotConfigDTO,
   | "isActive"
   | "description"
   | "name"
@@ -25,19 +24,19 @@ export interface UpdateBotConfigInput {
 }
 
 export interface UpdateBotConfigUseCaseProps {
-  botConfigRepository: BotConfigRepositoryDynamo;
+  botConfigRepository: Pick<IBotConfigRepository, "patch">;
 }
 
 export class UpdateBotConfigUseCase {
-  private readonly repo: BotConfigRepositoryDynamo;
+  private readonly botConfigRepository: Pick<IBotConfigRepository, "patch">;
 
   constructor(props: UpdateBotConfigUseCaseProps) {
-    this.repo = props.botConfigRepository;
+    this.botConfigRepository = props.botConfigRepository;
   }
 
   async execute(input: UpdateBotConfigInput): Promise<void> {
     if (!Object.keys(input.updates).length) return; // nada que hacer
-    await this.repo.patch(
+    await this.botConfigRepository.patch(
       input.botConfigId,
       input.clinicSource,
       input.clinicId,
