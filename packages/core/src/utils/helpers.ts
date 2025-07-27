@@ -131,7 +131,7 @@ export function safeISODate(dt: DateTime): string {
 }
 
 /** Retorna DateTime ahora en la zona de la clínica */
-export function clinicNow(timezone: string): DateTime {
+export function localTime(timezone: string): DateTime {
   if (!IANAZone.isValidZone(timezone)) {
     throw new Error(`Invalid timezone: ${timezone}`);
   }

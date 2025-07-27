@@ -1,4 +1,4 @@
-// /config/placeholders.js
+// packages/core/src/utils/defaultPlaceholders.ts
 
 export const defaultPlaceholders = {
   NOMBRE_ASISTENTE_VIRTUAL: "",

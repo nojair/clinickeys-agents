@@ -1,7 +1,7 @@
 // packages/core/src/application/usecases/ListGlobalBotConfigsUseCase.ts
 
+import { BotConfigService } from "@clinickeys-agents/core/application/services/BotConfigService";
 import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig";
-import { IBotConfigRepository } from "@clinickeys-agents/core/domain/botConfig";
 
 export interface ListGlobalBotConfigsInput {
   /** Máximo de ítems a devolver. Default 100 */
@@ -11,14 +11,14 @@ export interface ListGlobalBotConfigsInput {
 }
 
 export interface ListGlobalBotConfigsUseCaseProps {
-  botConfigRepository: Pick<IBotConfigRepository, "listGlobal">;
+  botConfigService: BotConfigService;
 }
 
 export class ListGlobalBotConfigsUseCase {
-  private readonly repo: Pick<IBotConfigRepository, "listGlobal">;
+  private readonly botConfigService: BotConfigService;
 
   constructor(props: ListGlobalBotConfigsUseCaseProps) {
-    this.repo = props.botConfigRepository;
+    this.botConfigService = props.botConfigService;
   }
 
   /**
@@ -30,6 +30,6 @@ export class ListGlobalBotConfigsUseCase {
     nextCursor: Record<string, Record<string, any>>;
   }> {
     const { limit = 100, cursor = {} } = input;
-    return this.repo.listGlobal(limit, cursor);
+    return this.botConfigService.listGlobal(limit, cursor);
   }
 }

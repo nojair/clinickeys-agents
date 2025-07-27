@@ -12,12 +12,12 @@ import {
   shouldLambdaContinue
 } from '@clinickeys-agents/core/utils';
 
-import type { NotificationDTO, NotificationPayload } from '@clinickeys-agents/core/domain/notification/';
-import type { IPatientRepository } from '@clinickeys-agents/core/domain/patient/IPatientRepository';
+import type { NotificationDTO, NotificationPayload } from '@clinickeys-agents/core/domain/notification';
+import type { IPatientRepository } from '@clinickeys-agents/core/domain/patient';
 import type { BotConfigDTO } from '@clinickeys-agents/core/domain/botConfig';
 import type { profiles } from '@clinickeys-agents/core/utils';
 import type { CountryCode } from 'libphonenumber-js';
-import type { IKommoRepository } from '@clinickeys-agents/core/domain/crm';
+import type { IKommoRepository } from '../../domain/kommo';
 import type { LeadMap, ContactMap } from "@clinickeys-agents/core/infrastructure/integrations/kommo";
 
 interface EnsureLeadParams {

@@ -1,21 +1,30 @@
 // packages/core/src/application/usecases/GetAllClinicsUseCase.ts
 
-import type { IClinicRepository, ClinicDTO } from "@clinickeys-agents/core/domain/clinic";
+import type { ClinicRepositoryFactory } from "@clinickeys-agents/core/infrastructure/clinic/ClinicRepositoryFactory";
+import type { ClinicDTO } from "@clinickeys-agents/core/domain/clinic";
 
 /**
- * Use case para obtener todas las clínicas desde el repositorio MySQL.
+ * Use case para obtener todas las clínicas de una fuente específica (por ahora solo "legacy").
  */
-export class GetAllClinicsUseCase {
-  private clinicRepository: IClinicRepository;
+export interface GetAllClinicsUseCaseProps {
+  clinicRepositoryFactory: ClinicRepositoryFactory;
+  clinicSource: string;
+}
 
-  constructor(clinicRepository: IClinicRepository) {
-    this.clinicRepository = clinicRepository;
+export class GetAllClinicsUseCase {
+  private readonly factory: ClinicRepositoryFactory;
+  private readonly clinicSource: string;
+
+  constructor(props: GetAllClinicsUseCaseProps) {
+    this.factory = props.clinicRepositoryFactory;
+    this.clinicSource = props.clinicSource;
   }
 
   /**
-   * Devuelve todas las clínicas registradas.
+   * Devuelve todas las clínicas registradas en la fuente configurada.
    */
   async execute(): Promise<ClinicDTO[]> {
-    return this.clinicRepository.findAll();
+    const repo = this.factory.get(this.clinicSource);
+    return repo.findAll(this.clinicSource);
   }
 }

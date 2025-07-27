@@ -1,5 +1,4 @@
 // packages/core/src/infrastructure/clinic/ClinicRepositoryMySQL.ts
-
 import { IClinicRepository, ClinicRepositoryError, ClinicNotFoundError, ClinicDTO } from "@clinickeys-agents/core/domain/clinic";
 import { Pool, RowDataPacket } from "mysql2/promise";
 

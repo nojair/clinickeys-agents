@@ -4,7 +4,7 @@ import { INotificationRepository } from "@clinickeys-agents/core/domain/notifica
 import { IBotConfigRepository } from "@clinickeys-agents/core/domain/botConfig";
 import { IPatientRepository } from "@clinickeys-agents/core/domain/patient/IPatientRepository";
 import { KommoApiGateway } from "@clinickeys-agents/core/infrastructure/integrations/kommo";
-import { clinicNow, safeISODate, parseClinicDate, canSendReminder } from "@clinickeys-agents/core/utils";
+import { localTime, safeISODate, parseClinicDate, canSendReminder } from "@clinickeys-agents/core/utils";
 import { KommoService } from "@clinickeys-agents/core/application/services";
 import { Logger } from "@clinickeys-agents/core/infrastructure/external";
 
@@ -62,7 +62,7 @@ export class SendRemindersJob {
             continue;
           }
 
-          const fechaEnvioProgramada = safeISODate(clinicNow(cfg.timezone));
+          const fechaEnvioProgramada = safeISODate(localTime(cfg.timezone));
           const notifications = await this.notificationsRepo.findPendingByClinic(clinicId, fechaEnvioProgramada);
           if (!notifications.length) continue;
 
@@ -72,7 +72,7 @@ export class SendRemindersJob {
           const kommoService = new KommoService(kommoGateway, this.patientRepo);
 
           const tz = cfg.timezone;
-          const now = clinicNow(tz);
+          const now = localTime(tz);
           const hourNow = now.hour;
           const MIN_HOUR = 10;
 

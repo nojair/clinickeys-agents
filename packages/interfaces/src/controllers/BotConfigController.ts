@@ -1,8 +1,8 @@
 // packages/core/src/interface/controllers/BotConfigController.ts
 
 import {
-  AddBotConfigUseCase,
-  AddBotConfigInput,
+  AddOpenAIBotConfigUseCase,
+  AddOpenAIBotConfigInput,
   UpdateBotConfigUseCase,
   UpdateBotConfigInput,
   DeleteBotConfigUseCase,
@@ -12,7 +12,7 @@ import {
 } from "@clinickeys-agents/core/application/usecases";
 
 export interface BotConfigControllerProps {
-  addUseCase: AddBotConfigUseCase;
+  addUseCase: AddOpenAIBotConfigUseCase;
   updateUseCase: UpdateBotConfigUseCase;
   deleteUseCase: DeleteBotConfigUseCase;
   getUseCase: GetBotConfigUseCase;
@@ -24,7 +24,7 @@ export interface BotConfigControllerProps {
  * Orquesta las llamadas entre handlers y casos de uso.
  */
 export class BotConfigController {
-  private readonly add: AddBotConfigUseCase;
+  private readonly add: AddOpenAIBotConfigUseCase;
   private readonly update: UpdateBotConfigUseCase;
   private readonly del: DeleteBotConfigUseCase;
   private readonly get: GetBotConfigUseCase;
@@ -39,7 +39,7 @@ export class BotConfigController {
   }
 
   // -------------------- public API --------------------
-  async addBotConfig(input: AddBotConfigInput): Promise<void> {
+  async addBotConfig(input: AddOpenAIBotConfigInput): Promise<void> {
     await this.add.execute(input);
   }
 

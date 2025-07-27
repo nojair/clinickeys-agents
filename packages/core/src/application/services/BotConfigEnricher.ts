@@ -2,6 +2,7 @@
 
 import { BotConfigDTO, BotConfigEnrichedDTO } from "@clinickeys-agents/core/domain/botConfig";
 import { KommoApiGateway } from "@clinickeys-agents/core/infrastructure/integrations/kommo";
+import { KommoRepository } from "@clinickeys-agents/core/infrastructure/kommo";
 import { KommoService } from "@clinickeys-agents/core/application/services";
 import { profiles } from "@clinickeys-agents/core/utils/constants";
 
@@ -24,9 +25,10 @@ export class BotConfigEnricher {
       apiKey: dto.crmApiKey,
       subdomain: dto.crmSubdomain || ""
     });
+    const repository = new KommoRepository(gateway)
     // El KommoService ahora requiere el patientRepository, pero para obtener campos custom solo usa el gateway
     // Así que se pasa undefined o puedes sobrecargar el constructor en KommoService si lo necesitas.
-    const kommoService = new KommoService(gateway, undefined as any);
+    const kommoService = new KommoService(repository, undefined as any);
 
     // 3. Llamar al método del service para obtener los custom fields
     const kommo_leads_custom_fields =
@@ -40,7 +42,7 @@ export class BotConfigEnricher {
       "crmApiKey",
       "crmSubdomain",
       "fieldsProfile",
-      "defaultCountry",
+      "default_country",
       "kommoSalesbotId",
     ];
 

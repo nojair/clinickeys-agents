@@ -1,4 +1,4 @@
-export * from "./AddBotConfigUseCase";
+export * from "./AddOpenAIBotConfigUseCase";
 export * from "./DeleteBotConfigUseCase";
 export * from "./GetAllClinicsUseCase";
 export * from "./GetBotConfigUseCase";

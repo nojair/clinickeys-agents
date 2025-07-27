@@ -32,9 +32,7 @@ export interface BotConfigDTO {
   openai: {
     /** Asistentes OpenAI registrados en la cuenta */
     assistants: {
-      /** ID del assistant para conversación ("bot parlante") */
-      speakingBotId: string;
-      /** Otros asistentes pueden agregarse aquí si es necesario */
+      /** Otros asistentes y sus IDs pueden agregarse aquí si es necesario */
       [key: string]: string;
     };
   };
@@ -56,6 +54,8 @@ export interface BotConfigDTO {
   // Auditoría
   createdAt: number;       // epoch millis
   updatedAt: number;       // epoch millis
+
+  placeholders: (Record<string, string>);
 }
 
 /**
