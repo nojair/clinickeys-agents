@@ -152,29 +152,34 @@ export class OpenAIService {
     }
 
     const newRun = await this.repo.createRun(tId, assistantId, message);
-    return this.getResponseFromWaitingAssistant(
-      tId,
-      newRun.id,
-      newRun.required_action?.submit_tool_outputs?.tool_calls?.map(
+    return this.getResponseFromWaitingAssistant({
+      threadId: tId,
+      runId: newRun.id,
+      functionCalls: newRun.required_action?.submit_tool_outputs?.tool_calls?.map(
         (tc) => ({
           tool_call_id: tc.id,
           name: tc.function.name,
           arguments: JSON.parse(tc.function.arguments),
         })
       ) as FunctionCallPayload[] || [],
-      message
-    );
+      rawOutput: message
+    });
   }
 
   /**
    * Procesa llamadas a herramientas pendientes y completa el run.
    */
-  async getResponseFromWaitingAssistant(
+  async getResponseFromWaitingAssistant({
+    threadId,
+    runId,
+    functionCalls,
+    rawOutput
+  }: {
     threadId: string,
     runId: string,
     functionCalls: FunctionCallPayload[],
     rawOutput: unknown
-  ): Promise<ResponseResult> {
+  }): Promise<ResponseResult> {
     this.logger.info("OpenAIService: Resolviendo run pendiente", { threadId, runId });
     const toolOutputs = functionCalls.map(fc => ({
       tool_call_id: fc.tool_call_id,

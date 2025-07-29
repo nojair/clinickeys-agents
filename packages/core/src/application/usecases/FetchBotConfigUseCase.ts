@@ -4,7 +4,7 @@ import { AppError } from '@clinickeys-agents/core/utils';
 export interface FetchBotConfigInput {
   botConfigId: string;
   clinicSource: string;
-  clinicId: string;
+  clinicId: number;
 }
 
 export interface FetchBotConfigOutput {

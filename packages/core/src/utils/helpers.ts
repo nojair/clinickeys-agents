@@ -274,3 +274,10 @@ export async function shouldLambdaContinue({
   );
   return current === initialValue;
 }
+
+export function formatFechaCita(fecha: string) {
+  if (fecha && !fecha.includes("T")) {
+    return `${fecha}T00:00:00.000Z`;
+  }
+  return fecha;
+}

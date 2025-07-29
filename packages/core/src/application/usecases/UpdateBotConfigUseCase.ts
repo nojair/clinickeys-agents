@@ -1,6 +1,6 @@
 // packages/core/src/application/usecases/UpdateBotConfigUseCase.ts
 
-import { BotConfigService } from "@clinickeys-agents/core/application/services/BotConfigService";
+import { BotConfigService } from "@clinickeys-agents/core/application/services";
 import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig";
 
 // Campos que se permiten actualizar vía PATCH

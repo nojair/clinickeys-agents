@@ -6,7 +6,7 @@ import { AppError } from '@clinickeys-agents/core/utils';
 export interface RecognizeUserIntentInput {
   botConfigId: string;
   clinicSource: string;
-  clinicId: string;
+  clinicId: number;
   leadId: number;
   tiempoActualDT: any;
   userMessage: string;

@@ -1,12 +1,12 @@
 import { KommoContactResponse } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
-import { KommoService } from '@clinickeys-agents/core/application/services/KommoService';
-import { AppError } from '@clinickeys-agents/core/utils';
+import { KommoService } from '@clinickeys-agents/core/application/services';
 import { FetchBotConfigUseCase } from './FetchBotConfigUseCase';
+import { AppError } from '@clinickeys-agents/core/utils';
 
 export interface FetchKommoDataInput {
   botConfigId: string;
   clinicSource: string;
-  clinicId: string;
+  clinicId: number;
   leadId: number;
 }
 

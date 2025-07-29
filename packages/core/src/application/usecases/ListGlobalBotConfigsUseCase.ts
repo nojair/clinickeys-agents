@@ -1,6 +1,6 @@
 // packages/core/src/application/usecases/ListGlobalBotConfigsUseCase.ts
 
-import { BotConfigService } from "@clinickeys-agents/core/application/services/BotConfigService";
+import { BotConfigService } from "@clinickeys-agents/core/application/services";
 import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig";
 
 export interface ListGlobalBotConfigsInput {

@@ -1,8 +1,7 @@
 // packages/core/src/application/usecases/AddOpenAIBotConfigUseCase.ts
 
-import { OpenAIService } from "@clinickeys-agents/core/application/services/OpenAIService";
-import { BotConfigService } from "@clinickeys-agents/core/application/services/BotConfigService";
-import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig/dtos";
+import { OpenAIService, BotConfigService } from "@clinickeys-agents/core/application/services";
+import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig";
 
 /**
  * Input para agregar una nueva configuración de bot OpenAI.

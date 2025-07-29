@@ -1,11 +1,11 @@
-import { AppError } from '@clinickeys-agents/core/utils';
+import { PatientService } from '@clinickeys-agents/core/application/services';
 import { FetchKommoDataUseCase } from './FetchKommoDataUseCase';
-import { PatientService } from '@clinickeys-agents/core/application/services/PatientService';
+import { AppError } from '@clinickeys-agents/core/utils';
 
 export interface FetchPatientInfoInput {
   botConfigId: string;
   clinicSource: string;
-  clinicId: string;
+  clinicId: number;
   leadId: number;
   tiempoActualDT: any;
 }

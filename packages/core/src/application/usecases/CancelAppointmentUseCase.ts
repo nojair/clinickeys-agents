@@ -1,87 +1,72 @@
-import type { BotConfigDTO } from '@clinickeys-agents/core/domain/botConfig';
-import { KommoService } from '@clinickeys-agents/core/application/services/KommoService';
-import { AppointmentService } from '@clinickeys-agents/core/application/services/AppointmentService';
-import { PackBonoService } from '@clinickeys-agents/core/application/services/PackBonoService';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 import {
-  PATIENT_MESSAGE,
-  REMINDER_MESSAGE,
-  BOT_MESSAGE,
-  THREAD_ID,
-  PLEASE_WAIT_MESSAGE
-} from '@clinickeys-agents/core/utils/constants';
+  KommoService,
+  AppointmentService,
+  PackBonoService,
+} from '@clinickeys-agents/core/application/services';
 
-export interface CancelAppointmentInput {
-  botConfig: BotConfigDTO;
+interface CancelAppointmentInput {
+  botConfig: any;
   leadId: number;
   mergedCustomFields: { id: string | number; name: string; value?: string }[];
   salesbotId: number;
-  cancelParams: {
+  params: {
     id_cita: number;
-    id_medico?: number;
+    id_medico?: number | null;
+    id_espacio?: number | null;
     fecha_cita?: string;
     hora_inicio?: string;
     hora_fin?: string;
-    id_espacio?: number;
   };
-  threadId: string;
 }
 
-export interface CancelAppointmentOutput {
+interface CancelAppointmentOutput {
   success: boolean;
-  appointmentId?: number;
+  toolOutput: string;
 }
+
+const ID_ESTADO_CITA_CANCELADA = 2;
 
 export class CancelAppointmentUseCase {
   constructor(
     private readonly kommoService: KommoService,
     private readonly appointmentService: AppointmentService,
-    private readonly packBonoService: PackBonoService
+    private readonly packBonoService: PackBonoService,
   ) {}
 
-  public async execute(
-    input: CancelAppointmentInput
-  ): Promise<CancelAppointmentOutput> {
-    const {
+  public async execute(input: CancelAppointmentInput): Promise<CancelAppointmentOutput> {
+    const { botConfig, leadId, mergedCustomFields, salesbotId, params } = input;
+    const { id_cita, id_medico, id_espacio, fecha_cita, hora_inicio, hora_fin } = params;
+
+    // 1. Mensaje inicial "please‑wait"
+    await this.kommoService.sendBotInitialMessage({
       botConfig,
       leadId,
       mergedCustomFields,
       salesbotId,
-      cancelParams,
-      threadId
-    } = input;
+      message: 'Muy bien, voy a cancelar tu cita. Un momento por favor.',
+    });
 
-    try {
-      await this.appointmentService.cancelAppointment(cancelParams.id_cita);
-      await this.packBonoService.procesarPackbonoPresupuestoDeCita(
-        'on_eliminar_cita',
-        cancelParams.id_cita
-      );
-
-      const confirmMessage = 'La cita fue cancelada con éxito.';
-      const customFields: Record<string, string> = {
-        [PATIENT_MESSAGE]: '',
-        [REMINDER_MESSAGE]: '',
-        [THREAD_ID]: threadId,
-        [BOT_MESSAGE]: confirmMessage,
-        [PLEASE_WAIT_MESSAGE]: 'false'
+    // 2. Validación mínima
+    if (!id_cita) {
+      return {
+        success: false,
+        toolOutput: '#cancelarCita\nLo siento, no pude identificar la cita que deseas cancelar. ¿Podrías volver a indicarme?'
       };
-
-      await this.kommoService.replyToLead({
-        botConfig,
-        leadId: Number(leadId),
-        customFields,
-        mergedCustomFields,
-        salesbotId
-      });
-
-      return { success: true, appointmentId: cancelParams.id_cita };
-    } catch (error) {
-      Logger.error(
-        `[CancelAppointmentUseCase] Error cancelando cita ${cancelParams.id_cita}:`,
-        error
-      );
-      return { success: false };
     }
+
+    // 3. Cancelar cita en BD
+    await this.appointmentService.updateAppointment({
+      id_cita,
+      id_estado_cita: ID_ESTADO_CITA_CANCELADA,
+    });
+
+    // 4. Procesar packs‑bono / presupuestos
+    await this.packBonoService.procesarPackbonoPresupuestoDeCita('on_eliminar_cita', id_cita);
+
+    // 5. Construir toolOutput
+    const toolOutput = `#cancelarCita\nLa cita fue cancelada con éxito: ${JSON.stringify({ id_cita })}`;
+
+    return { success: true, toolOutput };
   }
 }

@@ -1,6 +1,6 @@
 // packages/core/src/application/usecases/GetAllClinicsUseCase.ts
 
-import type { ClinicRepositoryFactory } from "@clinickeys-agents/core/infrastructure/clinic/ClinicRepositoryFactory";
+import type { ClinicRepositoryFactory } from "@clinickeys-agents/core/infrastructure/clinic";
 import type { ClinicDTO } from "@clinickeys-agents/core/domain/clinic";
 
 /**
