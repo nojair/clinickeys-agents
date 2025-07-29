@@ -51,7 +51,7 @@ export class BotConfigRepositoryDynamo {
   /**
    * Crear un nuevo BotConfig.
    */
-  async create(dto: Omit<BotConfigDTO, "pk" | "sk" | "bucket" | "createdAt" | "updatedAt">): Promise<void> {
+  async create(dto: Omit<BotConfigDTO, "pk" | "sk" | "bucket" | "createdAt" | "updatedAt">): Promise<BotConfigDTO> {
     const now = Date.now();
     const item: BotConfigDTO = {
       ...dto,
@@ -65,6 +65,8 @@ export class BotConfigRepositoryDynamo {
     await this.docClient.send(
       new PutCommand({ TableName: this.tableName, Item: item })
     );
+
+    return item;
   }
 
   /**
@@ -160,7 +162,7 @@ export class BotConfigRepositoryDynamo {
     });
 
     const pages = await Promise.all(queries);
-    const merged = pages.flatMap(p => p.items).sort((a,b) => b.createdAt - a.createdAt).slice(0, limit);
+    const merged = pages.flatMap(p => p.items).sort((a, b) => b.createdAt - a.createdAt).slice(0, limit);
 
     const nextCursor: Record<string, Record<string, unknown>> = {};
     pages.forEach(p => { if (p.next) nextCursor[p.bucket] = p.next; });
@@ -181,11 +183,15 @@ export class BotConfigRepositoryDynamo {
       | "name"
       | "timezone"
       | "defaultCountry"
-      | "kommoSalesbotId"
       | "crmApiKey"
       | "crmSubdomain"
       | "crmType"
-    >>
+    >> & {
+      kommo?: {
+        salesbotId?: number;
+        chatSalesbotId?: number;
+      };
+    }
   ): Promise<void> {
     const pk = this.pkOf(clinicSource, clinicId);
     const sk = this.skOf(botConfigId);
@@ -207,12 +213,23 @@ export class BotConfigRepositoryDynamo {
     add("name", update.name);
     add("timezone", update.timezone);
     add("defaultCountry", update.defaultCountry);
-    add("kommoSalesbotId", update.kommoSalesbotId);
     add("crmApiKey", update.crmApiKey);
     add("crmSubdomain", update.crmSubdomain);
     add("crmType", update.crmType);
 
-    if (exp.length === 1) return; // sólo updatedAt → nada que cambiar
+    // Manejo para patch de kommo.salesbotId y kommo.chatSalesbotId de forma independiente
+    if (update.kommo) {
+      if (update.kommo.salesbotId !== undefined) {
+        exp.push("kommo.salesbotId = :kommoSalesbotId");
+        attrs[":kommoSalesbotId"] = update.kommo.salesbotId;
+      }
+      if (update.kommo.chatSalesbotId !== undefined) {
+        exp.push("kommo.chatSalesbotId = :kommoChatSalesbotId");
+        attrs[":kommoChatSalesbotId"] = update.kommo.chatSalesbotId;
+      }
+    }
+
+    if (exp.length === 1) return; // sólo updatedAt, nada más que actualizar
 
     await this.docClient.send(
       new UpdateCommand({

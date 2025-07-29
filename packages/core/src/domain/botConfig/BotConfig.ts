@@ -21,7 +21,7 @@ export class BotConfig {
   readonly crmType: string;
   readonly crmSubdomain?: string;
   readonly crmApiKey: string;
-  readonly kommoSalesbotId?: string;
+  readonly kommoSalesbotId?: number;
 
   // Configuración regional
   readonly defaultCountry: string;
@@ -37,6 +37,9 @@ export class BotConfig {
   // Auditoría
   readonly createdAt: number;
   readonly updatedAt: number;
+
+  readonly openai: Record<string, any>
+  readonly kommo: Record<string, number>
 
   constructor(dto: BotConfigDTO) {
     // Claves
@@ -55,7 +58,7 @@ export class BotConfig {
     this.crmApiKey = dto.crmApiKey;
 
     // Kommo específico
-    this.kommoSalesbotId = dto.kommoSalesbotId;
+    this.kommo = dto.kommo;
 
     // Config regional
     this.defaultCountry = dto.defaultCountry;
@@ -69,6 +72,8 @@ export class BotConfig {
     this.isActive = dto.isActive;
     this.createdAt = dto.createdAt;
     this.updatedAt = dto.updatedAt;
+
+    this.openai = dto.openai;
   }
 
   // Métodos de dominio pueden añadirse aquí.

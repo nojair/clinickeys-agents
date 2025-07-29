@@ -1,18 +1,27 @@
-// packages/core/src/infrastructure/job/SendRemindersJob.ts
-
-import { INotificationRepository } from "@clinickeys-agents/core/domain/notification";
-import { IBotConfigRepository } from "@clinickeys-agents/core/domain/botConfig";
-import { IPatientRepository } from "@clinickeys-agents/core/domain/patient/IPatientRepository";
-import { KommoApiGateway } from "@clinickeys-agents/core/infrastructure/integrations/kommo";
-import { localTime, safeISODate, parseClinicDate, canSendReminder } from "@clinickeys-agents/core/utils";
-import { KommoService } from "@clinickeys-agents/core/application/services";
-import { Logger } from "@clinickeys-agents/core/infrastructure/external";
+import { INotificationRepository } from '@clinickeys-agents/core/domain/notification';
+import { IBotConfigRepository } from '@clinickeys-agents/core/domain/botConfig';
+import { IPatientRepository } from '@clinickeys-agents/core/domain/patient/IPatientRepository';
+import { KommoApiGateway } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
+import { KommoRepository } from '@clinickeys-agents/core/infrastructure/kommo/KommoRepository';
+import { KommoService } from '@clinickeys-agents/core/application/services/KommoService';
+import { localTime, safeISODate, parseClinicDate, canSendReminder } from '@clinickeys-agents/core/utils';
+import { Logger } from '@clinickeys-agents/core/infrastructure/external';
+import {
+  PATIENT_FIRST_NAME,
+  PATIENT_LAST_NAME,
+  PATIENT_LEAD_ID,
+  PATIENT_PHONE,
+  ID_NOTIFICATION,
+  REMINDER_MESSAGE,
+  TRIGGERED_BY_MACHINE,
+  PLEASE_WAIT_MESSAGE
+} from '@clinickeys-agents/core/utils/constants';
 
 export interface SendRemindersJobProps {
   notificationsRepo: INotificationRepository;
   botConfigRepo: IBotConfigRepository;
   patientRepo: IPatientRepository;
-  pageSize?: number; // lote de configs por página (default 100)
+  pageSize?: number;
 }
 
 export class SendRemindersJob {
@@ -28,13 +37,9 @@ export class SendRemindersJob {
     this.pageSize = props.pageSize ?? 100;
   }
 
-  /**
-   * Ejecuta el envío de recordatorios para todas las configuraciones activas.
-   * Procesa todas las fuentes (`clinicSource`) usando paginación por bucket.
-   */
-  async execute(): Promise<void> {
+  public async execute(): Promise<void> {
     try {
-      let cursor: Record<string, Record<string, any>> | undefined = {};
+      let cursor: Record<string, any> | undefined = {};
       let page = 0;
 
       do {
@@ -43,83 +48,76 @@ export class SendRemindersJob {
         page++;
 
         if (!configs.length) continue;
-
         Logger.info(`[JOB] Página ${page}: procesando ${configs.length} configuraciones`);
 
         for (const cfg of configs) {
-          // Solo procesamos CRMs Kommo por ahora
-          if (cfg.crmType !== "kommo") continue;
-
-          const clinicId = cfg.clinicId;
-          const clinicSource = cfg.clinicSource;
-
-          const apiKey = cfg.crmApiKey;
-          const subdomain = cfg.crmSubdomain;
-          const kommoSalesbotId = cfg.kommoSalesbotId;
-
-          if (!subdomain || !kommoSalesbotId || !apiKey) {
-            Logger.error("[JOB] Config incompleta", { clinicId, clinicSource, subdomain, kommoSalesbotId, apiKey });
+          if (cfg.crmType !== 'kommo') continue;
+          const { clinicId, clinicSource, crmApiKey: apiKey, crmSubdomain: subdomain, kommo: { salesbotId }, timezone } = cfg;
+          if (!subdomain || !salesbotId || !apiKey) {
+            Logger.error('[JOB] Config incompleta', { clinicId, clinicSource, subdomain, salesbotId, apiKey });
             continue;
           }
 
-          const fechaEnvioProgramada = safeISODate(localTime(cfg.timezone));
-          const notifications = await this.notificationsRepo.findPendingByClinic(clinicId, fechaEnvioProgramada);
+          const fechaEnvio = safeISODate(localTime(timezone));
+          const notifications = await this.notificationsRepo.findPendingByClinic(clinicId, fechaEnvio);
           if (!notifications.length) continue;
 
-          Logger.info(`[JOB] Clínica ${clinicId} (${clinicSource}) – ${notifications.length} notificaciones para ${fechaEnvioProgramada}`);
+          Logger.info(
+            `[JOB] Clínica ${clinicId} (${clinicSource}) – ${notifications.length} recordatorios para ${fechaEnvio}`
+          );
 
           const kommoGateway = new KommoApiGateway({ apiKey, subdomain });
-          const kommoService = new KommoService(kommoGateway, this.patientRepo);
+          const kommoRepo = new KommoRepository(kommoGateway);
+          const kommoService = new KommoService(kommoRepo, this.patientRepo);
 
-          const tz = cfg.timezone;
-          const now = localTime(tz);
-          const hourNow = now.hour;
+          const now = localTime(timezone);
           const MIN_HOUR = 10;
+          const hourNow = now.hour;
 
           for (const n of notifications) {
             try {
-              const progDate = parseClinicDate(n.scheduledDate, tz).toISODate();
-
-              Logger.info("[JOB] Analizando notificación", {
-                id_notificacion: n.notificacionId,
-                telefono: n.payload?.patient_phone,
-                progDate,
-                hora_local: hourNow,
-              });
+              const progDate = parseClinicDate(n.scheduledDate, timezone).toISODate();
+              Logger.info('[JOB] Analizando notificación', { id: n.notificacionId, telefono: n.payload?.patient_phone, progDate, hourNow });
 
               if (!canSendReminder(now, MIN_HOUR)) {
-                Logger.info("[JOB] Hora local < MIN_HOUR, pendiente", { hourNow, MIN_HOUR, id_notificacion: n.notificacionId, tz });
+                Logger.info('[JOB] Hora local < MIN_HOUR, pendiente', { hourNow, MIN_HOUR, id: n.notificacionId });
                 continue;
               }
 
-              // 1. Asegurar lead en Kommo
+              // 1. Asegurar lead
               const leadId = await kommoService.ensureLead({
                 botConfig: cfg,
-                notification: n,
+                patientId: n.payload?.patientId!,  
+                patientFirstName: n.payload?.patientFirstName || '',
+                patientLastName: n.payload?.patientLastName || '',
+                patientPhone: n.payload?.patient_phone || '',
+                notificationId: n.notificacionId
               });
 
-              // 2. Actualizar custom fields dinámicos
-              await kommoService.updateLeadCustomFields({ botConfig: cfg, leadId, notification: n });
+              // 2. Actualizar campos de recordatorio
+              const customFields: Record<string, string> = {
+                [PATIENT_LEAD_ID]: String(n.payload?.patientId),
+                [REMINDER_MESSAGE]: n.payload?.reminderMessage || '',
+                [ID_NOTIFICATION]: String(n.notificacionId),
+                [TRIGGERED_BY_MACHINE]: 'true'
+              };
+              await kommoService.updateLeadCustomFields({ botConfig: cfg, leadId, customFields });
 
               // 3. Ejecutar salesbot
-              await kommoGateway.runSalesbot({ botId: kommoSalesbotId, leadId });
-              Logger.info("[JOB] Salesbot ejecutado", { botId: kommoSalesbotId, leadId });
+              await kommoRepo.runSalesbot({ botId: salesbotId, leadId });
+              Logger.info('[JOB] Salesbot ejecutado', { salesbotId, leadId });
 
               // 4. Marcar como enviado
-              await this.notificationsRepo.updateState(n.notificacionId, "enviado");
+              await this.notificationsRepo.updateState(n.notificacionId, 'enviado');
             } catch (err) {
-              await this.notificationsRepo.updateState(n.notificacionId, "fallido");
-              Logger.error("Error enviando recordatorio", {
-                notificationId: n.notificacionId,
-                clinicId,
-                error: err,
-              });
+              await this.notificationsRepo.updateState(n.notificacionId, 'fallido');
+              Logger.error('[JOB] Error enviando recordatorio', { notificationId: n.notificacionId, clinicId, error: err });
             }
           }
         }
       } while (cursor && Object.keys(cursor).length);
     } catch (error) {
-      Logger.error("SendRemindersJob > Error ejecutando job", error);
+      Logger.error('SendRemindersJob > Error ejecutando job', error);
       throw error;
     }
   }

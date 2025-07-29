@@ -7,7 +7,7 @@ import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructur
 
 // Use‑cases
 import {
-  AddBotConfigUseCase,
+  AddOpenAIBotConfigUseCase,
   UpdateBotConfigUseCase,
   DeleteBotConfigUseCase,
   GetBotConfigUseCase,
@@ -22,7 +22,7 @@ const botConfigRepo = new BotConfigRepositoryDynamo({
 });
 
 const controller = new BotConfigController({
-  addUseCase: new AddBotConfigUseCase({ botConfigRepository: botConfigRepo }),
+  addUseCase: new AddOpenAIBotConfigUseCase({ botConfigRepository: botConfigRepo }),
   updateUseCase: new UpdateBotConfigUseCase({ botConfigRepository: botConfigRepo }),
   deleteUseCase: new DeleteBotConfigUseCase({ botConfigRepository: botConfigRepo }),
   getUseCase: new GetBotConfigUseCase({ botConfigRepository: botConfigRepo }),

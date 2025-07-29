@@ -19,6 +19,7 @@ export interface BotConfigDTO {
   botConfigId: string;   // UUID v4, único global
   clinicSource: string;  // "legacy", "v2", ...
   clinicId: number;      // ID en el sistema correspondiente
+  superClinicId: number;
 
   // Datos de CRM (multiplataforma)
   crmType: "kommo" | "hubspot" | string; // Permite nuevos CRMs
@@ -26,10 +27,15 @@ export interface BotConfigDTO {
   crmApiKey: string;
 
   // Datos específicos de Kommo
-  kommoSalesbotId?: number;     // ID del salesbot de Kommo, si aplica
+  kommo: {
+    salesbotId?: number;     // ID del salesbot de Kommo, si aplica
+    chatSalesbotId?: number;     // ID del salesbot de Kommo, si aplica
+  }
 
   // Configuración de OpenAI
   openai: {
+    /* OPENAI token */
+    token: string;
     /** Asistentes OpenAI registrados en la cuenta */
     assistants: {
       /** Otros asistentes y sus IDs pueden agregarse aquí si es necesario */
@@ -55,7 +61,7 @@ export interface BotConfigDTO {
   createdAt: number;       // epoch millis
   updatedAt: number;       // epoch millis
 
-  placeholders: (Record<string, string>);
+  placeholders: (Record<string, any>);
 }
 
 /**

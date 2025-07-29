@@ -12,6 +12,7 @@ import path from "path";
 export interface CreateBotConfigInput {
   botConfigId: string;
   clinicSource: string;
+  superClinicId: number,
   clinicId: number;
   crmType: string;
   crmSubdomain?: string;
@@ -56,6 +57,10 @@ export class BotConfigService {
     return await this.repo.findByBotConfig(botConfigId, clinicSource, clinicId);
   }
 
+  async findByBotConfig(botConfigId: string, clinicSource: string, clinicId: number): Promise<BotConfigDTO | null> {
+    return this.repo.findByBotConfig(botConfigId, clinicSource, clinicId);
+  }
+
   /**
    * Crea un nuevo BotConfig y todos los assistants de la carpeta de instrucciones, generando instrucciones y mapping dinámico.
    */
@@ -85,32 +90,31 @@ export class BotConfigService {
     // 4. Armar objeto BotConfigDTO (repo agrega PK/SK/bucket/etc)
     const toSave: Omit<BotConfigDTO, "pk" | "sk" | "bucket" | "createdAt" | "updatedAt"> = {
       botConfigId: input.botConfigId,
+      superClinicId: input.superClinicId,
       clinicSource: input.clinicSource,
       clinicId: input.clinicId,
       crmType: input.crmType,
       crmSubdomain: input.crmSubdomain,
       crmApiKey: input.crmApiKey,
-      kommoSalesbotId: input.kommoSalesbotId,
+      kommo: {
+        salesbotId: input.kommoSalesbotId,
+      },
       defaultCountry: input.defaultCountry,
       timezone: input.timezone,
       name: input.name,
       description: input.description,
       fieldsProfile: input.fieldsProfile,
-      openai: { assistants },
+      openai: {
+        token: input.openai.token,
+        assistants
+      },
       placeholders,
+      isActive: true, // o como prefieras
     };
 
-    await this.repo.create(toSave);
-
-    // Devuelve lo persistido (sin PK/SK/bucket/createdAt/updatedAt, el repo lo añadirá al devolverlo)
-    return {
-      ...toSave,
-      pk: "",
-      sk: "",
-      bucket: 0,
-      createdAt: 0,
-      updatedAt: 0,
-    } as BotConfigDTO;
+    // Devuelve el objeto real, con pk/sk/bucket/createdAt/updatedAt generados
+    const savedDto = await this.repo.create(toSave);
+    return savedDto;
   }
 
   /**

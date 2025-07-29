@@ -35,34 +35,6 @@ export const SALESBOT_LOG = "salesbotLog";
 export const BOT_MESSAGE = "botMessage";
 export const THREAD_ID = "threadId";
 
-// --- Field Map --- //
-export const NOTIFICATION_PAYLOAD_FIELD_MAP: Record<string, string> = {
-  [PATIENT_FIRST_NAME]: PATIENT_FIRST_NAME,
-  [PATIENT_LAST_NAME]: PATIENT_LAST_NAME,
-  [PATIENT_LEAD_ID]: PATIENT_LEAD_ID,
-  [PATIENT_PHONE]: PATIENT_PHONE,
-  [PATIENT_ID]: PATIENT_ID,
-
-  [CLINIC_NAME]: CLINIC_NAME,
-  [CLINIC_ID]: CLINIC_ID,
-
-  [APPOINTMENT_WEEKDAY_NAME]: APPOINTMENT_WEEKDAY_NAME,
-  [APPOINTMENT_START_TIME]: APPOINTMENT_START_TIME,
-  [APPOINTMENT_END_TIME]: APPOINTMENT_END_TIME,
-  [APPOINTMENT_DATE]: APPOINTMENT_DATE,
-
-  [DOCTOR_FULL_NAME]: DOCTOR_FULL_NAME,
-  [DOCTOR_ID]: DOCTOR_ID,
-
-  [TREATMENT_NAME]: TREATMENT_NAME,
-  [TREATMENT_ID]: TREATMENT_ID,
-
-  [SPACE_NAME]: SPACE_NAME,
-  [SPACE_ID]: SPACE_ID,
-
-  [REMINDER_MESSAGE]: REMINDER_MESSAGE,
-};
-
 // --- Profiles --- //
 export const profiles = {
   default_kommo_profile: {
@@ -82,6 +54,11 @@ export const profiles = {
         { field_name: APPOINTMENT_DATE },
 
         { field_name: REMINDER_MESSAGE },
+        { field_name: PATIENT_LEAD_ID },
+        { field_name: CLINIC_ID },
+        { field_name: DOCTOR_ID },
+        { field_name: TREATMENT_ID },
+        { field_name: SPACE_ID },
 
         { field_name: PATIENT_FIRST_NAME },
         { field_name: PATIENT_LAST_NAME },

@@ -1,13 +1,14 @@
 // packages/core/src/infrastructure/kommo/KommoRepository.ts
 
 import {
-  KommoApiGateway,
-  KommoLeadCustomFieldDefinition,
   KommoContactCustomFieldDefinition,
-  KommoCreateContactResponse,
-  KommoCreateLeadResponse,
+  KommoLeadCustomFieldDefinition,
   KommoSearchContactResponse,
+  KommoCreateContactResponse,
   KommoGetLeadByIdResponse,
+  KommoCreateLeadResponse,
+  KommoContactResponse,
+  KommoApiGateway,
 } from "@clinickeys-agents/core/infrastructure/integrations/kommo";
 
 export class KommoRepository {
@@ -38,7 +39,7 @@ export class KommoRepository {
     minutesSinceNow = 10,
     responsibleUserId
   }: {
-    leadId: string | number;
+    leadId: number | number;
     message: string;
     minutesSinceNow?: number;
     responsibleUserId: number | string;
@@ -70,17 +71,22 @@ export class KommoRepository {
     return await this.gateway.searchContactByPhone(params);
   }
 
-  public async getLeadById(params: { leadId: string }): Promise<KommoGetLeadByIdResponse | null> {
+  public async getLeadById(params: { leadId: number }): Promise<KommoGetLeadByIdResponse | null> {
     return await this.gateway.getLeadById(params);
   }
 
   // --------- PATCH LEAD DIRECTO ---------
-  public async patchLead(params: { leadId: string; payload: any }): Promise<any> {
+  public async patchLead(params: { leadId: number; payload: any }): Promise<any> {
     return await this.gateway.patchLead(params);
   }
 
   // --------- RUN SALESBOT ---------
-  public async runSalesbot(params: { botId: number; leadId: string }): Promise<any> {
+  public async runSalesbot(params: { botId: number; leadId: number }): Promise<any> {
     return await this.gateway.runSalesbot(params);
+  }
+
+  // --------- GET CONTACT BY ID ---------
+  public async getContactById(params: { contactId: number }): Promise<KommoContactResponse | null> {
+    return await this.gateway.getContactById(params);
   }
 }

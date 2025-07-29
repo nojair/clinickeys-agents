@@ -1,6 +1,9 @@
-// packages/core/src/application/services/KommoService.ts
-
-import { KommoContactCustomFieldDefinition, KommoLeadCustomFieldDefinition } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
+import {
+  KommoContactCustomFieldDefinition,
+  KommoLeadCustomFieldDefinition,
+  KommoContactResponse,
+  KommoGetLeadByIdResponse
+} from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import { KommoCustomFieldExistence } from '@clinickeys-agents/core/application/services/types';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
@@ -9,20 +12,55 @@ import {
   getKommoRelevantFields,
   buildCustomFieldsValues,
   getCustomFieldValue,
-  shouldLambdaContinue
+  shouldLambdaContinue,
 } from '@clinickeys-agents/core/utils';
-
-import type { NotificationDTO, NotificationPayload } from '@clinickeys-agents/core/domain/notification';
+import {
+  PATIENT_FIRST_NAME,
+  PATIENT_LAST_NAME,
+  PATIENT_PHONE,
+  PATIENT_LEAD_ID,
+  ID_NOTIFICATION,
+  PLEASE_WAIT_MESSAGE,
+  BOT_MESSAGE,
+  PATIENT_MESSAGE
+} from '@clinickeys-agents/core/utils/constants';
 import type { IPatientRepository } from '@clinickeys-agents/core/domain/patient';
 import type { BotConfigDTO } from '@clinickeys-agents/core/domain/botConfig';
 import type { profiles } from '@clinickeys-agents/core/utils';
 import type { CountryCode } from 'libphonenumber-js';
 import type { IKommoRepository } from '../../domain/kommo';
-import type { LeadMap, ContactMap } from "@clinickeys-agents/core/infrastructure/integrations/kommo";
+import type { LeadMap, ContactMap } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 
-interface EnsureLeadParams {
+interface EnsureLeadInput {
   botConfig: BotConfigDTO;
-  notification: NotificationDTO;
+  patientId: number;
+  patientFirstName: string;
+  patientLastName: string;
+  patientPhone: string;
+  notificationId?: number;
+}
+
+interface UpdateLeadFieldsInput {
+  botConfig: BotConfigDTO;
+  leadId: number;
+  customFields: Record<string, string>;
+}
+
+interface ReplyToLeadInput {
+  botConfig: BotConfigDTO;
+  leadId: number;
+  customFields: Record<string, string>;
+  mergedCustomFields: { id: string | number; name: string; value?: string }[];
+  delayMs?: number;
+  salesbotId: number;
+}
+
+interface SendBotInitialMessageInput {
+  botConfig: BotConfigDTO;
+  leadId: number;
+  mergedCustomFields: { id: string | number; name: string; value?: string }[];
+  salesbotId: number;
+  message: string;
 }
 
 export class KommoService {
@@ -33,6 +71,14 @@ export class KommoService {
   constructor(kommoRepository: IKommoRepository, patientRepository: IPatientRepository) {
     this.kommoRepository = kommoRepository;
     this.patientRepository = patientRepository;
+  }
+
+  async getContactById(contactId: number): Promise<KommoContactResponse | null> {
+    return this.kommoRepository.getContactById({ contactId });
+  }
+
+  async getLeadById(leadId: number): Promise<KommoGetLeadByIdResponse | null> {
+    return this.kommoRepository.getLeadById({ leadId });
   }
 
   private async loadCustomFieldMappings() {
@@ -47,218 +93,120 @@ export class KommoService {
     return this.customFieldMappingsCache;
   }
 
-  async ensureLead({ botConfig, notification }: EnsureLeadParams): Promise<string> {
-    const payload: NotificationPayload | undefined = notification.payload;
-    if (!payload) throw new Error('Notification payload is required');
+  public async ensureLead(input: EnsureLeadInput): Promise<number> {
+    const { botConfig, patientId, patientFirstName, patientLastName, patientPhone, notificationId } = input;
+    const defaultCountry = botConfig.defaultCountry as CountryCode;
+    const normalizedPhone = parsePhoneNumberFromString(patientPhone, defaultCountry)?.number || patientPhone;
+    Logger.info('[KommoService.ensureLead] teléfono normalizado', { normalizedPhone });
 
-    const phoneIntl = (() => {
-      const p = parsePhoneNumberFromString(payload.patient_phone ?? '', botConfig.defaultCountry as CountryCode);
-      const num = p ? p.number : payload.patient_phone;
-      Logger.info('[ensureLead] teléfono normalizado', { original: payload.patient_phone, normalizado: num });
-      return num;
-    })();
-
-    // PASO 1: Consultar kommoLeadId guardado en BD
-    let kommoLeadIdEnBD: string | undefined;
+    let existingLeadId: string | undefined;
     try {
-      kommoLeadIdEnBD = await this.patientRepository.getKommoLeadId(payload.patientId);
-      Logger.info('[KommoService.ensureLead] lead ID en BD', { bd_lead_id: kommoLeadIdEnBD });
+      existingLeadId = await this.patientRepository.getKommoLeadId(patientId);
     } catch (e: any) {
-      Logger.error('[KommoService.ensureLead][ERROR] al consultar kommoLeadId en patientRepository', { error: e.message, stack: e.stack });
+      Logger.error('[KommoService.ensureLead] error obteniendo leadId desde BD', e);
     }
 
-    if (kommoLeadIdEnBD) {
-      // PASO 2: Verificar que el lead exista en Kommo
-      Logger.info('[KommoService.ensureLead] verificando existencia del lead en Kommo…');
-      const okLead = await this.kommoRepository.getLeadById({ leadId: kommoLeadIdEnBD });
-      if (okLead) {
-        Logger.info('[KommoService.ensureLead] lead válido en Kommo — FIN', { leadId: kommoLeadIdEnBD });
-        return kommoLeadIdEnBD;
-      }
-      Logger.info('[KommoService.ensureLead] lead NO existe en Kommo — se recreará');
+    if (existingLeadId) {
+      const leadExists = await this.kommoRepository.getLeadById({ leadId: Number(existingLeadId) });
+      if (leadExists) return Number(existingLeadId);
     }
 
-    // PASO 3: Buscar contacto por teléfono en Kommo
-    let contactId: string | undefined;
-    let leadId: string | undefined;
-    const found = await this.kommoRepository.searchContactByPhone({ phone: phoneIntl });
-    if (found && found._embedded?.contacts?.length) {
-      const contact = found._embedded.contacts[0];
-      contactId = contact.id;
-      if (contact._embedded?.leads?.length) {
-        leadId = contact._embedded.leads[0].id;
-      }
-      Logger.info('[KommoService.ensureLead] contacto EXISTENTE', { contactId, leadId });
-    } else {
-      Logger.info('[KommoService.ensureLead] contacto NO encontrado');
+    let contactId: number | undefined;
+    let leadId: number | undefined;
+    const found = await this.kommoRepository.searchContactByPhone({ phone: normalizedPhone });
+    if (found?._embedded?.contacts?.length) {
+      contactId = Number(found._embedded.contacts[0].id);
+      leadId = Number(found._embedded.contacts[0]._embedded?.leads?.[0]?.id);
     }
 
     const { leadMap, contactMap } = await this.loadCustomFieldMappings();
     const { addingKommoContactFields, kommoLeadCustomFields } = getKommoRelevantFields(botConfig.fieldsProfile as keyof typeof profiles);
 
-    // PASO 4: Crear contacto si no existe
     if (!contactId) {
-      const contactPayload = [
-        {
-          name: `${payload.patientFirstName} ${payload.patientLastName}`,
-          custom_fields_values: buildCustomFieldsValues({
-            fields: addingKommoContactFields,
-            fieldMap: contactMap,
-            notification,
-            payload,
-            type: 'contact'
-          })
-        },
-      ];
-      let contactRes;
-      try {
-        contactRes = await this.kommoRepository.createContact({ body: contactPayload });
-      } catch (e: any) {
-        Logger.error('[KommoService.ensureLead][ERROR] Fallo creando contacto', { error: e.message, stack: e.stack });
-        throw e;
-      }
-      contactId = contactRes?._embedded?.contacts?.[0]?.id;
-      if (!contactId) {
-        throw new Error('[KommoService.ensureLead] No se pudo obtener el contactId después de crear el contacto');
-      }
-      Logger.info('[KommoService.ensureLead] contacto creado', { contactId });
+      const customFieldsContacts: Record<string, string> = {
+        [PATIENT_FIRST_NAME]: patientFirstName,
+        [PATIENT_LAST_NAME]: patientLastName,
+        [PATIENT_PHONE]: patientPhone
+      };
+      const payload = [{
+        name: `${patientFirstName} ${patientLastName}`,
+        custom_fields_values: buildCustomFieldsValues({ fields: addingKommoContactFields, fieldMap: contactMap, customFields: customFieldsContacts })
+      }];
+      const res = await this.kommoRepository.createContact({ body: payload });
+      contactId = Number(res._embedded?.contacts?.[0]?.id!);
     }
 
-    // PASO 5: Crear lead si no existe
     if (!leadId) {
-      const leadPayload = [
-        {
-          name: `${payload.patientFirstName} ${payload.patientLastName}`,
-          _embedded: { contacts: [{ id: contactId, is_main: true }] },
-          custom_fields_values: buildCustomFieldsValues({
-            fields: kommoLeadCustomFields,
-            fieldMap: leadMap,
-            notification,
-            payload,
-            type: 'lead'
-          })
-        },
-      ];
-      let leadRes;
+      const customFieldsLeads: Record<string, string> = {
+        [PATIENT_FIRST_NAME]: patientFirstName,
+        [PATIENT_LAST_NAME]: patientLastName,
+        [PATIENT_PHONE]: patientPhone,
+        [PATIENT_LEAD_ID]: String(patientId)
+      };
+      if (notificationId != null) customFieldsLeads[ID_NOTIFICATION] = String(notificationId);
+
+      const payload = [{
+        name: `${patientFirstName} ${patientLastName}`,
+        _embedded: { contacts: [{ id: contactId!, is_main: true }] },
+        custom_fields_values: buildCustomFieldsValues({ fields: kommoLeadCustomFields, fieldMap: leadMap, customFields: customFieldsLeads })
+      }];
+      const res = await this.kommoRepository.createLead({ body: payload });
+      leadId = Number(res._embedded?.leads?.[0]?.id!);
       try {
-        leadRes = await this.kommoRepository.createLead({ body: leadPayload });
+        await this.patientRepository.updateKommoLeadId(patientId, leadId);
       } catch (e: any) {
-        Logger.error('[KommoService.ensureLead][ERROR] Fallo creando lead', { error: e.message, stack: e.stack });
-        throw e;
+        Logger.error('[KommoService.ensureLead] error actualizando leadId en BD', e);
       }
-      leadId = leadRes?._embedded?.leads?.[0]?.id;
-      if (!leadId) {
-        throw new Error('[KommoService.ensureLead] No se pudo obtener el leadId después de crear el lead');
-      }
-      Logger.info('[KommoService.ensureLead] lead creado', { leadId });
     }
 
-    try {
-      await this.patientRepository.updateKommoLeadId(payload.patientId, leadId!);
-      Logger.info('[KommoService.ensureLead] BD actualizada con nuevo leadId', { leadId });
-    } catch (e: any) {
-      Logger.error('[KommoService.ensureLead][ERROR] Fallo al actualizar la BD', { error: e.message, stack: e.stack });
-    }
-
-    Logger.info('[KommoService.ensureLead] <<< FIN OK', { leadId });
     return leadId!;
   }
 
-  async updateLeadCustomFields({
-    botConfig,
-    leadId,
-    notification
-  }: {
-    botConfig: BotConfigDTO,
-    leadId: string,
-    notification: NotificationDTO
-  }): Promise<void> {
+  public async updateLeadCustomFields(input: UpdateLeadFieldsInput): Promise<void> {
+    const { botConfig, leadId, customFields } = input;
     const { leadMap } = await this.loadCustomFieldMappings();
     const { kommoLeadCustomFields } = getKommoRelevantFields(botConfig.fieldsProfile as keyof typeof profiles);
-    if (!notification.payload) {
-      throw new Error('Notification payload is required');
-    }
-    const payload: NotificationPayload = notification.payload;
-    const custom_fields_values = buildCustomFieldsValues({
-      fields: kommoLeadCustomFields,
-      fieldMap: leadMap,
-      notification,
-      payload,
-      type: 'lead'
-    });
-    if (custom_fields_values.length > 0) {
-      await this.kommoRepository.patchLead({
-        leadId,
-        payload: { custom_fields_values },
-      });
+    const values = buildCustomFieldsValues({ fields: kommoLeadCustomFields, fieldMap: leadMap, customFields });
+    if (values.length) {
+      await this.kommoRepository.patchLead({ leadId, payload: { custom_fields_values: values } });
     }
   }
 
-  async getKommoLeadsCustomFields(configFields: string[]): Promise<KommoCustomFieldExistence[]> {
-    const fetchedFields: KommoLeadCustomFieldDefinition[] = await this.kommoRepository.fetchCustomFields('leads');
-    const namesSet = new Set(fetchedFields.map((field) => field.name));
-    return configFields.map((name) => ({ field_name: name, exists: namesSet.has(name) }));
-  }
-
-  public async replyToLead({
-    leadId,
-    customFields,
-    mergedCustomFields,
-    delayMs = 10000,
-    salesbotId
-  }: {
-    botConfig: BotConfigDTO;
-    leadId: string;
-    notification: NotificationDTO;
-    customFields: Record<string, string>;
-    mergedCustomFields: { id: string | number; name: string; value: string }[];
-    delayMs?: number;
-    salesbotId: number;
-  }) {
-    // 1. Obtener el lead actual
-    const latestLead = await this.kommoRepository.getLeadById({ leadId });
-    if (!latestLead) {
-      throw new Error('latestLead is null');
-    }
-    const initialUserMessage = getCustomFieldValue(latestLead.custom_fields_values || [], 'patientMessage');
-
-    // 2. Esperar y verificar si el mensaje sigue igual
-    const shouldProceed = await shouldLambdaContinue({
-      latestLead,
-      initialValue: initialUserMessage,
-      fieldName: 'patientMessage',
-      delayMs
-    });
-    if (!shouldProceed) {
-      Logger.info(`[replyToLead] Abortado para lead ${leadId}: patientMessage cambió`);
-      return { aborted: true };
-    }
-
-    // 3. Armar payload patch de lead (solo campos actualizados)
-    const custom_fields_values = mergedCustomFields
-      .map((cf) => {
-        if (!(cf.name in customFields)) return null;
-        return {
-          field_id: cf.id,
-          values: [{ value: customFields[cf.name] }],
-        };
-      })
-      .filter(Boolean);
-
-    Logger.info('[replyToLead] custom_fields_values:', custom_fields_values);
-
-    // 4. PATCH lead en Kommo
-    await this.kommoRepository.patchLead({
-      leadId,
-      payload: { custom_fields_values }
-    });
-
-    // 5. Ejecutar salesbot
-    await this.kommoRepository.runSalesbot({
-      leadId: leadId,
-      botId: salesbotId
-    });
-
+  public async replyToLead(input: ReplyToLeadInput): Promise<{ success: boolean; aborted?: boolean }> {
+    const { leadId, customFields, mergedCustomFields, delayMs = 10000, salesbotId } = input;
+    const latest = await this.kommoRepository.getLeadById({ leadId });
+    const initial = getCustomFieldValue(latest?.custom_fields_values || [], PATIENT_MESSAGE);
+    const ok = await shouldLambdaContinue({ latestLead: latest!, initialValue: initial, fieldName: PATIENT_MESSAGE, delayMs });
+    if (!ok) return { success: false, aborted: true };
+    const values = mergedCustomFields
+      .map(cf => cf.name in customFields ? { field_id: cf.id, values: [{ value: customFields[cf.name] }] } : null)
+      .filter(Boolean as any);
+    await this.kommoRepository.patchLead({ leadId, payload: { custom_fields_values: values } });
+    await this.kommoRepository.runSalesbot({ leadId, botId: salesbotId });
     return { success: true };
+  }
+
+  public async sendBotInitialMessage(input: SendBotInitialMessageInput): Promise<void> {
+    const { botConfig, leadId, mergedCustomFields, salesbotId, message } = input;
+    const extra: Record<string, string> = {};
+    for (const cf of mergedCustomFields) if (cf.value != null) extra[cf.name] = String(cf.value);
+    if (extra[PLEASE_WAIT_MESSAGE] === 'true') return;
+    const customFields = { ...extra, [BOT_MESSAGE]: message, [PLEASE_WAIT_MESSAGE]: 'true' };
+    await this.replyToLead({ botConfig, leadId, customFields, mergedCustomFields, salesbotId });
+  }
+
+  public async getKommoLeadsCustomFields(configFields: string[]): Promise<KommoCustomFieldExistence[]> {
+    const fetched = await this.kommoRepository.fetchCustomFields('leads');
+    const names = new Set(fetched.map(f => f.name));
+    return configFields.map(name => ({ field_name: name, exists: names.has(name) }));
+  }
+
+  public async createTask(params: {
+    leadId: number;
+    message: string;
+    minutesSinceNow?: number;
+    responsibleUserId: number | string;
+  }): Promise<{ success: boolean }> {
+    return this.kommoRepository.createTask(params);
   }
 }

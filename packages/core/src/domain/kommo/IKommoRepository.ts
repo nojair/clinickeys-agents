@@ -1,37 +1,47 @@
-// packages/core/src/domain/kommo/IKommoRepository.ts
-
-import {
+import type {
   KommoLeadCustomFieldDefinition,
   KommoContactCustomFieldDefinition,
-  KommoCreateContactResponse,
-  KommoCreateLeadResponse,
   KommoSearchContactResponse,
+  KommoCreateContactResponse,
   KommoGetLeadByIdResponse,
-} from "@clinickeys-agents/core/infrastructure/integrations/kommo";
+  KommoCreateLeadResponse,
+  KommoContactResponse
+} from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 
+/**
+ * Defines the contract for interacting with Kommo entities.
+ */
 export interface IKommoRepository {
-  // --------- FIELDS ---------
+  /** Fetch custom fields for leads or contacts */
   fetchCustomFields(entityType: 'leads'): Promise<KommoLeadCustomFieldDefinition[]>;
   fetchCustomFields(entityType: 'contacts'): Promise<KommoContactCustomFieldDefinition[]>;
-  fetchCustomFields(entityType: 'leads' | 'contacts'): Promise<KommoLeadCustomFieldDefinition[] | KommoContactCustomFieldDefinition[]>;
 
-  // --------- TASKS ---------
+  /** Create a task on a lead */
   createTask(params: {
-    leadId: string | number;
+    leadId: number | number;
     message: string;
     minutesSinceNow?: number;
     responsibleUserId: number | string;
   }): Promise<{ success: boolean }>;
 
-  // --------- CRUD KOMMO CONTACTS ---------
+  /** Create a new contact */
   createContact(params: { body: any }): Promise<KommoCreateContactResponse>;
+
+  /** Create a new lead */
   createLead(params: { body: any }): Promise<KommoCreateLeadResponse>;
+
+  /** Search for contacts by phone number */
   searchContactByPhone(params: { phone: string }): Promise<KommoSearchContactResponse | null>;
-  getLeadById(params: { leadId: string }): Promise<KommoGetLeadByIdResponse | null>;
 
-  // --------- PATCH LEAD DIRECTO ---------
-  patchLead(params: { leadId: string; payload: any }): Promise<any>;
+  /** Retrieve a lead by its ID */
+  getLeadById(params: { leadId: number }): Promise<KommoGetLeadByIdResponse | null>;
 
-  // --------- RUN SALESBOT ---------
-  runSalesbot(params: { botId: number; leadId: string }): Promise<any>;
+  /** Patch custom fields on a lead */
+  patchLead(params: { leadId: number; payload: any }): Promise<any>;
+
+  /** Execute a salesbot for a lead */
+  runSalesbot(params: { botId: number; leadId: number }): Promise<any>;
+
+  /** Retrieve a contact by its ID */
+  getContactById(params: { contactId: number }): Promise<KommoContactResponse | null>;
 }

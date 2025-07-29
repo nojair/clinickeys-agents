@@ -1,15 +1,9 @@
 // packages/core/src/utils/helpers.ts
 
-import type { NotificationDTO, NotificationPayload } from '@clinickeys-agents/core/domain/notification';
 import type { LeadMap, ContactMap } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import {
   profiles,
-  NOTIFICATION_PAYLOAD_FIELD_MAP,
   // Custom field constants:
-  APPOINTMENT_START_TIME,
-  APPOINTMENT_END_TIME,
-  APPOINTMENT_DATE,
-  ID_NOTIFICATION,
   PATIENT_MESSAGE,
   PATIENT_PHONE,
 } from '@clinickeys-agents/core/utils';
@@ -164,54 +158,58 @@ function isContactFieldConfig(field: LeadFieldConfig | ContactFieldConfig): fiel
   return (field as ContactFieldConfig).field_code !== undefined;
 }
 
+/**
+ * Construye un arreglo de valores de campos personalizados para patch en Kommo,
+ * basándose únicamente en un objeto de customFields preformateado.
+ * @param fields Configuraciones de campos (lead o contact)
+ * @param fieldMap Mapa de nombre de campo → field_id y opcional enum_id de Kommo
+ * @param customFields Objeto con valores de campos (clave es nombre o code del campo)
+ * @returns Array de custom_fields_values listo para enviar a Kommo.
+ */
 export function buildCustomFieldsValues({
   fields,
   fieldMap,
-  notification,
-  payload,
-  type
+  customFields,
 }: {
-  fields: (LeadFieldConfig | ContactFieldConfig)[];
+  fields: Array<LeadFieldConfig | ContactFieldConfig>;
   fieldMap: LeadMap | ContactMap;
-  notification: NotificationDTO;
-  payload: NotificationPayload;
-  type: 'lead' | 'contact';
-}) {
-  return fields.map((f) => {
-    let field_id: string | undefined = undefined;
+  customFields: Record<string, string>;
+}): Array<{ field_id: string | number; values: Array<{ value: string; enum_id?: string | number }> }> {
+  const result: Array<{ field_id: string | number; values: Array<{ value: string; enum_id?: string | number }> }> = [];
 
-    if (type === 'lead' && isLeadFieldConfig(f)) {
-      const leadMap = fieldMap as LeadMap;
-      field_id = (leadMap as Record<string, any>)[f.field_name]?.field_id;
-      if (!field_id) return undefined;
-      let value = '';
-      if (f.field_name === ID_NOTIFICATION) value = `${notification.notificacionId}`;
-      else if (NOTIFICATION_PAYLOAD_FIELD_MAP[f.field_name] && payload && payload[NOTIFICATION_PAYLOAD_FIELD_MAP[f.field_name]] !== undefined) {
-        let raw = payload[NOTIFICATION_PAYLOAD_FIELD_MAP[f.field_name]];
-        if (f.field_name === APPOINTMENT_DATE) value = formatVisitDate(raw);
-        else if (f.field_name === APPOINTMENT_START_TIME) value = formatVisitTime(raw);
-        else if (f.field_name === APPOINTMENT_END_TIME) value = formatVisitTime(raw);
-        else value = `${raw}`;
-      } else return undefined;
-      return { field_id, values: [{ value }] };
-    }
+  for (const config of fields) {
+    if (isLeadFieldConfig(config)) {
+      const fieldName = config.field_name;
+      const rawValue = customFields[fieldName];
+      if (!rawValue) continue;
+      // Index fieldMap safely via Record
+      const leadMap = fieldMap as unknown as Record<string, { field_id: string | number }>;
+      const mapEntry = leadMap[fieldName];
+      if (!mapEntry?.field_id) continue;
+      result.push({
+        field_id: mapEntry.field_id,
+        values: [{ value: rawValue }]
+      });
 
-    if (type === 'contact' && isContactFieldConfig(f)) {
-      const contactMap = fieldMap as ContactMap;
-      field_id = (contactMap as Record<string, any>)[f.field_code]?.field_id;
-      if (!field_id) return undefined;
-      if (f.field_code === 'PHONE') { // podrías reemplazar 'PHONE' por una constante si lo prefieres
-        const enum_id = (contactMap as Record<string, any>)['PHONE']?.enum_id;
-        const value = payload[PATIENT_PHONE] ?? '';
-        return {
-          field_id,
-          values: [{ value, ...(enum_id ? { enum_id } : {}) }],
-        };
-      }
-      return undefined;
+    } else if (isContactFieldConfig(config)) {
+      const fieldCode = config.field_code;
+      if (fieldCode !== 'PHONE') continue;
+      const rawValue = customFields[fieldCode] || customFields[PATIENT_PHONE] || '';
+      if (!rawValue) continue;
+      // Index contactMap safely via Record
+      const contactMap = fieldMap as unknown as Record<string, { field_id: string | number; enum_id?: string | number }>;
+      const mapEntry = contactMap[fieldCode];
+      if (!mapEntry?.field_id) continue;
+      const valueObj: { value: string; enum_id?: string | number } = { value: rawValue };
+      if (mapEntry.enum_id) valueObj.enum_id = mapEntry.enum_id;
+      result.push({
+        field_id: mapEntry.field_id,
+        values: [valueObj]
+      });
     }
-    return undefined;
-  }).filter(Boolean);
+  }
+
+  return result;
 }
 
 // --- 1. Obtener el valor de un custom field desde custom_fields_values de Kommo --- //

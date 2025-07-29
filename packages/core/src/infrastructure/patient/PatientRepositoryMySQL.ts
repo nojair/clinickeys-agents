@@ -37,7 +37,7 @@ export class PatientRepositoryMySQL implements IPatientRepository {
     telefono: string;
     id_clinica: number;
     id_super_clinica: number;
-    kommo_lead_id?: string;
+    kommo_lead_id?: number;
   }): Promise<number> {
     const query = `
       INSERT INTO pacientes 

@@ -10,7 +10,7 @@ export interface IBotConfigRepository {
   /**
    * Crea un nuevo BotConfig. El repositorio compone PK, SK, bucket y timestamps.
    */
-  create(dto: Omit<BotConfigDTO, "pk" | "sk" | "bucket" | "createdAt" | "updatedAt">): Promise<void>;
+  create(dto: Omit<BotConfigDTO, "pk" | "sk" | "bucket" | "createdAt" | "updatedAt">): Promise<BotConfigDTO>;
 
   /**
    * Obtiene un BotConfig único por sus claves primarias lógicas.

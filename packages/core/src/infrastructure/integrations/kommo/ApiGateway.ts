@@ -41,6 +41,43 @@ export interface KommoCreateLeadResponse {
   };
 }
 
+export interface KommoContactResponse {
+  id: number;
+  name: string;
+  first_name: string;
+  last_name: string;
+  responsible_user_id: number;
+  group_id: number;
+  created_by: number;
+  updated_by: number;
+  created_at: number;
+  updated_at: number;
+  closest_task_at: number | null;
+  is_deleted: boolean;
+  is_unsorted: boolean;
+  custom_fields_values: Array<{
+    field_id: number;
+    field_name: string;
+    field_code: string;
+    field_type: string;
+    values: Array<{
+      value: string;
+      enum_id?: number;
+      enum_code?: string;
+    }>;
+  }>;
+  account_id: number;
+  _links: {
+    self: {
+      href: string;
+    };
+  };
+  _embedded: {
+    tags: any[];
+    companies: any[];
+  };
+}
+
 // ---------- GATEWAY KOMMO PROFESIONAL ----------
 
 export interface KommoApiGatewayOptions {
@@ -62,7 +99,7 @@ export class KommoApiGateway {
     this.http = new HttpClient();
   }
 
-  async patchLead({ leadId, payload }: { leadId: string; payload: any }) {
+  async patchLead({ leadId, payload }: { leadId: number; payload: any }) {
     const url = `${this.baseUrl}/leads/${leadId}`;
     const res = await this.http.request<any>(url, {
       method: "PATCH",
@@ -72,7 +109,7 @@ export class KommoApiGateway {
     return res.data;
   }
 
-  async runSalesbot({ botId, leadId }: { botId: number; leadId: string }) {
+  async runSalesbot({ botId, leadId }: { botId: number; leadId: number }) {
     const url = `https://${this.subdomain}.kommo.com/api/v2/salesbot/run`;
     const body = [
       { botConfigId: botId, entity_id: leadId, entity_type: "2" },
@@ -115,7 +152,7 @@ export class KommoApiGateway {
     return res.data;
   }
 
-  async getLeadById({ leadId }: { leadId: string }): Promise<KommoGetLeadByIdResponse | null> {
+  async getLeadById({ leadId }: { leadId: number }): Promise<KommoGetLeadByIdResponse | null> {
     const url = `${this.baseUrl}/leads/${leadId}?with=contacts`;
     const res = await this.http.request<KommoGetLeadByIdResponse>(url, {
       token: this.apiKey,
@@ -146,6 +183,15 @@ export class KommoApiGateway {
       body,
       token: this.apiKey,
     });
+    return res.data;
+  }
+
+  async getContactById({ contactId }: { contactId: number }): Promise<KommoContactResponse | null> {
+    const url = `${this.baseUrl}/contacts/${contactId}`;
+    const res = await this.http.request<KommoContactResponse>(url, {
+      token: this.apiKey,
+    });
+    if (res.status === 204) return null;
     return res.data;
   }
 }

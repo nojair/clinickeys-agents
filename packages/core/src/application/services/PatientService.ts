@@ -5,6 +5,15 @@ import { ISchedulingRepository } from "@clinickeys-agents/core/domain/scheduling
 import { DateTime } from "luxon";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 
+export interface GetPatientByPhoneOrCreateParams {
+  nombre: string;
+  apellido: string;
+  telefono: string;
+  id_clinica: number;
+  id_super_clinica: number;
+  kommo_lead_id: number;
+}
+
 export class PatientService {
   private readonly patientRepo: IPatientRepository;
   private readonly schedulingRepo: ISchedulingRepository;
@@ -12,6 +21,43 @@ export class PatientService {
   constructor(patientRepo: IPatientRepository, schedulingRepo: ISchedulingRepository) {
     this.patientRepo = patientRepo;
     this.schedulingRepo = schedulingRepo;
+  }
+
+  async findById(patientId: number): Promise<any | undefined> {
+    return await this.patientRepo.findById(patientId);
+  }
+
+  async createPatient(params: GetPatientByPhoneOrCreateParams): Promise<any | undefined> {
+    return await this.patientRepo.createPatient(params);
+  }
+
+  async getPatientByPhoneOrCreate(params: GetPatientByPhoneOrCreateParams) {
+    let telefonoNacional = params.telefono;
+    try {
+      const phoneObj = parsePhoneNumberFromString(params.telefono);
+      if (phoneObj) {
+        telefonoNacional = phoneObj.nationalNumber;
+      }
+    } catch {
+      // Si falla el parseo, usar el original
+    }
+
+    const pacienteExistente = await this.patientRepo.findByNationalPhoneAndClinic(
+      telefonoNacional,
+      Number(params.id_clinica)
+    );
+    if (pacienteExistente) return pacienteExistente;
+
+    const id_paciente = await this.patientRepo.createPatient({
+      nombre: params.nombre,
+      apellido: params.apellido,
+      telefono: params.telefono,
+      id_clinica: params.id_clinica,
+      id_super_clinica: params.id_super_clinica,
+      kommo_lead_id: params.kommo_lead_id,
+    });
+
+    return { id_paciente, nombre: params.nombre, apellido: params.apellido, telefono: params.telefono };
   }
 
   /**
@@ -47,7 +93,7 @@ export class PatientService {
     try {
       const phoneNumber = parsePhoneNumberFromString(telefono);
       if (phoneNumber) telefonoSinPrefijo = phoneNumber.nationalNumber;
-    } catch (_) {}
+    } catch (_) { }
 
     // Buscar paciente (solo activos)
     const paciente = await this.patientRepo.findByNationalPhoneAndClinic(telefonoSinPrefijo, id_clinica);

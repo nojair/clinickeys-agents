@@ -10,7 +10,7 @@ import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig/dtos";
  * No requiere pk, sk, bucket, createdAt ni updatedAt.
  */
 export type AddOpenAIBotConfigInput = Omit<BotConfigDTO,
-  "pk" | "sk" | "bucket" | "createdAt" | "updatedAt" | "openai"
+  "pk" | "sk" | "bucket" | "createdAt" | "updatedAt"
 > & {
   instructions: Record<string, string>;
 };
@@ -40,8 +40,8 @@ export class AddOpenAIBotConfigUseCase {
 
     // 2. Prepara la config de openai.assistants
     const openaiConfig = {
+      token: input.openai.token,
       assistants: {
-        ...assistantIds,
         speakingBotId: assistantIds.speakingBot ?? Object.values(assistantIds)[0]
       }
     };
@@ -55,10 +55,10 @@ export class AddOpenAIBotConfigUseCase {
       openai: openaiConfig,
     };
 
-    // 5. Persiste el BotConfig usando el service
-    await this.botConfigService.createBotConfig(botConfigToSave);
+    // 5. Persiste el BotConfig usando el service y GUARDA el DTO completo retornado
+    const savedBotConfig = await this.botConfigService.createBotConfig(botConfigToSave);
 
-    // 6. Retorna los assistant IDs y el BotConfig guardado
-    return { assistantIds, botConfig: botConfigToSave as BotConfigDTO };
+    // 6. Retorna los assistant IDs y el BotConfig guardado (completo)
+    return { assistantIds, botConfig: savedBotConfig };
   }
 }

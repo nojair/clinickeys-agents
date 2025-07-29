@@ -1,4 +1,4 @@
-// @clinickeys-agents/core/src/infrastructure/packBono/PackBonoRepositoryMySQL.ts
+// packages/core/src/infrastructure/packBono/PackBonoRepositoryMySQL.ts
 
 import { ejecutarConReintento } from "@clinickeys-agents/core/utils";
 
@@ -54,28 +54,10 @@ export class PackBonoRepositoryMySQL {
   }
 
   /**
-   * Inserta una sesión de pack bono para un paciente.
+   * Procesa el pack bono/presupuesto de una cita usando el stored procedure legacy.
    */
-  async insertPackBonoSesion(params: {
-    id_paciente: number;
-    id_pack_bono: number;
-    fecha_inicio: string;
-    fecha_fin: string;
-    total_sesiones: number;
-    sesiones_utilizadas: number;
-  }): Promise<void> {
-    const query = `
-      INSERT INTO pack_bonos_sesiones (
-        id_paciente, id_pack_bono, fecha_inicio, fecha_fin, total_sesiones, sesiones_utilizadas
-      ) VALUES (?, ?, ?, ?, ?, ?)
-    `;
-    await ejecutarConReintento(query, [
-      params.id_paciente,
-      params.id_pack_bono,
-      params.fecha_inicio,
-      params.fecha_fin,
-      params.total_sesiones,
-      params.sesiones_utilizadas,
-    ]);
+  async procesarPackbonoPresupuestoDeCita(p_action: string, p_id_cita: number): Promise<any> {
+    const query = 'CALL sp_procesar_cita_packbono_y_presupuesto(?, ?)';
+    return await ejecutarConReintento(query, [p_action, p_id_cita]);
   }
 }

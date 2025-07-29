@@ -4,7 +4,7 @@ export interface IPatientRepository {
   /**
    * Actualiza el kommoLeadId de un paciente.
    */
-  updateKommoLeadId(patientId: number, kommoLeadId: string): Promise<void>;
+  updateKommoLeadId(patientId: number, kommoLeadId: number): Promise<void>;
 
   /**
    * Obtiene el kommoLeadId de un paciente.
@@ -20,7 +20,7 @@ export interface IPatientRepository {
     telefono: string;
     id_clinica: number;
     id_super_clinica: number;
-    kommo_lead_id?: string;
+    kommo_lead_id?: number;
   }): Promise<number>;
 
   /**
@@ -36,8 +36,5 @@ export interface IPatientRepository {
   /**
    * Busca paciente por número nacional, clínica y solo activos.
    */
-  findByNationalPhoneAndClinic(
-    telefonoNacional: string,
-    id_clinica: number
-  ): Promise<any | undefined>;
+  findByNationalPhoneAndClinic(telefonoNacional: string, id_clinica: number): Promise<any | undefined>;
 }
