@@ -1,3 +1,5 @@
+// packages/core/src/application/services/AppointmentService.ts
+
 import { AppointmentRepositoryMySQL, AppointmentCreateParams, AppointmentUpdateParams } from "@clinickeys-agents/core/infrastructure/appointment/AppointmentRepositoryMySQL";
 import { AppError } from '@clinickeys-agents/core/utils';
 

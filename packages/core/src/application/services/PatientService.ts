@@ -1,9 +1,11 @@
-// @clinickeys-agents/core/src/application/services/PatientService.ts
+// packages/core/src/application/services/PatientService.ts
 
-import { IPatientRepository } from "@clinickeys-agents/core/domain/patient/IPatientRepository";
-import { ISchedulingRepository } from "@clinickeys-agents/core/domain/scheduling/ISchedulingRepository";
-import { DateTime } from "luxon";
+import { IAppointmentRepository } from "@clinickeys-agents/core/domain/appointment";
+import { IPresupuestoRepository } from "@clinickeys-agents/core/domain/presupuesto";
+import { IPackBonoRepository } from "@clinickeys-agents/core/domain/packBono";
+import { IPatientRepository } from "@clinickeys-agents/core/domain/patient";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
+import { DateTime } from "luxon";
 
 export interface GetPatientByPhoneOrCreateParams {
   nombre: string;
@@ -16,11 +18,25 @@ export interface GetPatientByPhoneOrCreateParams {
 
 export class PatientService {
   private readonly patientRepo: IPatientRepository;
-  private readonly schedulingRepo: ISchedulingRepository;
+  private readonly presupuestoRepo: IPresupuestoRepository;
+  private readonly appointmentRepo: IAppointmentRepository;
+  private readonly packBonoRepo: IPackBonoRepository;
 
-  constructor(patientRepo: IPatientRepository, schedulingRepo: ISchedulingRepository) {
+  constructor({
+    patientRepo,
+    appointmentRepo,
+    presupuestoRepo,
+    packBonoRepo,
+  }: {
+    patientRepo: IPatientRepository,
+    presupuestoRepo: IPresupuestoRepository,
+    appointmentRepo: IAppointmentRepository
+    packBonoRepo: IPackBonoRepository;
+  }) {
     this.patientRepo = patientRepo;
-    this.schedulingRepo = schedulingRepo;
+    this.presupuestoRepo = presupuestoRepo;
+    this.appointmentRepo = appointmentRepo;
+    this.packBonoRepo = packBonoRepo;
   }
 
   async findById(patientId: number): Promise<any | undefined> {
@@ -107,7 +123,7 @@ export class PatientService {
     const idPaciente = paciente.id_paciente;
 
     // Obtener presupuestos
-    const presupuestos = await this.schedulingRepo.getPresupuestosByPacienteId(idPaciente, id_clinica);
+    const presupuestos = await this.presupuestoRepo.getPresupuestosByPacienteId(idPaciente, id_clinica);
     const presupuestosMapped = (presupuestos || []).map((p: any) => ({
       id_presupuesto: p.id_presupuesto,
       fecha: p.fecha,
@@ -121,7 +137,7 @@ export class PatientService {
     }));
 
     // Obtener citas futuras/activas
-    const citasRaw = await this.schedulingRepo.getCitasByPacienteId(idPaciente, id_clinica);
+    const citasRaw = await this.appointmentRepo.getAppointmentsByPatient(idPaciente, id_clinica);
     const citasFiltradas = (citasRaw || []).filter((cita: any) => {
       const fecha = cita.fecha_cita instanceof Date
         ? DateTime.fromJSDate(cita.fecha_cita).toISODate()
@@ -149,10 +165,10 @@ export class PatientService {
     }));
 
     // Packs/bonos: sesiones y detalles
-    const packSesiones = await this.schedulingRepo.getPackBonosSesionesByPacienteId(idPaciente);
-    const citasDetalle = await this.schedulingRepo.getCitasDetallePorPackTratamiento(idPaciente, id_clinica);
+    const packSesiones = await this.packBonoRepo.getPackBonosSesionesByPacienteId(idPaciente);
+    const citasDetalle = await this.appointmentRepo.getCitasDetallePorPackTratamiento(idPaciente, id_clinica);
     const lookupCitas: Record<string, any[]> = {};
-    (citasDetalle || []).forEach(row => {
+    (citasDetalle || []).forEach((row: any) => {
       const key = `${row.id_pack_bono}_${row.id_tratamiento}`;
       if (!lookupCitas[key]) lookupCitas[key] = [];
       lookupCitas[key].push(row.id_cita);
@@ -160,10 +176,10 @@ export class PatientService {
     const packsBonos = await Promise.all(
       (packSesiones || []).map(async (sesion: any) => {
         // Info pack bono
-        const packBono = await this.schedulingRepo.getPackBonoById(sesion.id_pack_bono, id_clinica);
+        const packBono = await this.packBonoRepo.getPackBonoById(sesion.id_pack_bono, id_clinica);
         if (!packBono) return null;
         // Tratamientos asociados
-        const tratamientos = await this.schedulingRepo.getPackBonoTratamientos(sesion.id_pack_bono);
+        const tratamientos = await this.packBonoRepo.getPackBonoTratamientos(sesion.id_pack_bono);
         const tratamientosConUso = (tratamientos || []).map((tratamiento: any) => {
           const key = `${sesion.id_pack_bono}_${tratamiento.id_tratamiento}`;
           const citas_id = lookupCitas[key] || [];

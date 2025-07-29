@@ -1,7 +1,10 @@
+// packages/core/src/application/services/OpenAIService.ts
+
 import { IOpenAIAssistantRepository } from "@clinickeys-agents/core/domain/openai";
 import { Logger } from "@clinickeys-agents/core/infrastructure/external";
 import { zodTextFormat } from "openai/helpers/zod";
 import { ZodType } from "zod";
+
 import {
   CreateAssistantPayload,
   UpdateAssistantPayload,

@@ -131,6 +131,17 @@ export class AppointmentRepositoryMySQL {
     return rows[0] || undefined;
   }
 
+  async getCitasDetallePorPackTratamiento(id_paciente: number, id_clinica: number): Promise<any | undefined> {
+    const query = `
+      SELECT id_pack_bono, id_tratamiento, id_cita
+      FROM citas
+      WHERE id_paciente = ? 
+        AND id_pack_bono IS NOT NULL
+        AND id_clinica = ?
+    `;
+    await ejecutarConReintento(query, [id_paciente, id_clinica]);
+  }
+
   /**
    * Elimina una cita por su ID.
    */

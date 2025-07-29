@@ -57,7 +57,7 @@ export class FetchKommoDataUseCase {
         context: { leadId, leadData }
       });
     }
-    const contactId = contacts[0].id;
+    const contactId = Number(contacts[0].id);
     const contactData = await this.kommoService.getContactById(contactId);
     if (!contactData) {
       throw new AppError({

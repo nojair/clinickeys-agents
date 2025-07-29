@@ -1,6 +1,5 @@
 // packages/core/src/application/services/NotificationService.ts
 
-import { NotificationDTO, NotificationState } from "@clinickeys-agents/core/domain/notification";
 import { INotificationRepository } from "@clinickeys-agents/core/domain/notification";
 
 export class NotificationService {

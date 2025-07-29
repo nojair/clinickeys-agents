@@ -10,7 +10,7 @@ export class PatientRepositoryMySQL implements IPatientRepository {
   /**
    * Actualiza el campo kommoLeadId de un paciente específico.
    */
-  async updateKommoLeadId(patientId: number, kommoLeadId: string): Promise<void> {
+  async updateKommoLeadId(patientId: number, kommoLeadId: number): Promise<void> {
     await ejecutarConReintento(
       "UPDATE pacientes SET kommo_lead_id = ? WHERE id_paciente = ?",
       [kommoLeadId, patientId]

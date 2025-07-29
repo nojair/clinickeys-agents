@@ -1,3 +1,5 @@
+// packages/core/src/application/services/PackBonoService.ts
+
 import { PackBonoRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/packBono/PackBonoRepositoryMySQL";
 
 export class PackBonoService {

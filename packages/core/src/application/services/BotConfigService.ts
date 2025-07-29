@@ -1,13 +1,12 @@
-// @clinickeys-agents/core/src/application/services/BotConfigService.ts
+// packages/core/src/application/services/BotConfigService.ts
 
-import { IBotConfigRepository } from "@clinickeys-agents/core/domain/botConfig/IBotConfigRepository";
-import { BotConfigDTO, BotConfigEnrichedDTO } from "@clinickeys-agents/core/domain/botConfig/dtos";
-import { BotConfigEnricher } from "@clinickeys-agents/core/application/services/BotConfigEnricher";
+import { BotConfigDTO, BotConfigEnrichedDTO } from "@clinickeys-agents/core/domain/botConfig";
+import { defaultPlaceholders, generateInstructions } from "@clinickeys-agents/core/utils";
 import { IOpenAIAssistantRepository } from "@clinickeys-agents/core/domain/openai";
-import { generateInstructions } from "@clinickeys-agents/core/utils/generateInstructions";
-import { defaultPlaceholders } from "@clinickeys-agents/core/utils/defaultPlaceholders";
-import fs from "fs";
+import { BotConfigEnricher } from "@clinickeys-agents/core/application/services";
+import { IBotConfigRepository } from "@clinickeys-agents/core/domain/botConfig";
 import path from "path";
+import fs from "fs";
 
 export interface CreateBotConfigInput {
   botConfigId: string;

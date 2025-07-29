@@ -1,16 +1,17 @@
-import { TratamientoRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/tratamiento/TratamientoRepositoryMySQL";
-import { MedicoRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/medico/MedicoRepositoryMySQL";
-import { EspacioRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/espacio/EspacioRepositoryMySQL";
-import { ejecutarConReintento } from "@clinickeys-agents/core/utils";
-import { Logger } from "@clinickeys-agents/core/infrastructure/external/Logger";
-import { AppError } from "@clinickeys-agents/core/utils/AppError";
-import { generarConsultasSQL, calcularDisponibilidad, ajustarDisponibilidad } from "@clinickeys-agents/core/utils/availabilityHelpers";
-import { OpenAIService } from '@clinickeys-agents/core/application/services/OpenAIService';
+// packages/core/src/application/services/AvailabilityService.ts
 
+import { generarConsultasSQL, calcularDisponibilidad, ajustarDisponibilidad } from "@clinickeys-agents/core/utils";
+import { TratamientoRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/tratamiento";
+import { EspacioRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/espacio";
+import { MedicoRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/medico";
+import { Logger } from "@clinickeys-agents/core/infrastructure/external/Logger";
+import { OpenAIService } from '@clinickeys-agents/core/application/services';
 import { ConsultaCitaSchema } from '@clinickeys-agents/core/utils/schemas';
+import { ejecutarConReintento } from "@clinickeys-agents/core/utils";
+import { AppError } from "@clinickeys-agents/core/utils/AppError";
 import { readFile } from 'fs/promises';
-import path from 'path';
 import type { DateTime } from 'luxon';
+import path from 'path';
 
 interface GetAvailabilityInfoInput {
   id_clinica: number;

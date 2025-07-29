@@ -4,7 +4,7 @@ import { BotConfigDTO, BotConfigEnrichedDTO } from "@clinickeys-agents/core/doma
 import { KommoApiGateway } from "@clinickeys-agents/core/infrastructure/integrations/kommo";
 import { KommoRepository } from "@clinickeys-agents/core/infrastructure/kommo";
 import { KommoService } from "@clinickeys-agents/core/application/services";
-import { profiles } from "@clinickeys-agents/core/utils/constants";
+import { profiles } from "@clinickeys-agents/core/utils";
 
 /**
  * Service para enriquecer un BotConfigDTO con los campos de Kommo y el estado de preparación.

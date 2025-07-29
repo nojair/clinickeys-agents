@@ -24,6 +24,7 @@ export const botConfigDynamo = new sst.aws.Dynamo(`BotConfigDynamo${SUFFIX}`, {
     // botConfigId: "string",
 
     // Clínica multi‑fuente (desnormalizado)
+    // superClinicId: "string",
     // clinicId: "string",
     clinicSource: "string", // "legacy", "v2", ...
 
