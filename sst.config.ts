@@ -25,14 +25,16 @@ export default $config({
     }
   },
   async run() {
-    const databases = await import("./infra/database");
     const apiGateway = await import("./infra/apigateway");
-    await import("./infra/cron");
+    const databases = await import("./infra/database");
+    const lambda = await import("./infra/lambda");
     await import("./infra/frontend");
+    await import("./infra/cron");
 
     return {
-      BotConfigTable: databases.botConfigTable.name,
+      BotConfigTable: databases.botConfigDynamo.name,
       Gateway: apiGateway.botConfigApiGateway.url,
+      ChatbotWebhookFn: lambda.chatbotWebhookFn.url
     };
   },
 });

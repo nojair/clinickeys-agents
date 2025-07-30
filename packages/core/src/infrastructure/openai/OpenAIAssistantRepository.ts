@@ -9,10 +9,12 @@ import {
   SubmitToolOutputsPayload,
 } from "@clinickeys-agents/core/infrastructure/integrations/openai/models";
 
+import { IOpenAIAssistantRepository } from "@clinickeys-agents/core/domain/openai";
+
 /**
  * Repositorio para gestionar Assistants y Threads de OpenAI usando OpenAIGateway
  */
-export class OpenAIAssistantRepository {
+export class OpenAIAssistantRepository implements IOpenAIAssistantRepository {
   private gateway: OpenAIGateway;
 
   constructor(

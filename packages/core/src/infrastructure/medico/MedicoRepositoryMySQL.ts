@@ -1,12 +1,13 @@
 // @clinickeys-agents/core/src/infrastructure/medico/MedicoRepositoryMySQL.ts
 
 import { ejecutarConReintento } from "@clinickeys-agents/core/utils";
+import { MedicoDTO, IMedicoRepository } from "@clinickeys-agents/core/domain/medico";
 
-export class MedicoRepositoryMySQL {
+export class MedicoRepositoryMySQL implements IMedicoRepository {
   /**
    * Obtiene todos los médicos activos de una clínica y super clínica.
    */
-  async getMedicos(id_clinica: number, id_super_clinica: number): Promise<any[]> {
+  async getMedicos(id_clinica: number, id_super_clinica: number): Promise<MedicoDTO[]> {
     const query = `
       SELECT 
         m.id_medico,
@@ -29,7 +30,7 @@ export class MedicoRepositoryMySQL {
   /**
    * Obtiene un médico por su ID.
    */
-  async getMedicoById(id_medico: number): Promise<any | undefined> {
+  async getMedicoById(id_medico: number): Promise<MedicoDTO | undefined> {
     const query = `
       SELECT 
         m.id_medico,
@@ -53,7 +54,7 @@ export class MedicoRepositoryMySQL {
   /**
    * Busca médicos por especialidad (opcional).
    */
-  async findMedicosByEspecialidad(especialidad: string, id_clinica: number, id_super_clinica: number): Promise<any[]> {
+  async findMedicosByEspecialidad(especialidad: string, id_clinica: number, id_super_clinica: number): Promise<MedicoDTO[]> {
     const query = `
       SELECT 
         m.id_medico,
@@ -77,7 +78,7 @@ export class MedicoRepositoryMySQL {
   /**
    * Obtiene los médicos activos asociados a un tratamiento específico.
    */
-  async getMedicosByTratamiento(id_tratamiento: number, id_clinica: number): Promise<any[]> {
+  async getMedicosByTratamiento(id_tratamiento: number, id_clinica: number): Promise<MedicoDTO[]> {
     const query = `
       SELECT 
         m.id_medico,

@@ -26,7 +26,7 @@ import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 import type { BotConfigDTO } from '@clinickeys-agents/core/domain/botConfig';
 import { DateTime } from 'luxon';
 
-interface CommunicateInput {
+export interface CommunicateInput {
   botConfig: BotConfigDTO;
   leadId: number;
   mergedCustomFields: { id: string | number; name: string; value?: string }[];
@@ -46,19 +46,54 @@ interface CommunicateOutput {
   message: string;
 }
 
+export interface CommunicateWithAssistantUseCaseDeps {
+  kommoService: KommoService;
+  openAIService: OpenAIService;
+  recognizeIntentUC: RecognizeUserIntentUseCase;
+  scheduleAppointmentUC: ScheduleAppointmentUseCase;
+  checkAvailabilityUC: CheckAvailabilityUseCase;
+  checkReprogramAvailabilityUC: CheckReprogramAvailabilityUseCase;
+  rescheduleAppointmentUC: RescheduleAppointmentUseCase;
+  cancelAppointmentUC: CancelAppointmentUseCase;
+  handleUrgencyUC: HandleUrgencyUseCase;
+  regularConversationUC: RegularConversationUseCase;
+}
+
 export class CommunicateWithAssistantUseCase {
-  constructor(
-    private readonly kommoService: KommoService,
-    private readonly openAIService: OpenAIService,
-    private readonly recognizeIntentUC: RecognizeUserIntentUseCase,
-    private readonly scheduleAppointmentUC: ScheduleAppointmentUseCase,
-    private readonly checkAvailabilityUC: CheckAvailabilityUseCase,
-    private readonly checkReprogramAvailabilityUC: CheckReprogramAvailabilityUseCase,
-    private readonly rescheduleAppointmentUC: RescheduleAppointmentUseCase,
-    private readonly cancelAppointmentUC: CancelAppointmentUseCase,
-    private readonly handleUrgencyUC: HandleUrgencyUseCase,
-    private readonly regularConversationUC: RegularConversationUseCase,
-  ) { }
+  private readonly kommoService: KommoService;
+  private readonly openAIService: OpenAIService;
+  private readonly recognizeIntentUC: RecognizeUserIntentUseCase;
+  private readonly scheduleAppointmentUC: ScheduleAppointmentUseCase;
+  private readonly checkAvailabilityUC: CheckAvailabilityUseCase;
+  private readonly checkReprogramAvailabilityUC: CheckReprogramAvailabilityUseCase;
+  private readonly rescheduleAppointmentUC: RescheduleAppointmentUseCase;
+  private readonly cancelAppointmentUC: CancelAppointmentUseCase;
+  private readonly handleUrgencyUC: HandleUrgencyUseCase;
+  private readonly regularConversationUC: RegularConversationUseCase;
+
+  constructor({
+    kommoService,
+    openAIService,
+    recognizeIntentUC,
+    scheduleAppointmentUC,
+    checkAvailabilityUC,
+    checkReprogramAvailabilityUC,
+    rescheduleAppointmentUC,
+    cancelAppointmentUC,
+    handleUrgencyUC,
+    regularConversationUC,
+  }: CommunicateWithAssistantUseCaseDeps) {
+    this.kommoService = kommoService;
+    this.openAIService = openAIService;
+    this.recognizeIntentUC = recognizeIntentUC;
+    this.scheduleAppointmentUC = scheduleAppointmentUC;
+    this.checkAvailabilityUC = checkAvailabilityUC;
+    this.checkReprogramAvailabilityUC = checkReprogramAvailabilityUC;
+    this.rescheduleAppointmentUC = rescheduleAppointmentUC;
+    this.cancelAppointmentUC = cancelAppointmentUC;
+    this.handleUrgencyUC = handleUrgencyUC;
+    this.regularConversationUC = regularConversationUC;
+  }
 
   public async execute(input: CommunicateInput): Promise<CommunicateOutput> {
     const { botConfig, leadId, mergedCustomFields, salesbotId, userMessage, threadId } = input;

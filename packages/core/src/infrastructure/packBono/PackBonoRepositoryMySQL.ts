@@ -1,8 +1,9 @@
 // packages/core/src/infrastructure/packBono/PackBonoRepositoryMySQL.ts
 
+import { IPackBonoRepository } from "@clinickeys-agents/core/domain/packBono";
 import { ejecutarConReintento } from "@clinickeys-agents/core/utils";
 
-export class PackBonoRepositoryMySQL {
+export class PackBonoRepositoryMySQL implements IPackBonoRepository {
   /**
    * Obtiene todos los packs bono de una clínica.
    */

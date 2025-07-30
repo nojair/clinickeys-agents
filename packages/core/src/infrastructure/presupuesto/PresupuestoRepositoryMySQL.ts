@@ -1,8 +1,9 @@
 // @clinickeys-agents/core/src/infrastructure/presupuesto/PresupuestoRepositoryMySQL.ts
 
+import { IPresupuestoRepository } from "@clinickeys-agents/core/domain/presupuesto";
 import { ejecutarConReintento } from "@clinickeys-agents/core/utils";
 
-export class PresupuestoRepositoryMySQL {
+export class PresupuestoRepositoryMySQL implements IPresupuestoRepository {
   /**
    * Obtiene todos los presupuestos pendientes de un paciente en una clínica.
    */

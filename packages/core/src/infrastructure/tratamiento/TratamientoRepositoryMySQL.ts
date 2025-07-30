@@ -1,6 +1,7 @@
+import { ITratamientoRepository } from "@clinickeys-agents/core/domain/tratamiento";
 import { ejecutarConReintento } from "@clinickeys-agents/core/utils";
 
-export class TratamientoRepositoryMySQL {
+export class TratamientoRepositoryMySQL implements ITratamientoRepository {
   /**
    * Returns all active treatments for a clinic and super clinic.
    */

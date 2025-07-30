@@ -11,7 +11,9 @@ import {
   KommoApiGateway,
 } from "@clinickeys-agents/core/infrastructure/integrations/kommo";
 
-export class KommoRepository {
+import { IKommoRepository } from "@clinickeys-agents/core/domain/kommo";
+
+export class KommoRepository implements IKommoRepository {
   private gateway: KommoApiGateway;
 
   constructor(gateway: KommoApiGateway) {
