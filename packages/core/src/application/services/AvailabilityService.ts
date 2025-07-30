@@ -1,17 +1,18 @@
 // packages/core/src/application/services/AvailabilityService.ts
 
 import { generarConsultasSQL, calcularDisponibilidad, ajustarDisponibilidad } from "@clinickeys-agents/core/utils";
-import { TratamientoRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/tratamiento";
-import { EspacioRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/espacio";
-import { MedicoRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/medico";
+import { ITratamientoRepository } from "@clinickeys-agents/core/domain/tratamiento";
+import { IEspacioRepository } from "@clinickeys-agents/core/domain/espacio";
+import { IMedicoRepository } from "@clinickeys-agents/core/domain/medico";
 import { Logger } from "@clinickeys-agents/core/infrastructure/external/Logger";
 import { OpenAIService } from '@clinickeys-agents/core/application/services';
 import { ConsultaCitaSchema } from '@clinickeys-agents/core/utils/schemas';
 import { ejecutarConReintento } from "@clinickeys-agents/core/utils";
 import { AppError } from "@clinickeys-agents/core/utils/AppError";
 import { readFile } from 'fs/promises';
-import type { DateTime } from 'luxon';
 import path from 'path';
+
+import type { DateTime } from 'luxon';
 
 interface GetAvailabilityInfoInput {
   id_clinica: number;
@@ -29,15 +30,15 @@ export interface GetTreatmentsDataInput {
 }
 
 export class AvailabilityService {
-  private treatmentRepo: TratamientoRepositoryMySQL;
-  private doctorRepo: MedicoRepositoryMySQL;
-  private spaceRepo: EspacioRepositoryMySQL;
+  private treatmentRepo: ITratamientoRepository;
+  private doctorRepo: IMedicoRepository;
+  private spaceRepo: IEspacioRepository;
   private readonly openAIService: OpenAIService;
 
   constructor(
-    treatmentRepo: TratamientoRepositoryMySQL,
-    doctorRepo: MedicoRepositoryMySQL,
-    spaceRepo: EspacioRepositoryMySQL,
+    treatmentRepo: ITratamientoRepository,
+    doctorRepo: IMedicoRepository,
+    spaceRepo: IEspacioRepository,
     openAIService: OpenAIService
   ) {
     this.treatmentRepo = treatmentRepo;

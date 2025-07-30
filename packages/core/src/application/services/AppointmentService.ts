@@ -1,12 +1,15 @@
-// packages/core/src/application/services/AppointmentService.ts
-
-import { AppointmentRepositoryMySQL, AppointmentCreateParams, AppointmentUpdateParams } from "@clinickeys-agents/core/infrastructure/appointment/AppointmentRepositoryMySQL";
 import { AppError } from '@clinickeys-agents/core/utils';
 
-export class AppointmentService {
-  private appointmentRepository: AppointmentRepositoryMySQL;
+import {
+  IAppointmentRepository,
+  AppointmentCreateParams,
+  AppointmentUpdateParams
+} from "@clinickeys-agents/core/domain/appointment";
 
-  constructor(appointmentRepository: AppointmentRepositoryMySQL) {
+export class AppointmentService {
+  private appointmentRepository: IAppointmentRepository;
+
+  constructor(appointmentRepository: IAppointmentRepository) {
     this.appointmentRepository = appointmentRepository;
   }
 
@@ -31,7 +34,6 @@ export class AppointmentService {
   }
 
   async cancelAppointment(appointmentId: number): Promise<any | undefined> {
-    // Lógica de negocio: Cambiar estado a 'cancelado' y registrar motivo
     const appointment = await this.getAppointmentById(appointmentId);
     if (!appointment) {
       throw new AppError({
@@ -40,7 +42,7 @@ export class AppointmentService {
         context: { appointmentId }
       });
     }
-    const CANCELED_STATUS = 6; // Cambia este valor según tu catálogo de estados
+    const CANCELED_STATUS = 6;
     await this.updateAppointment({
       id_cita: appointmentId,
       id_estado_cita: CANCELED_STATUS,

@@ -1,7 +1,6 @@
 // packages/core/src/application/services/ClinicService.ts
 
-import type { IClinicRepository } from "@clinickeys-agents/core/domain/clinic";
-import type { ClinicDTO } from "@clinickeys-agents/core/domain/clinic";
+import type { ClinicDTO, IClinicRepository } from "@clinickeys-agents/core/domain/clinic";
 
 /**
  * Servicio de dominio para operaciones con clínicas.

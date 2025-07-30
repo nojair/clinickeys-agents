@@ -1,9 +1,10 @@
 // packages/core/src/interface/handlers/clinicsHandler.ts
 
-import type { Handler, APIGatewayProxyResult as R } from "aws-lambda";
 import { ClinicRepositoryFactory } from "@clinickeys-agents/core/infrastructure/clinic/ClinicRepositoryFactory";
 import { ClinicService } from "@clinickeys-agents/core/application/services";
 import { ClinicController } from "../controllers";
+
+import type { Handler, APIGatewayProxyResult as R } from "aws-lambda";
 
 export const handler: Handler = async (event): Promise<R> => {
   const factory = new ClinicRepositoryFactory();

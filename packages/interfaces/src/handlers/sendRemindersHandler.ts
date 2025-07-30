@@ -32,7 +32,7 @@ export const handler: Handler = async (event, context): Promise<R> => {
     tableName: getEnvVar("BOT_CONFIG_TABLE"),
     docClient,
   });
-  const patientRepo = new PatientRepositoryMySQL(mysqlPool);
+  const patientRepo = new PatientRepositoryMySQL();
 
   // Inyectar los repositorios al Job
   const job = new SendRemindersJob({

@@ -56,10 +56,7 @@ export class CancelAppointmentUseCase {
     }
 
     // 3. Cancelar cita en BD
-    await this.appointmentService.updateAppointment({
-      id_cita,
-      id_estado_cita: ID_ESTADO_CITA_CANCELADA,
-    });
+    await this.appointmentService.cancelAppointment(id_cita);
 
     // 4. Procesar packs‑bono / presupuestos
     await this.packBonoService.procesarPackbonoPresupuestoDeCita('on_eliminar_cita', id_cita);

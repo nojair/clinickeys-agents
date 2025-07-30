@@ -1,12 +1,12 @@
 // packages/core/src/application/services/PackBonoService.ts
 
-import { PackBonoRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/packBono/PackBonoRepositoryMySQL";
+import { IPackBonoRepository } from "@clinickeys-agents/core/domain/packBono";
 
 export class PackBonoService {
-  private packBonoRepository: PackBonoRepositoryMySQL;
+  private packBonoRepository: IPackBonoRepository;
 
-  constructor(packBonoRepository?: PackBonoRepositoryMySQL) {
-    this.packBonoRepository = packBonoRepository || new PackBonoRepositoryMySQL();
+  constructor(packBonoRepository: IPackBonoRepository) {
+    this.packBonoRepository = packBonoRepository;
   }
 
   async getPackBonosByClinic(id_clinica: number): Promise<any[]> {
