@@ -5,7 +5,7 @@ import { ITratamientoRepository } from "@clinickeys-agents/core/domain/tratamien
 import { IEspacioRepository } from "@clinickeys-agents/core/domain/espacio";
 import { IMedicoRepository } from "@clinickeys-agents/core/domain/medico";
 import { Logger } from "@clinickeys-agents/core/infrastructure/external/Logger";
-import { OpenAIService } from '@clinickeys-agents/core/application/services';
+import { IOpenAIService } from '@clinickeys-agents/core/domain/openai';
 import { ConsultaCitaSchema } from '@clinickeys-agents/core/utils/schemas';
 import { ejecutarConReintento } from "@clinickeys-agents/core/utils";
 import { AppError } from "@clinickeys-agents/core/utils/AppError";
@@ -33,13 +33,13 @@ export class AvailabilityService {
   private treatmentRepo: ITratamientoRepository;
   private doctorRepo: IMedicoRepository;
   private spaceRepo: IEspacioRepository;
-  private readonly openAIService: OpenAIService;
+  private readonly openAIService: IOpenAIService;
 
   constructor(
     treatmentRepo: ITratamientoRepository,
     doctorRepo: IMedicoRepository,
     spaceRepo: IEspacioRepository,
-    openAIService: OpenAIService
+    openAIService: IOpenAIService
   ) {
     this.treatmentRepo = treatmentRepo;
     this.doctorRepo = doctorRepo;

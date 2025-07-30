@@ -37,7 +37,7 @@ export interface BotConfigDTO {
     /* OPENAI token */
     token: string;
     /** Asistentes OpenAI registrados en la cuenta */
-    assistants: {
+    assistants?: {
       /** Otros asistentes y sus IDs pueden agregarse aquí si es necesario */
       [key: string]: string;
     };

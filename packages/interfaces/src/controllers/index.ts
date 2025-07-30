@@ -1,2 +1,2 @@
-export * from './BotConfigController';
+export * from './BotController';
 export * from './ClinicController';

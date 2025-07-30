@@ -1,12 +1,9 @@
 // packages/core/src/application/services/BotConfigService.ts
 
 import { BotConfigDTO, BotConfigEnrichedDTO } from "@clinickeys-agents/core/domain/botConfig";
-import { defaultPlaceholders, generateInstructions } from "@clinickeys-agents/core/utils";
-import { IOpenAIAssistantRepository } from "@clinickeys-agents/core/domain/openai";
+import { defaultPlaceholders } from "@clinickeys-agents/core/utils";
 import { BotConfigEnricher } from "@clinickeys-agents/core/application/services";
 import { IBotConfigRepository } from "@clinickeys-agents/core/domain/botConfig";
-import path from "path";
-import fs from "fs";
 
 export interface CreateBotConfigInput {
   botConfigId: string;
@@ -25,19 +22,15 @@ export interface CreateBotConfigInput {
   placeholders?: Record<string, string>;
   openai: {
     token: string;
+    // assistants?: Record<string, string>; // Ya no se maneja aquí
   };
 }
 
 export class BotConfigService {
   private readonly repo: IBotConfigRepository;
-  private readonly openaiRepo: IOpenAIAssistantRepository;
 
-  constructor(
-    repo: IBotConfigRepository,
-    openaiRepo: IOpenAIAssistantRepository
-  ) {
+  constructor(repo: IBotConfigRepository) {
     this.repo = repo;
-    this.openaiRepo = openaiRepo;
   }
 
   /**
@@ -61,32 +54,12 @@ export class BotConfigService {
   }
 
   /**
-   * Crea un nuevo BotConfig y todos los assistants de la carpeta de instrucciones, generando instrucciones y mapping dinámico.
+   * Crea un nuevo BotConfig con los datos básicos (sin assistants OpenAI).
    */
   async createBotConfig(input: CreateBotConfigInput): Promise<BotConfigDTO> {
-    // 1. Merge placeholders con defaults
+    // Merge placeholders con defaults
     const placeholders: Record<string, string> = { ...defaultPlaceholders, ...(input.placeholders || {}) };
 
-    // 2. Buscar todos los templates .md disponibles en la carpeta de instrucciones
-    const templateDir = path.resolve(__dirname, "..", "..", ".ia", "instructions", "templates");
-    const assistantFiles = fs.readdirSync(templateDir).filter((file) => file.endsWith(".md"));
-
-    // 3. Genera instrucciones para cada assistant y crea cada assistant en OpenAI
-    const assistants: Record<string, string> = {};
-    for (const fileName of assistantFiles) {
-      const assistantKey = path.basename(fileName, ".md"); // sin .md
-      const instructionText = generateInstructions(assistantKey, placeholders);
-
-      const assistant = await this.openaiRepo.createAssistant({
-        name: assistantKey,
-        instructions: instructionText,
-        top_p: 0.01,
-        temperature: 0.01,
-      });
-      assistants[assistantKey] = assistant.id;
-    }
-
-    // 4. Armar objeto BotConfigDTO (repo agrega PK/SK/bucket/etc)
     const toSave: Omit<BotConfigDTO, "pk" | "sk" | "bucket" | "createdAt" | "updatedAt"> = {
       botConfigId: input.botConfigId,
       superClinicId: input.superClinicId,
@@ -105,13 +78,13 @@ export class BotConfigService {
       fieldsProfile: input.fieldsProfile,
       openai: {
         token: input.openai.token,
-        assistants
+        // assistants se agregará/actualizará luego desde el UseCase
       },
       placeholders,
       isActive: true, // o como prefieras
     };
 
-    // Devuelve el objeto real, con pk/sk/bucket/createdAt/updatedAt generados
+    // Guarda y retorna el BotConfig completo
     const savedDto = await this.repo.create(toSave);
     return savedDto;
   }

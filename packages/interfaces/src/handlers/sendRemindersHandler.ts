@@ -1,14 +1,15 @@
 // packages/core/src/interface/handlers/sendRemindersHandler.ts
 
 import { createMySQLPool, createDynamoDocumentClient, getEnvVar } from "@clinickeys-agents/core/infrastructure/config";
+import { PatientRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/patient/PatientRepositoryMySQL";
 import { NotificationRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/notification";
 import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/botConfig";
-import { PatientRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/patient/PatientRepositoryMySQL";
 import { SendRemindersJob } from "@clinickeys-agents/core/infrastructure/job";
 import { APIGatewayProxyResult as R } from "aws-lambda";
+
 import type { Handler } from 'aws-lambda';
 
-export const handler: Handler = async (event, context): Promise<R> => {
+export const handler: Handler = async (): Promise<R> => {
   console.log('Lambda execution start');
   // Crear pools y clientes de infraestructura
   const mysqlPool = createMySQLPool({
