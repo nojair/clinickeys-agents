@@ -1,4 +1,4 @@
-// packages/core/src/infrastructure/config/dynamoFactory.ts
+// packages/core/src/infrastructure/helpers/dynamoFactory.ts
 
 import { DynamoDBClient, DynamoDBClientConfig } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";

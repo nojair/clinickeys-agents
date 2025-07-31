@@ -2,12 +2,11 @@
 
 import type { Handler, SQSEvent } from "aws-lambda";
 
-import { createDynamoDocumentClient, getEnvVar } from "@clinickeys-agents/core/infrastructure/config";
+import { createDynamoDocumentClient, getEnvVar } from "@clinickeys-agents/core/infrastructure/helpers";
 import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/botConfig";
-import { BotConfigService } from "@clinickeys-agents/core/application/services";
 import { GetBotConfigUseCase } from "@clinickeys-agents/core/application/usecases";
-
 import { LeadProcessorController } from "../controllers/LeadProcessorController";
+import { BotConfigService } from "@clinickeys-agents/core/application/services";
 import { Logger } from "@clinickeys-agents/core/infrastructure/external";
 
 // ───────────────────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 // packages/core/src/interface/handlers/sendRemindersHandler.ts
 
-import { createMySQLPool, createDynamoDocumentClient, getEnvVar } from "@clinickeys-agents/core/infrastructure/config";
+import { createMySQLPool, createDynamoDocumentClient, getEnvVar } from "@clinickeys-agents/core/infrastructure/helpers";
 import { PatientRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/patient/PatientRepositoryMySQL";
 import { NotificationRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/notification";
 import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/botConfig";
@@ -13,26 +13,27 @@ type reminderHandlerResponse = {
   body: string,
 };
 
+// Crear pools y clientes de infraestructura
+createMySQLPool({
+  host: getEnvVar("CLINICS_DATA_DB_HOST"),
+  user: getEnvVar("CLINICS_DATA_DB_USER"),
+  password: getEnvVar("CLINICS_DATA_DB_PASSWORD"),
+  database: getEnvVar("CLINICS_DATA_DB_NAME"),
+  port: getEnvVar("CLINICS_DATA_DB_PORT") ? Number(getEnvVar("CLINICS_DATA_DB_PORT")) : 3306,
+  waitForConnections: true,
+  connectionLimit: 2,
+  queueLimit: 0,
+});
+
 export const handler: Handler<any, reminderHandlerResponse> = async () => {
   console.log('Lambda execution start');
-  // Crear pools y clientes de infraestructura
-  const mysqlPool = createMySQLPool({
-    host: getEnvVar("CLINICS_DATA_DB_HOST"),
-    user: getEnvVar("CLINICS_DATA_DB_USER"),
-    password: getEnvVar("CLINICS_DATA_DB_PASSWORD"),
-    database: getEnvVar("CLINICS_DATA_DB_NAME"),
-    port: getEnvVar("CLINICS_DATA_DB_PORT") ? Number(getEnvVar("CLINICS_DATA_DB_PORT")) : 3306,
-    waitForConnections: true,
-    connectionLimit: 2,
-    queueLimit: 0,
-  });
 
   const docClient = createDynamoDocumentClient({
     region: getEnvVar("AWS_REGION"),
   });
 
   // Crear repositorios concretos (infrastructure)
-  const notificationsRepo = new NotificationRepositoryMySQL(mysqlPool);
+  const notificationsRepo = new NotificationRepositoryMySQL();
   const botConfigRepo = new BotConfigRepositoryDynamo({
     tableName: getEnvVar("BOT_CONFIG_TABLE"),
     docClient,
@@ -59,8 +60,5 @@ export const handler: Handler<any, reminderHandlerResponse> = async () => {
       statusCode: 500,
       body: JSON.stringify({ error: error.message || "Internal server error" }),
     };
-  } finally {
-    await mysqlPool.end();
-    console.log('Lambda execution end');
   }
 };

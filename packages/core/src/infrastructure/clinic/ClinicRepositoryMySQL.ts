@@ -1,27 +1,18 @@
 // packages/core/src/infrastructure/clinic/ClinicRepositoryMySQL.ts
 import { IClinicRepository, ClinicRepositoryError, ClinicNotFoundError, ClinicDTO } from "@clinickeys-agents/core/domain/clinic";
-import { Pool, RowDataPacket } from "mysql2/promise";
+import { ejecutarConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
 
 /**
  * Repositorio MySQL para clínicas.
  * Atiende exclusivamente al `clinicSource = "legacy"`.
  */
 export class ClinicRepositoryMySQL implements IClinicRepository {
-  private readonly pool: Pool;
-  private static readonly SOURCE = "legacy";
-
-  constructor(pool: Pool) {
-    this.pool = pool;
-  }
 
   // ---------------------------------------------------------------- findById
   async findById(clinicSource: string, clinicId: string): Promise<ClinicDTO | null> {
-    if (clinicSource !== ClinicRepositoryMySQL.SOURCE) {
-      return null; // este repositorio no gestiona la fuente solicitada
-    }
     try {
-      const [rows] = await this.pool.query<RowDataPacket[]>(
-        `SELECT 
+      const query = `
+        SELECT
           id_clinica        AS clinicId,
           id_super_clinica  AS superClinicId,
           nombre_clinica    AS name,
@@ -38,9 +29,11 @@ export class ClinicRepositoryMySQL implements IClinicRepository {
           nif_rep_legal     AS legalRepNif
         FROM clinicas
         WHERE clinicId = ?
-        LIMIT 1`,
-        [clinicId]
-      );
+        LIMIT 1
+      `;
+      const args = [clinicId];
+
+      const [rows] = await ejecutarConReintento(query, args)
 
       if (rows.length === 0) throw new ClinicNotFoundError(clinicId);
 
@@ -54,11 +47,10 @@ export class ClinicRepositoryMySQL implements IClinicRepository {
   // ---------------------------------------------------------------- findAll
   async findAll(clinicSource?: string): Promise<ClinicDTO[]> {
     // Si se solicita otra fuente, este repo devuelve []
-    if (clinicSource && clinicSource !== ClinicRepositoryMySQL.SOURCE) return [];
 
     try {
-      const [rows] = await this.pool.query<RowDataPacket[]>(
-        `SELECT 
+      const query = `
+        SELECT 
           id_clinica        AS clinicId,
           id_super_clinica  AS superClinicId,
           nombre_clinica    AS name,
@@ -73,10 +65,11 @@ export class ClinicRepositoryMySQL implements IClinicRepository {
           url_firma         AS signatureUrl,
           rep_legal         AS legalRep,
           nif_rep_legal     AS legalRepNif
-        FROM clinicas`
-      );
+        FROM clinicas
+      `;
+      const [rows] = await ejecutarConReintento(query);
 
-      return rows.map(row => ({ clinicSource: ClinicRepositoryMySQL.SOURCE, ...row })) as ClinicDTO[];
+      return rows.map((row: any) => ({ clinicSource, ...row })) as ClinicDTO[];
     } catch (error: any) {
       throw new ClinicRepositoryError(error.message);
     }

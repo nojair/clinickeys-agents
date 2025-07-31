@@ -3,7 +3,7 @@ import { chatbotQueue } from "./queue";
 import { SUFFIX } from "./config";
 
 export const chatbotWebhookFn = new sst.aws.Function(`chatbotWebhookFn${SUFFIX}`, {
-  handler: "src/leadWebhook.handler",
+  handler: "packages/interfaces/src/handlers/LeadWebhookController.handler",
   link: [chatbotQueue],
   timeout: "30 seconds",
   url: true,
@@ -14,6 +14,6 @@ export const chatbotWebhookFn = new sst.aws.Function(`chatbotWebhookFn${SUFFIX}`
 
 // Handler que procesa los mensajes de la cola
 chatbotQueue.subscribe({
-  handler: "src/leadProcessor.handler",
+  handler: "packages/interfaces/src/handlers/leadProcessorHandler.handler",
   timeout: "420 seconds",
 });

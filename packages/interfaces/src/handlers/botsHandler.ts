@@ -2,7 +2,7 @@
 // packages/core/src/interface/handlers/botsHandler.ts
 // -----------------------------------------------------------------------------
 
-import { createDynamoDocumentClient, getEnvVar } from "@clinickeys-agents/core/infrastructure/config";
+import { createDynamoDocumentClient, getEnvVar } from "@clinickeys-agents/core/infrastructure/helpers";
 import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/botConfig";
 import { OpenAIGateway } from "@clinickeys-agents/core/infrastructure/integrations/openai";
 import { OpenAIAssistantRepository } from "@clinickeys-agents/core/infrastructure/openai";

@@ -1,4 +1,4 @@
-// packages/core/src/infrastructure/config/env.ts
+// packages/core/src/infrastructure/helpers/env.ts
 
 /**
  * Utilidad para acceder a variables de entorno desde el runtime del handler.

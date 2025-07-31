@@ -7,7 +7,7 @@ import { IMedicoRepository } from "@clinickeys-agents/core/domain/medico";
 import { Logger } from "@clinickeys-agents/core/infrastructure/external/Logger";
 import { IOpenAIService } from '@clinickeys-agents/core/domain/openai';
 import { ConsultaCitaSchema } from '@clinickeys-agents/core/utils/schemas';
-import { ejecutarConReintento } from "@clinickeys-agents/core/utils";
+import { ejecutarConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
 import { AppError } from "@clinickeys-agents/core/utils/AppError";
 import { readFile } from 'fs/promises';
 import path from 'path';

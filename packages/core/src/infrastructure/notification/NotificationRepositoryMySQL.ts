@@ -1,6 +1,6 @@
 // packages/core/src/infrastructure/notification/NotificationRepositoryMySQL.ts
 
-import { Pool, RowDataPacket, OkPacket } from "mysql2/promise";
+import { ejecutarConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
 import {
   NotificationDTO,
   NotificationState,
@@ -14,24 +14,19 @@ import {
  * Recibe un pool de MySQL por parámetro.
  */
 export class NotificationRepositoryMySQL implements INotificationRepository {
-  private pool: Pool;
-
-  constructor(pool: Pool) {
-    this.pool = pool;
-  }
-
   async findPendingByClinic(
     clinicId: number,
     fecha_envio_programada: string
   ): Promise<NotificationDTO[]> {
     try {
-      const [rows] = await this.pool.query<RowDataPacket[]>(
-        `SELECT * FROM notificaciones
-         WHERE estado = 'pendiente'
-         AND id_clinica = ?
-         AND fecha_envio_programada = ?`,
-        [clinicId, fecha_envio_programada]
-      );
+      const query = `
+        SELECT * FROM notificaciones
+        WHERE estado = 'pendiente'
+        AND id_clinica = ?
+        AND fecha_envio_programada = ?
+      `;
+      const args = [clinicId, fecha_envio_programada]
+      const [rows] = await ejecutarConReintento(query, args);
       if (!rows.length) {
         throw new NotificationNotFoundError(clinicId);
       }
@@ -63,11 +58,10 @@ export class NotificationRepositoryMySQL implements INotificationRepository {
 
   async updateState(id_notificacion: number, estado: NotificationState): Promise<void> {
     try {
-      const [result] = await this.pool.query<OkPacket>(
-        `UPDATE notificaciones SET estado = ?, actualizado_el = CURRENT_TIMESTAMP WHERE id_notificacion = ?`,
-        [estado, id_notificacion]
-      );
-      if (!result || result.affectedRows === 0) {
+      const query = `UPDATE notificaciones SET estado = ?, actualizado_el = CURRENT_TIMESTAMP WHERE id_notificacion = ?`;
+      const args = [estado, id_notificacion];
+      const [rows] = await ejecutarConReintento(query, args);
+      if (!rows || rows.affectedRows === 0) {
         throw new NotificationStateUpdateError(id_notificacion, estado);
       }
     } catch (error: any) {

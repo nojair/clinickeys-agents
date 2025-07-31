@@ -1,16 +1,27 @@
 // packages/core/src/interface/handlers/clinicsHandler.ts
 
-import { ClinicRepositoryFactory } from "@clinickeys-agents/core/infrastructure/clinic/ClinicRepositoryFactory";
+import { ClinicRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/clinic";
+import { createMySQLPool, getEnvVar } from "@clinickeys-agents/core/infrastructure/helpers";
 import { ClinicService } from "@clinickeys-agents/core/application/services";
 import { ClinicController } from "../controllers";
 
 import type { Handler, APIGatewayProxyEventV2 as E, APIGatewayProxyResultV2 as R } from "aws-lambda";
 
-export const handler: Handler<E, R> = async (event) => {
-  const factory = new ClinicRepositoryFactory();
+createMySQLPool({
+  host: getEnvVar("CLINICS_DATA_DB_HOST"),
+  user: getEnvVar("CLINICS_DATA_DB_USER"),
+  password: getEnvVar("CLINICS_DATA_DB_PASSWORD"),
+  database: getEnvVar("CLINICS_DATA_DB_NAME"),
+  port: getEnvVar("CLINICS_DATA_DB_PORT") ? Number(getEnvVar("CLINICS_DATA_DB_PORT")) : 3306,
+  waitForConnections: true,
+  connectionLimit: 2,
+  queueLimit: 0,
+});
 
-  // El repo debe vivir en el scope del handler para cerrarlo en finally
-  let repo;
+export const handler: Handler<E, R> = async (event) => {
+  const clinicRepo = new ClinicRepositoryMySQL();
+
+  // El clinicRepo debe vivir en el scope del handler para cerrarlo en finally
   try {
     const { http: { method, path } } = event.requestContext;
     const qs = event.queryStringParameters ?? {};
@@ -19,8 +30,7 @@ export const handler: Handler<E, R> = async (event) => {
     const clinicId = qs.id_clinic || pathParams.id_clinic;
     console.log("Listing clinics with source:", clinicSource);
 
-    repo = factory.get(clinicSource);
-    const service = new ClinicService(repo);
+    const service = new ClinicService(clinicRepo);
     const controller = new ClinicController(service);
 
     if (method === "GET" && path === "/clinics") {
@@ -40,10 +50,5 @@ export const handler: Handler<E, R> = async (event) => {
   } catch (error: any) {
     console.error("clinicsHandler error:", error);
     return { statusCode: 500, body: JSON.stringify({ message: "Internal server error" }) };
-  } finally {
-    // Solo si el repo concreto soporta closeConnection
-    if (repo && typeof (repo as any).closeConnection === "function") {
-      await (repo as any).closeConnection();
-    }
   }
 };

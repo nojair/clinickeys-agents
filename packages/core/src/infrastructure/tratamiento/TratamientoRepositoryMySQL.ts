@@ -1,5 +1,5 @@
 import { ITratamientoRepository } from "@clinickeys-agents/core/domain/tratamiento";
-import { ejecutarConReintento } from "@clinickeys-agents/core/utils";
+import { ejecutarConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
 
 export class TratamientoRepositoryMySQL implements ITratamientoRepository {
   /**

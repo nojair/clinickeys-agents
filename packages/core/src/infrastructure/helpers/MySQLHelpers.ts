@@ -1,4 +1,4 @@
-// @clinickeys-agents/core/src/utils/MySQLHelpers.ts
+// @clinickeys-agents/core/infrastructure/helpers/MySQLHelpers.ts
 
 import mysql, { Pool, PoolOptions } from "mysql2/promise";
 

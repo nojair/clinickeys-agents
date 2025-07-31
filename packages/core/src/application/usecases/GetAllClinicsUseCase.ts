@@ -1,22 +1,22 @@
 // packages/core/src/application/usecases/GetAllClinicsUseCase.ts
 
-import type { ClinicRepositoryFactory } from "@clinickeys-agents/core/infrastructure/clinic";
+import { ClinicService } from "@clinickeys-agents/core/application/services";
 import type { ClinicDTO } from "@clinickeys-agents/core/domain/clinic";
 
 /**
  * Use case para obtener todas las clínicas de una fuente específica (por ahora solo "legacy").
  */
 export interface GetAllClinicsUseCaseProps {
-  clinicRepositoryFactory: ClinicRepositoryFactory;
+  clinicService: ClinicService;
   clinicSource: string;
 }
 
 export class GetAllClinicsUseCase {
-  private readonly factory: ClinicRepositoryFactory;
+  private readonly clinicService: ClinicService;
   private readonly clinicSource: string;
 
   constructor(props: GetAllClinicsUseCaseProps) {
-    this.factory = props.clinicRepositoryFactory;
+    this.clinicService = props.clinicService;
     this.clinicSource = props.clinicSource;
   }
 
@@ -24,7 +24,6 @@ export class GetAllClinicsUseCase {
    * Devuelve todas las clínicas registradas en la fuente configurada.
    */
   async execute(): Promise<ClinicDTO[]> {
-    const repo = this.factory.get(this.clinicSource);
-    return repo.findAll(this.clinicSource);
+    return this.clinicService.listGlobalClinics(this.clinicSource);
   }
 }

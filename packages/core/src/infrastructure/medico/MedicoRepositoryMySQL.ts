@@ -1,6 +1,6 @@
 // @clinickeys-agents/core/src/infrastructure/medico/MedicoRepositoryMySQL.ts
 
-import { ejecutarConReintento } from "@clinickeys-agents/core/utils";
+import { ejecutarConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
 import { MedicoDTO, IMedicoRepository } from "@clinickeys-agents/core/domain/medico";
 
 export class MedicoRepositoryMySQL implements IMedicoRepository {

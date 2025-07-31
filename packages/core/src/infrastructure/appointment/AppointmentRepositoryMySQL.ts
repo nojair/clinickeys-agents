@@ -1,6 +1,6 @@
 // @clinickeys-agents/core/src/infrastructure/appointment/AppointmentRepositoryMySQL.ts
 
-import { ejecutarConReintento } from "@clinickeys-agents/core/utils";
+import { ejecutarConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
 
 export interface AppointmentCreateParams {
   id_paciente: number;
