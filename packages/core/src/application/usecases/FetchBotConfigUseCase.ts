@@ -20,7 +20,7 @@ export class FetchBotConfigUseCase {
 
   async execute(input: FetchBotConfigInput): Promise<FetchBotConfigOutput> {
     const { botConfigId, clinicSource, clinicId } = input;
-    const botConfig = await this.botConfigService.findByPrimaryKey(botConfigId, clinicSource, Number(clinicId));
+    const botConfig = await this.botConfigService.getBotConfig(botConfigId, clinicSource, Number(clinicId));
     if (!botConfig) {
       throw new AppError({
         code: 'ERR_BOTCONFIG_NOT_FOUND',

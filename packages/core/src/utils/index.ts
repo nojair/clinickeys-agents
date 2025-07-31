@@ -2,7 +2,6 @@ export * from './generateInstructions';
 export * from './availabilityHelpers';
 export * from './defaultPlaceholders';
 export * from './ErrorReporter';
-export * from './MySQLHelpers';
 export * from './ErrorMapper';
 export * from './openaiTools';
 export * from './errorCodes';

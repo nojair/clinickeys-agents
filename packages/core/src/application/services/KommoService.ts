@@ -23,8 +23,7 @@ import {
   PATIENT_FIRST_NAME,
   PATIENT_LAST_NAME,
   PATIENT_PHONE,
-  PATIENT_LEAD_ID,
-  ID_NOTIFICATION,
+  NOTIFICATION_ID,
   PLEASE_WAIT_MESSAGE,
   BOT_MESSAGE,
   PATIENT_MESSAGE
@@ -147,9 +146,8 @@ export class KommoService {
         [PATIENT_FIRST_NAME]: patientFirstName,
         [PATIENT_LAST_NAME]: patientLastName,
         [PATIENT_PHONE]: patientPhone,
-        [PATIENT_LEAD_ID]: String(patientId)
       };
-      if (notificationId != null) customFieldsLeads[ID_NOTIFICATION] = String(notificationId);
+      if (notificationId != null) customFieldsLeads[NOTIFICATION_ID] = String(notificationId);
 
       const payload = [{
         name: `${patientFirstName} ${patientLastName}`,

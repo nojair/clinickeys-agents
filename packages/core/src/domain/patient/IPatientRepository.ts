@@ -1,5 +1,7 @@
 // @clinickeys-agents/core/src/domain/patient/IPatientRepository.ts
 
+import { PatientDTO } from "@clinickeys-agents/core/domain/patient";
+
 export interface IPatientRepository {
   /**
    * Actualiza el kommoLeadId de un paciente.
@@ -24,17 +26,17 @@ export interface IPatientRepository {
   }): Promise<number>;
 
   /**
-   * Busca paciente por teléfono.
+   * Busca paciente por teléfono. Devuelve PatientDTO o undefined.
    */
-  findByPhone(telefono: string): Promise<any | undefined>;
+  findByPhone(telefono: string): Promise<PatientDTO | undefined>;
 
   /**
-   * Busca paciente por ID.
+   * Busca paciente por ID. Devuelve PatientDTO o undefined.
    */
-  findById(patientId: number): Promise<any | undefined>;
+  findById(patientId: number): Promise<PatientDTO | undefined>;
 
   /**
-   * Busca paciente por número nacional, clínica y solo activos.
+   * Busca paciente por número nacional, clínica y solo activos. Devuelve PatientDTO o undefined.
    */
-  findByNationalPhoneAndClinic(telefonoNacional: string, id_clinica: number): Promise<any | undefined>;
+  findByNationalPhoneAndClinic(telefonoNacional: string, id_clinica: number): Promise<PatientDTO | undefined>;
 }

@@ -134,23 +134,15 @@ CREATE TABLE `citas` (
 
 CAMBIOS EN PAYLOAD:
 
-JSON_OBJECT(
-  'patientId', v_id_paciente,
-  'patientFirstName', v_nombre_paciente,
-  'patientLastName', v_apellido_paciente,
-  'patientLeadId', v_kommo_lead_id,
-  'patientPhone', v_telefono_paciente,
-  'clinicId', v_id_clinica,
-  'clinicName', v_nombre_clinica,
-  'appointmentDate', DATE_FORMAT(NEW.fecha_cita, '%Y-%m-%d'),
-  'appointmentStartTime', TIME_FORMAT(NEW.hora_inicio, '%H:%i:%s'),
-  'appointmentEndTime', TIME_FORMAT(NEW.hora_fin, '%H:%i:%s'),
-  'appointmentWeekdayName', v_dia_semana,
-  'doctorId', v_id_medico,
-  'doctorFullName', v_nombre_medico,
-  'treatmentId', v_id_tratamiento,
-  'treatmentName', v_nombre_tratamiento,
-  'spaceId', v_id_visit_space,
-  'spaceName', v_nombre_espacio,
-  'reminderMessage', v_mensaje_notificación
-)
+SET v_payload = JSON_OBJECT(
+  'patient_firstname', v_nombre_paciente,
+  'patient_lastname', v_apellido_paciente,
+  'clinic_name', v_nombre_clinica,
+  'visit_week_day_name', v_dia_semana,
+  'medic_full_name', v_nombre_medico,
+  'treatment_name', v_nombre_tratamiento,
+  'visit_date', DATE_FORMAT(v_fecha_cita, '%Y-%m-%d'),
+  'visit_init_time', TIME_FORMAT(v_hora_inicio, '%H:%i:%s'),
+  'visit_end_time', TIME_FORMAT(v_hora_fin, '%H:%i:%s'),
+  'visit_space_name', v_nombre_espacio
+);

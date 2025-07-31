@@ -1,4 +1,3 @@
-import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 import {
   KommoService,
   AppointmentService,
@@ -25,8 +24,6 @@ interface CancelAppointmentOutput {
   toolOutput: string;
 }
 
-const ID_ESTADO_CITA_CANCELADA = 2;
-
 export class CancelAppointmentUseCase {
   constructor(
     private readonly kommoService: KommoService,
@@ -36,14 +33,14 @@ export class CancelAppointmentUseCase {
 
   public async execute(input: CancelAppointmentInput): Promise<CancelAppointmentOutput> {
     const { botConfig, leadId, mergedCustomFields, salesbotId, params } = input;
-    const { id_cita, id_medico, id_espacio, fecha_cita, hora_inicio, hora_fin } = params;
+    const { id_cita } = params;
 
     // 1. Mensaje inicial "please‑wait"
     await this.kommoService.sendBotInitialMessage({
-      botConfig,
       leadId,
-      mergedCustomFields,
+      botConfig,
       salesbotId,
+      mergedCustomFields,
       message: 'Muy bien, voy a cancelar tu cita. Un momento por favor.',
     });
 

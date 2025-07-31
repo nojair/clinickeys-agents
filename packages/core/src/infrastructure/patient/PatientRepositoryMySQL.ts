@@ -1,8 +1,7 @@
 // @clinickeys-agents/core/src/infrastructure/patient/PatientRepositoryMySQL.ts
 
-import { IPatientRepository } from "@clinickeys-agents/core/domain/patient/IPatientRepository";
+import { PatientDTO, IPatientRepository } from "@clinickeys-agents/core/domain/patient";
 import { ejecutarConReintento, ejecutarUnicoResultado } from "@clinickeys-agents/core/infrastructure/helpers";
-
 /**
  * Implementación MySQL del repositorio de pacientes.
  */
@@ -58,31 +57,33 @@ export class PatientRepositoryMySQL implements IPatientRepository {
   }
 
   /**
-   * Busca paciente por teléfono. Devuelve el primer match o undefined.
+   * Busca paciente por teléfono. Devuelve el primer match como PatientDTO o undefined.
    */
-  async findByPhone(telefono: string): Promise<any | undefined> {
+  async findByPhone(telefono: string): Promise<PatientDTO | undefined> {
     const row = await ejecutarUnicoResultado(
       "SELECT * FROM pacientes WHERE telefono = ? LIMIT 1",
       [telefono]
     );
-    return row || undefined;
+    if (!row) return undefined;
+    return this.mapRowToPatientDTO(row);
   }
 
   /**
-   * Busca paciente por ID. Devuelve el registro completo o undefined.
+   * Busca paciente por ID. Devuelve el registro completo como PatientDTO o undefined.
    */
-  async findById(patientId: number): Promise<any | undefined> {
+  async findById(patientId: number): Promise<PatientDTO | undefined> {
     const row = await ejecutarUnicoResultado(
       "SELECT * FROM pacientes WHERE id_paciente = ?",
       [patientId]
     );
-    return row || undefined;
+    if (!row) return undefined;
+    return this.mapRowToPatientDTO(row);
   }
 
   /**
-   * Busca paciente por teléfono nacional (solo dígitos), clínica y estado activo.
+   * Busca paciente por teléfono nacional (solo dígitos), clínica y estado activo. Devuelve PatientDTO o undefined.
    */
-  async findByNationalPhoneAndClinic(telefonoNacional: string, id_clinica: number): Promise<any | undefined> {
+  async findByNationalPhoneAndClinic(telefonoNacional: string, id_clinica: number): Promise<PatientDTO | undefined> {
     const row = await ejecutarUnicoResultado(
       `SELECT id_paciente, nombre, apellido, telefono, id_clinica, nif_cif, id_super_clinica, id_cliente, kommo_lead_id
        FROM pacientes
@@ -92,6 +93,53 @@ export class PatientRepositoryMySQL implements IPatientRepository {
        LIMIT 1`,
       [telefonoNacional, id_clinica]
     );
-    return row || undefined;
+    if (!row) return undefined;
+    // Los campos seleccionados aquí son menos, así que sólo se devuelven esos
+    return {
+      id_paciente: row.id_paciente,
+      nombre: row.nombre,
+      apellido: row.apellido,
+      telefono: row.telefono,
+      id_clinica: row.id_clinica,
+      nif_cif: row.nif_cif,
+      id_super_clinica: row.id_super_clinica,
+      id_cliente: row.id_cliente,
+      kommo_lead_id: row.kommo_lead_id,
+      // Defaults para campos obligatorios que no vienen del SELECT:
+      lopd_aceptado: false,
+    } as PatientDTO;
+  }
+
+  /**
+   * Convierte un row de la BD a PatientDTO
+   */
+  private mapRowToPatientDTO(row: any): PatientDTO {
+    return {
+      id_paciente: row.id_paciente,
+      nombre: row.nombre,
+      apellido: row.apellido,
+      email: row.email,
+      telefono: row.telefono,
+      fecha_nacimiento: row.fecha_nacimiento,
+      id_sexo: row.id_sexo,
+      direccion: row.direccion,
+      ciudad: row.ciudad,
+      id_clinica: row.id_clinica,
+      codigo_postal: row.codigo_postal,
+      nif_cif: row.nif_cif,
+      referido: row.referido,
+      observaciones: row.observaciones,
+      id_super_clinica: row.id_super_clinica,
+      id_estado_registro: row.id_estado_registro,
+      id_cliente: row.id_cliente,
+      lopd_aceptado: !!row.lopd_aceptado,
+      kommo_lead_id: row.kommo_lead_id,
+      old_id: row.old_id,
+      fecha_alta: row.fecha_alta,
+      fecha_creacion: row.fecha_creacion,
+      fecha_modificacion: row.fecha_modificacion,
+      usuario_creacion: row.usuario_creacion,
+      id_usuario_creacion: row.id_usuario_creacion,
+    };
   }
 }

@@ -3,10 +3,10 @@
 import { BotConfigDTO, BotConfigEnrichedDTO } from "@clinickeys-agents/core/domain/botConfig";
 import { defaultPlaceholders } from "@clinickeys-agents/core/utils";
 import { BotConfigEnricher } from "@clinickeys-agents/core/application/services";
-import { IBotConfigRepository } from "@clinickeys-agents/core/domain/botConfig";
+import { IBotConfigRepository, BotConfigType } from "@clinickeys-agents/core/domain/botConfig";
 
 export interface CreateBotConfigInput {
-  botConfigType: string;
+  botConfigType: BotConfigType;
   botConfigId: string;
   clinicSource: string;
   superClinicId: number,
@@ -48,10 +48,6 @@ export class BotConfigService {
    */
   async getBotConfig(botConfigId: string, clinicSource: string, clinicId: number): Promise<BotConfigDTO | null> {
     return await this.repo.findByPrimaryKey(botConfigId, clinicSource, clinicId);
-  }
-
-  async findByPrimaryKey(botConfigId: string, clinicSource: string, clinicId: number): Promise<BotConfigDTO | null> {
-    return this.repo.findByPrimaryKey(botConfigId, clinicSource, clinicId);
   }
 
   /**

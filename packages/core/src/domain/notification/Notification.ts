@@ -9,7 +9,7 @@ import { NotificationDTO, NotificationState } from "./dtos";
 export class Notification {
   readonly notificationId: number;
   readonly type: string;
-  readonly destinationEntity: string;
+  readonly recipientType: string;
   readonly message: string;
   readonly scheduledDate: string; // ISO Date
   readonly scheduledTime: string; // HH:mm:ss
@@ -17,33 +17,33 @@ export class Notification {
   readonly superClinicId: number;
   readonly state: NotificationState;
 
-  readonly entityDestinationId?: number;
-  readonly typeRecipientId?: number;
+  readonly recipientTypeId?: number;
+  readonly recipientId?: number;
   readonly payload?: any;
   readonly realSendDate?: string;
   readonly createdAt: string;
   readonly updatedAt: string;
-  readonly triggerEntity?: string;
-  readonly triggerEntityId?: number;
+  readonly triggerType?: string;
+  readonly triggerTypeId?: number;
 
   constructor(dto: NotificationDTO) {
-    this.notificationId = dto.notificacionId;
-    this.type = dto.type;
-    this.destinationEntity = dto.destinationEntity;
-    this.message = dto.message;
-    this.scheduledDate = dto.scheduledDate;
-    this.scheduledTime = dto.scheduledTime;
-    this.clinicId = dto.clinicId;
-    this.superClinicId = dto.superClinicId;
-    this.state = dto.state;
-    this.entityDestinationId = dto.entityDestinationId;
-    this.typeRecipientId = dto.typeRecipientId;
+    this.state = dto.estado;
+    this.message = dto.mensaje;
     this.payload = dto.payload;
-    this.realSendDate = dto.realSendDate;
-    this.createdAt = dto.createdAt;
-    this.updatedAt = dto.updatedAt;
-    this.triggerEntity = dto.triggerEntity;
-    this.triggerEntityId = dto.triggerEntityId;
+    this.clinicId = dto.id_clinica;
+    this.createdAt = dto.creado_el;
+    this.type = dto.tipo_notificacion;
+    this.updatedAt = dto.actualizado_el;
+    this.realSendDate = dto.fecha_envio_real;
+    this.recipientType = dto.entidad_destino;
+    this.superClinicId = dto.id_super_clinica;
+    this.notificationId = dto.id_notificacion;
+    this.recipientId = dto.id_entidad_destino;
+    this.triggerType = dto.entidad_desencadenadora;
+    this.scheduledTime = dto.hora_envio_programada;
+    this.recipientTypeId = dto.id_tipo_destinatario;
+    this.scheduledDate = dto.fecha_envio_programada;
+    this.triggerTypeId = dto.id_entidad_desencadenadora;
   }
 
   // Métodos de dominio adicionales pueden agregarse aquí si son necesarios.

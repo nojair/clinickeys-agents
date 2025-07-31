@@ -14,41 +14,35 @@ export type NotificationState =
   | 'omitido';
 
 export type NotificationPayload = {
-  patientId: number;
-  patientFirstName: string;
-  patientLastName: string;
-  patient_phone: string;
-  clinicId: number;
-  clinicName: string;
-  appointmentDate: string; // YYYY-MM-DD
-  appointmentStartTime: string; // HH:mm:ss
-  appointmentEndTime: string; // HH:mm:ss
-  appointmentWeekdayName: string;
-  doctor_id: number;
-  doctorFullName: string;
-  treatment_id: number;
-  treatmentName: string;
-  space_id: number;
-  spaceName: string;
+  visit_date: string;
+  clinic_name: string;
+  visit_end_time: string;
+  treatment_name: string;
+  visit_init_time: string;
+  medic_full_name: string;
+  patient_lastname: string;
+  visit_space_name: string;
+  patient_firstname: string;
+  visit_week_day_name: string;
   [key: string]: any;
 };
 
 export interface NotificationDTO {
-  notificacionId: number;
-  type: string;
-  entityDestinationId?: number;
-  typeRecipientId?: number;
-  destinationEntity: string;
-  message: string;
+  id_notificacion: number;
+  tipo_notificacion: string;
+  id_entidad_destino?: number;
+  entidad_destino: string;
+  id_tipo_destinatario?: number;
+  mensaje: string;
   payload?: NotificationPayload;
-  scheduledDate: string; // ISO Date
-  scheduledTime: string; // HH:mm:ss
-  realSendDate?: string; // ISO DateTime
-  state: NotificationState;
-  createdAt: string; // ISO DateTime
-  updatedAt: string; // ISO DateTime
-  triggerEntity?: string;
-  triggerEntityId?: number;
-  clinicId: number;
-  superClinicId: number;
+  fecha_envio_programada: string; // ISO Date
+  hora_envio_programada: string; // HH:mm:ss
+  fecha_envio_real?: string; // ISO DateTime
+  estado: NotificationState;
+  creado_el: string; // ISO DateTime
+  actualizado_el: string; // ISO DateTime
+  entidad_desencadenadora?: string;
+  id_entidad_desencadenadora?: number;
+  id_clinica: number;
+  id_super_clinica: number;
 }

@@ -42,7 +42,7 @@ export class AppointmentService {
         context: { appointmentId }
       });
     }
-    const CANCELED_STATUS = 6;
+    const CANCELED_STATUS = 2;
     await this.updateAppointment({
       id_cita: appointmentId,
       id_estado_cita: CANCELED_STATUS,

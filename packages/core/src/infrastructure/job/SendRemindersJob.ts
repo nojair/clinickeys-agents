@@ -7,14 +7,20 @@ import { KommoService } from '@clinickeys-agents/core/application/services/Kommo
 import { localTime, safeISODate, parseClinicDate, canSendReminder } from '@clinickeys-agents/core/utils';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 import {
-  PATIENT_FIRST_NAME,
-  PATIENT_LAST_NAME,
-  PATIENT_LEAD_ID,
+  SPACE_NAME,
+  CLINIC_NAME,
   PATIENT_PHONE,
-  ID_NOTIFICATION,
+  TREATMENT_NAME,
+  NOTIFICATION_ID,
   REMINDER_MESSAGE,
+  DOCTOR_FULL_NAME,
+  APPOINTMENT_DATE,
+  PATIENT_LAST_NAME,
+  PATIENT_FIRST_NAME,
   TRIGGERED_BY_MACHINE,
-  PLEASE_WAIT_MESSAGE
+  APPOINTMENT_END_TIME,
+  APPOINTMENT_START_TIME,
+  APPOINTMENT_WEEKDAY_NAME,
 } from '@clinickeys-agents/core/utils/constants';
 
 export interface SendRemindersJobProps {
@@ -69,36 +75,50 @@ export class SendRemindersJob {
           const kommoRepo = new KommoRepository(kommoGateway);
           const kommoService = new KommoService(kommoRepo, this.patientRepo);
 
+          
           const now = localTime(timezone);
           const MIN_HOUR = 10;
           const hourNow = now.hour;
-
+          
           for (const n of notifications) {
             try {
-              const progDate = parseClinicDate(n.scheduledDate, timezone).toISODate();
-              Logger.info('[JOB] Analizando notificación', { id: n.notificacionId, telefono: n.payload?.patient_phone, progDate, hourNow });
+              const patient = await this.patientRepo.findById(n.id_entidad_destino as number);
+              if (!patient) throw new Error("No patient found");
+              const progDate = parseClinicDate(n.hora_envio_programada, timezone).toISODate();
+              Logger.info('[JOB] Analizando notificación', { id: n.id_notificacion, telefono: patient.telefono, progDate, hourNow });
 
               if (!canSendReminder(now, MIN_HOUR)) {
-                Logger.info('[JOB] Hora local < MIN_HOUR, pendiente', { hourNow, MIN_HOUR, id: n.notificacionId });
+                Logger.info('[JOB] Hora local < MIN_HOUR, pendiente', { hourNow, MIN_HOUR, id: n.id_notificacion });
                 continue;
               }
 
               // 1. Asegurar lead
               const leadId = await kommoService.ensureLead({
                 botConfig: cfg,
-                patientId: n.payload?.patientId!,  
-                patientFirstName: n.payload?.patientFirstName || '',
-                patientLastName: n.payload?.patientLastName || '',
-                patientPhone: n.payload?.patient_phone || '',
-                notificationId: n.notificacionId
+                patientId: patient.id_paciente,
+                [PATIENT_FIRST_NAME]: n.payload?.patient_firstname || '',
+                [PATIENT_LAST_NAME]: n.payload?.patient_lastname || '',
+                [PATIENT_PHONE]: patient.telefono || '',
+                [NOTIFICATION_ID]: n.id_notificacion
               });
 
               // 2. Actualizar campos de recordatorio
               const customFields: Record<string, string> = {
-                [PATIENT_LEAD_ID]: String(n.payload?.patientId),
-                [REMINDER_MESSAGE]: n.payload?.reminderMessage || '',
-                [ID_NOTIFICATION]: String(n.notificacionId),
-                [TRIGGERED_BY_MACHINE]: 'true'
+                [REMINDER_MESSAGE]: n.mensaje || '',
+                [NOTIFICATION_ID]: String(n.id_notificacion),
+                [TRIGGERED_BY_MACHINE]: 'true',
+                [PATIENT_FIRST_NAME]: n.payload?.patient_firstname || "",
+                [PATIENT_LAST_NAME]: n.payload?.patient_lastname || "",
+                [PATIENT_PHONE]: n.payload?.patient_lastname || "",
+                [CLINIC_NAME]: n.payload?.clinic_name || "",
+                [APPOINTMENT_DATE]: n.payload?.visit_date || "",
+                [APPOINTMENT_START_TIME]: n.payload?.visit_init_time || "",
+                [APPOINTMENT_END_TIME]: n.payload?.visit_end_time || "",
+                [APPOINTMENT_WEEKDAY_NAME]: n.payload?.visit_week_day_name || "",
+                [DOCTOR_FULL_NAME]: n.payload?.medic_full_name || "",
+                [TREATMENT_NAME]: n.payload?.treatment_name || "",
+                [SPACE_NAME]: n.payload?.visit_space_name || "",
+                
               };
               await kommoService.updateLeadCustomFields({ botConfig: cfg, leadId, customFields });
 
@@ -107,10 +127,10 @@ export class SendRemindersJob {
               Logger.info('[JOB] Salesbot ejecutado', { salesbotId, leadId });
 
               // 4. Marcar como enviado
-              await this.notificationsRepo.updateState(n.notificacionId, 'enviado');
+              await this.notificationsRepo.updateState(n.id_notificacion, 'enviado');
             } catch (err) {
-              await this.notificationsRepo.updateState(n.notificacionId, 'fallido');
-              Logger.error('[JOB] Error enviando recordatorio', { notificationId: n.notificacionId, clinicId, error: err });
+              await this.notificationsRepo.updateState(n.id_notificacion, 'fallido');
+              Logger.error('[JOB] Error enviando recordatorio', { notificationId: n.id_notificacion, clinicId, error: err });
             }
           }
         }

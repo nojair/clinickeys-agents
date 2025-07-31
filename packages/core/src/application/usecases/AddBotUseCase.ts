@@ -1,6 +1,6 @@
 // packages/core/src/application/usecases/AddBotUseCase.ts
 
-import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig";
+import { BotConfigDTO, BotConfigType } from "@clinickeys-agents/core/domain/botConfig";
 import { IBotConfigRepository } from "@clinickeys-agents/core/domain/botConfig";
 import { IOpenAIAssistantRepository } from "@clinickeys-agents/core/domain/openai";
 import { defaultPlaceholders, generateInstructions } from "@clinickeys-agents/core/utils";
@@ -8,7 +8,7 @@ import path from "path";
 import fs from "fs";
 
 export interface AddBotInput {
-  botConfigType: string;
+  botConfigType: BotConfigType;
   botConfigId: string;
   clinicSource: string;
   superClinicId: number;

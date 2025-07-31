@@ -444,8 +444,4 @@ BEGIN
   END IF;
 
 END$$
-<<<<<<< HEAD
-=======
-
->>>>>>> dev
 DELIMITER ;

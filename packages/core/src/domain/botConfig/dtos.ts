@@ -3,6 +3,14 @@
 import { KommoCustomFieldExistence } from "@clinickeys-agents/core/application/services";
 
 /**
+ * Enum para los tipos de bot config.
+ */
+export enum BotConfigType {
+  NotificationBot = "notificationBot",
+  ChatBot = "chatBot",
+}
+
+/**
  * DTO para la configuración de un Bot.
  * Corresponde a los ítems almacenados en DynamoDB.
  */
@@ -17,7 +25,7 @@ export interface BotConfigDTO {
 
   // Identidad y multi‑tenant
   botConfigId: string;   // UUID v4, único global
-  botConfigType: string; // "notification", "chat", ...
+  botConfigType: BotConfigType; // Enum: "notificationBot" | "chatBot"
   clinicSource: string;  // "legacy", "v2", ...
   clinicId: number;      // ID en el sistema correspondiente
   superClinicId: number;
