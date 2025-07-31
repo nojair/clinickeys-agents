@@ -5,11 +5,15 @@ import { PatientRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/p
 import { NotificationRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/notification";
 import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/botConfig";
 import { SendRemindersJob } from "@clinickeys-agents/core/infrastructure/job";
-import { APIGatewayProxyResult as R } from "aws-lambda";
 
 import type { Handler } from 'aws-lambda';
 
-export const handler: Handler = async (): Promise<R> => {
+type reminderHandlerResponse = {
+  statusCode: number,
+  body: string,
+};
+
+export const handler: Handler<any, reminderHandlerResponse> = async () => {
   console.log('Lambda execution start');
   // Crear pools y clientes de infraestructura
   const mysqlPool = createMySQLPool({

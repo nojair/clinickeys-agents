@@ -1,6 +1,6 @@
 // packages/core/src/interface/handlers/leadProcessor.ts
 
-import { SQSEvent } from "aws-lambda";
+import type { Handler, SQSEvent } from "aws-lambda";
 
 import { createDynamoDocumentClient, getEnvVar } from "@clinickeys-agents/core/infrastructure/config";
 import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/botConfig";
@@ -28,6 +28,6 @@ const controller = new LeadProcessorController(getBotConfigUC, logger);
 // ───────────────────────────────────────────────────────────────────────────
 // Lambda entry point
 // ───────────────────────────────────────────────────────────────────────────
-export const handler = async (event: SQSEvent): Promise<void> => {
+export const handler: Handler<SQSEvent, void> = async (event) => {
   await controller.handle(event);
 };

@@ -19,7 +19,7 @@ import {
   type ListGlobalBotConfigsInput,
 } from "@clinickeys-agents/core/application/usecases";
 
-import type { APIGatewayProxyEventV2 as Event, APIGatewayProxyResult as Result, Handler } from "aws-lambda";
+import type { Handler, APIGatewayProxyEventV2 as E, APIGatewayProxyResultV2 as R } from "aws-lambda";
 
 // -------------------- DI --------------------
 const docClient = createDynamoDocumentClient({
@@ -43,7 +43,7 @@ const controller = new BotController({
 });
 
 // -------------------- Handler --------------------
-export const handler: Handler<Event, Result> = async (event) => {
+export const handler: Handler<E, R> = async (event) => {
   try {
     const { method, path } = event.requestContext.http;
     const qs = event.queryStringParameters ?? {};

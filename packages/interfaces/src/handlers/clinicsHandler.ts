@@ -4,9 +4,9 @@ import { ClinicRepositoryFactory } from "@clinickeys-agents/core/infrastructure/
 import { ClinicService } from "@clinickeys-agents/core/application/services";
 import { ClinicController } from "../controllers";
 
-import type { Handler, APIGatewayProxyResult as R } from "aws-lambda";
+import type { Handler, APIGatewayProxyEventV2 as E, APIGatewayProxyResultV2 as R } from "aws-lambda";
 
-export const handler: Handler = async (event): Promise<R> => {
+export const handler: Handler<E, R> = async (event) => {
   const factory = new ClinicRepositoryFactory();
 
   // El repo debe vivir en el scope del handler para cerrarlo en finally

@@ -1,9 +1,6 @@
 // packages/core/src/interface/handlers/leadWebhook.ts
 
-import {
-  APIGatewayProxyEventV2,
-  APIGatewayProxyStructuredResultV2,
-} from "aws-lambda";
+import type { Handler, LambdaFunctionURLEvent as E, LambdaFunctionURLResult as R } from "aws-lambda";
 
 import { LeadWebhookController } from "../controllers";
 import { ProcessLeadWebhookUseCase } from "@clinickeys-agents/core/application/usecases";
@@ -22,8 +19,6 @@ const controller = new LeadWebhookController(processUC, messagePublisher, Logger
 // ───────────────────────────────────────────────────────────────────────────
 // Lambda entry point
 // ───────────────────────────────────────────────────────────────────────────
-export const handler = async (
-  event: APIGatewayProxyEventV2,
-): Promise<APIGatewayProxyStructuredResultV2> => {
+export const handler: Handler<E, R> = async (event) => {
   return controller.handle(event);
 };
