@@ -1,6 +1,6 @@
 // packages/core/src/infrastructure/botConfig/BotConfigRepositoryDynamo.ts
 
-import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig";
+import { BotConfigDTO, IBotConfigRepository } from "@clinickeys-agents/core/domain/botConfig";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import crc32 from "crc-32";
 import {
@@ -21,7 +21,7 @@ export interface BotConfigRepositoryDynamoProps {
  * Repositorio DynamoDB para BotConfig.
  * Encapsula hashing (bucket), composición de PK/SK y paginación.
  */
-export class BotConfigRepositoryDynamo {
+export class BotConfigRepositoryDynamo implements IBotConfigRepository {
   private readonly tableName: string;
   private readonly docClient: DynamoDBDocumentClient;
   private readonly buckets: number;
@@ -72,7 +72,7 @@ export class BotConfigRepositoryDynamo {
   /**
    * Obtener un BotConfig único (clave compuesta).
    */
-  async findByBotConfig(
+  async findByPrimaryKey(
     botConfigId: string,
     clinicSource: string,
     clinicId: number
@@ -83,6 +83,56 @@ export class BotConfigRepositoryDynamo {
       new GetCommand({ TableName: this.tableName, Key: { pk, sk } })
     );
     return (res.Item as BotConfigDTO) ?? null;
+  }
+
+  /**
+ * Buscar todos los BotConfig por tipo de bot (GSI byBotConfigType).
+ */
+  async listByBotConfigType(
+    botConfigType: string,
+    limit = 50,
+    cursor?: Record<string, unknown>
+  ): Promise<{ items: BotConfigDTO[]; nextCursor?: Record<string, unknown> }> {
+    const res = await this.docClient.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        IndexName: "byBotConfigType",
+        KeyConditionExpression: "botConfigType = :type",
+        ExpressionAttributeValues: { ":type": botConfigType },
+        ScanIndexForward: false,
+        Limit: limit,
+        ExclusiveStartKey: cursor,
+      })
+    );
+    return {
+      items: (res.Items as BotConfigDTO[]) ?? [],
+      nextCursor: res.LastEvaluatedKey,
+    };
+  }
+
+  /**
+ * Buscar todos los BotConfig por subdominio Kommo (GSI byKommoSubdomain).
+ */
+  async listByKommoSubdomain(
+    kommoSubdomain: string,
+    limit = 50,
+    cursor?: Record<string, unknown>
+  ): Promise<{ items: BotConfigDTO[]; nextCursor?: Record<string, unknown> }> {
+    const res = await this.docClient.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        IndexName: "byKommoSubdomain",
+        KeyConditionExpression: "kommoSubdomain = :sd",
+        ExpressionAttributeValues: { ":sd": kommoSubdomain },
+        ScanIndexForward: false,
+        Limit: limit,
+        ExclusiveStartKey: cursor,
+      })
+    );
+    return {
+      items: (res.Items as BotConfigDTO[]) ?? [],
+      nextCursor: res.LastEvaluatedKey,
+    };
   }
 
   /**
@@ -111,7 +161,7 @@ export class BotConfigRepositoryDynamo {
   }
 
   /**
-   * Listar BotConfig por fuente (clinicSource) usando GSI bySourceCreated.
+   * Listar BotConfig por fuente (clinicSource) usando GSI byClinicSource.
    */
   async listBySource(
     clinicSource: string,
@@ -121,7 +171,7 @@ export class BotConfigRepositoryDynamo {
     const res = await this.docClient.send(
       new QueryCommand({
         TableName: this.tableName,
-        IndexName: "bySourceCreated",
+        IndexName: "byClinicSource",
         KeyConditionExpression: "clinicSource = :src",
         ExpressionAttributeValues: { ":src": clinicSource },
         ScanIndexForward: false,
@@ -178,19 +228,14 @@ export class BotConfigRepositoryDynamo {
     clinicSource: string,
     clinicId: number,
     update: Partial<Pick<BotConfigDTO,
-      | "isActive"
+      | "isEnabled"
       | "description"
       | "name"
       | "timezone"
       | "defaultCountry"
-      | "kommoApiKey"
+      | "kommo"
       | "kommoSubdomain"
-    >> & {
-      kommo?: {
-        salesbotId?: number;
-        chatSalesbotId?: number;
-      };
-    }
+    >>
   ): Promise<void> {
     const pk = this.pkOf(clinicSource, clinicId);
     const sk = this.skOf(botConfigId);
@@ -207,23 +252,19 @@ export class BotConfigRepositoryDynamo {
       }
     };
 
-    add("isActive", update.isActive);
+    add("isEnabled", update.isEnabled);
     add("description", update.description);
     add("name", update.name);
     add("timezone", update.timezone);
     add("defaultCountry", update.defaultCountry);
-    add("kommoApiKey", update.kommoApiKey);
+    add("kommo", update.kommo);
     add("kommoSubdomain", update.kommoSubdomain);
 
-    // Manejo para patch de kommo.salesbotId y kommo.chatSalesbotId de forma independiente
+    // Manejo para patch de kommo.salesbotId
     if (update.kommo) {
       if (update.kommo.salesbotId !== undefined) {
-        exp.push("kommo.salesbotId = :kommoSalesbotId");
-        attrs[":kommoSalesbotId"] = update.kommo.salesbotId;
-      }
-      if (update.kommo.chatSalesbotId !== undefined) {
-        exp.push("kommo.chatSalesbotId = :kommoChatSalesbotId");
-        attrs[":kommoChatSalesbotId"] = update.kommo.chatSalesbotId;
+        exp.push("kommo.salesbotId = :salesbotId");
+        attrs[":salesbotId"] = update.kommo.salesbotId;
       }
     }
 

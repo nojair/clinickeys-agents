@@ -15,7 +15,25 @@ export interface IBotConfigRepository {
   /**
    * Obtiene un BotConfig único por sus claves primarias lógicas.
    */
-  findByBotConfig(botConfigId: string, clinicSource: string, clinicId: number): Promise<BotConfigDTO | null>;
+  findByPrimaryKey(botConfigId: string, clinicSource: string, clinicId: number): Promise<BotConfigDTO | null>;
+
+  /**
+   * Lista todos los BotConfig por subdominio Kommo (GSI byKommoSubdomain).
+   */
+  listByKommoSubdomain(
+    kommoSubdomain: string,
+    limit?: number,
+    cursor?: Record<string, any>
+  ): Promise<{ items: BotConfigDTO[]; nextCursor?: Record<string, any> }>;
+
+  /**
+   * Lista todos los BotConfig de un tipo específico (GSI byBotConfigType, global).
+   */
+  listByBotConfigType(
+    botConfigType: string,
+    limit?: number,
+    cursor?: Record<string, any>
+  ): Promise<{ items: BotConfigDTO[]; nextCursor?: Record<string, any> }>;
 
   /**
    * Lista todos los BotConfig de una clínica (paginado).
@@ -23,7 +41,7 @@ export interface IBotConfigRepository {
   listByClinic(clinicSource: string, clinicId: number, limit?: number, cursor?: Record<string, any>): Promise<{ items: BotConfigDTO[]; nextCursor?: Record<string, any> }>;
 
   /**
-   * Lista los BotConfig de una fuente (GSI bySourceCreated).
+   * Lista los BotConfig de una fuente (GSI byClinicSource).
    */
   listBySource(clinicSource: string, limit?: number, cursor?: Record<string, any>): Promise<{ items: BotConfigDTO[]; nextCursor?: Record<string, any> }>;
 

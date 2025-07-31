@@ -8,7 +8,7 @@ import { SUFFIX } from "./config";
  *  Cada registro representa la configuración de UN BOT específico para una clínica.
  *
  *  PK → "CLINIC#<clinicSource>#<clinicId>"
- *  SK → "BOT_CONFIG#<botType>#<botConfigId>"
+ *  SK → "BOT_CONFIG#<botConfigType>#<botConfigId>"
  *
  *  Ejemplo de valores:
  *    pk: "CLINIC#v2#c123"
@@ -17,7 +17,7 @@ import { SUFFIX } from "./config";
  *  GSIs disponibles:
  *   • byKommoSubdomain → listado/lookup por CRM + subdominio
  *   • byBucketCreated → feed global shard‑bucket → creado más reciente
- *   • bySourceCreated → feed por fuente
+ *   • byClinicSource → feed por fuente
  */
 
 export const botConfigDynamo = new sst.aws.Dynamo(`BotConfigDynamo${SUFFIX}`, {
@@ -34,7 +34,7 @@ export const botConfigDynamo = new sst.aws.Dynamo(`BotConfigDynamo${SUFFIX}`, {
 
     /**
      * Clave de ordenamiento (range)
-     * Formato: "BOT_CONFIG#<botType>#<botConfigId>"
+     * Formato: "BOT_CONFIG#<botConfigType>#<botConfigId>"
      */
     sk: "string",
 
@@ -46,7 +46,7 @@ export const botConfigDynamo = new sst.aws.Dynamo(`BotConfigDynamo${SUFFIX}`, {
      * Tipo de bot al que corresponde esta configuración.
      * Ejemplo: "notificationBot", "chatBot", "ventasBot", etc.
      */
-    botType: "string",
+    botConfigType: "string",
 
     // =======================
     // Estado y control
@@ -134,6 +134,13 @@ export const botConfigDynamo = new sst.aws.Dynamo(`BotConfigDynamo${SUFFIX}`, {
   },
 
   globalIndexes: {
+    /** Lookup y listado por Bot Config Type */
+    byBotConfigType: {
+      hashKey: "botConfigType",
+      rangeKey: "createdAt",
+      projection: "all",
+    },
+
     /** Lookup y listado por CRM + subdominio */
     byKommoSubdomain: {
       hashKey: "kommoSubdomain",
@@ -149,7 +156,7 @@ export const botConfigDynamo = new sst.aws.Dynamo(`BotConfigDynamo${SUFFIX}`, {
     },
 
     /** Feed por fuente */
-    bySourceCreated: {
+    byClinicSourceCreated: {
       hashKey: "clinicSource",
       rangeKey: "createdAt",
       projection: "all",

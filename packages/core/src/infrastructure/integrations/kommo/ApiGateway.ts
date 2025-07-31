@@ -81,19 +81,19 @@ export interface KommoContactResponse {
 // ---------- GATEWAY KOMMO PROFESIONAL ----------
 
 export interface KommoApiGatewayOptions {
-  apiKey: string;
+  longLivedToken: string;
   subdomain: string;
 }
 
 export class KommoApiGateway {
-  private apiKey: string;
+  private longLivedToken: string;
   private subdomain: string;
   private baseUrl: string;
   private fieldCache: Record<string, KommoLeadCustomFieldDefinition[] | KommoContactCustomFieldDefinition[]> = {};
   private http: HttpClient;
 
-  constructor({ apiKey, subdomain }: KommoApiGatewayOptions) {
-    this.apiKey = apiKey;
+  constructor({ longLivedToken, subdomain }: KommoApiGatewayOptions) {
+    this.longLivedToken = longLivedToken;
     this.subdomain = subdomain;
     this.baseUrl = `https://${subdomain}.kommo.com/api/v4`;
     this.http = new HttpClient();
@@ -104,7 +104,7 @@ export class KommoApiGateway {
     const res = await this.http.request<any>(url, {
       method: "PATCH",
       body: payload,
-      token: this.apiKey,
+      token: this.longLivedToken,
     });
     return res.data;
   }
@@ -117,7 +117,7 @@ export class KommoApiGateway {
     const res = await this.http.request<any>(url, {
       method: "POST",
       body,
-      token: this.apiKey,
+      token: this.longLivedToken,
     });
     return res.data;
   }
@@ -127,7 +127,7 @@ export class KommoApiGateway {
     const res = await this.http.request<KommoCreateContactResponse>(url, {
       method: "POST",
       body,
-      token: this.apiKey,
+      token: this.longLivedToken,
     });
     return res.data;
   }
@@ -137,7 +137,7 @@ export class KommoApiGateway {
     const res = await this.http.request<KommoCreateLeadResponse>(url, {
       method: "POST",
       body,
-      token: this.apiKey,
+      token: this.longLivedToken,
     });
     return res.data;
   }
@@ -146,7 +146,7 @@ export class KommoApiGateway {
     const query = encodeURIComponent(phone);
     const url = `${this.baseUrl}/contacts?query=${query}&with=leads,catalog_elements&order[updated_at]=desc`;
     const res = await this.http.request<KommoSearchContactResponse>(url, {
-      token: this.apiKey,
+      token: this.longLivedToken,
     });
     if (res.status === 204) return null;
     return res.data;
@@ -155,7 +155,7 @@ export class KommoApiGateway {
   async getLeadById({ leadId }: { leadId: number }): Promise<KommoGetLeadByIdResponse | null> {
     const url = `${this.baseUrl}/leads/${leadId}?with=contacts`;
     const res = await this.http.request<KommoGetLeadByIdResponse>(url, {
-      token: this.apiKey,
+      token: this.longLivedToken,
     });
     if (res.status === 204) return null;
     return res.data;
@@ -167,7 +167,7 @@ export class KommoApiGateway {
     if (this.fieldCache[entityType]) return this.fieldCache[entityType];
     const url = `${this.baseUrl}/${entityType}/custom_fields`;
     const res = await this.http.request<any>(url, {
-      token: this.apiKey,
+      token: this.longLivedToken,
     });
     if (!res.data || !res.data._embedded?.custom_fields) {
       throw new Error(`Error fetching ${entityType} custom fields: ${res.status}`);
@@ -181,7 +181,7 @@ export class KommoApiGateway {
     const res = await this.http.request<any>(url, {
       method: "POST",
       body,
-      token: this.apiKey,
+      token: this.longLivedToken,
     });
     return res.data;
   }
@@ -189,7 +189,7 @@ export class KommoApiGateway {
   async getContactById({ contactId }: { contactId: number }): Promise<KommoContactResponse | null> {
     const url = `${this.baseUrl}/contacts/${contactId}`;
     const res = await this.http.request<KommoContactResponse>(url, {
-      token: this.apiKey,
+      token: this.longLivedToken,
     });
     if (res.status === 204) return null;
     return res.data;

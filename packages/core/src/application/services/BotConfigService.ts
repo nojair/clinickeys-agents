@@ -6,13 +6,15 @@ import { BotConfigEnricher } from "@clinickeys-agents/core/application/services"
 import { IBotConfigRepository } from "@clinickeys-agents/core/domain/botConfig";
 
 export interface CreateBotConfigInput {
+  botConfigType: string;
   botConfigId: string;
   clinicSource: string;
   superClinicId: number,
   clinicId: number;
-  kommoSubdomain?: string;
-  kommoApiKey: string;
-  kommoSalesbotId?: number;
+  kommoSubdomain: string;
+  longLivedToken: string;
+  responsibleUserId: string,
+  salesbotId: number;
   defaultCountry: string;
   timezone: string;
   name: string;
@@ -20,7 +22,7 @@ export interface CreateBotConfigInput {
   fieldsProfile: string;
   placeholders?: Record<string, string>;
   openai: {
-    token: string;
+    apiKey: string;
     // assistants?: Record<string, string>; // Ya no se maneja aquí
   };
 }
@@ -36,7 +38,7 @@ export class BotConfigService {
    * Obtiene un BotConfig enriquecido (campos custom, is_ready, etc.)
    */
   async getEnrichedBotConfig(botConfigId: string, clinicSource: string, clinicId: number): Promise<BotConfigEnrichedDTO | null> {
-    const dto = await this.repo.findByBotConfig(botConfigId, clinicSource, clinicId);
+    const dto = await this.repo.findByPrimaryKey(botConfigId, clinicSource, clinicId);
     if (!dto) return null;
     return await BotConfigEnricher.enrich(dto);
   }
@@ -45,11 +47,11 @@ export class BotConfigService {
    * Obtiene un BotConfig "raw" (sin enriquecer).
    */
   async getBotConfig(botConfigId: string, clinicSource: string, clinicId: number): Promise<BotConfigDTO | null> {
-    return await this.repo.findByBotConfig(botConfigId, clinicSource, clinicId);
+    return await this.repo.findByPrimaryKey(botConfigId, clinicSource, clinicId);
   }
 
-  async findByBotConfig(botConfigId: string, clinicSource: string, clinicId: number): Promise<BotConfigDTO | null> {
-    return this.repo.findByBotConfig(botConfigId, clinicSource, clinicId);
+  async findByPrimaryKey(botConfigId: string, clinicSource: string, clinicId: number): Promise<BotConfigDTO | null> {
+    return this.repo.findByPrimaryKey(botConfigId, clinicSource, clinicId);
   }
 
   /**
@@ -61,13 +63,16 @@ export class BotConfigService {
 
     const toSave: Omit<BotConfigDTO, "pk" | "sk" | "bucket" | "createdAt" | "updatedAt"> = {
       botConfigId: input.botConfigId,
+      botConfigType: input.botConfigType,
       superClinicId: input.superClinicId,
       clinicSource: input.clinicSource,
       clinicId: input.clinicId,
       kommoSubdomain: input.kommoSubdomain,
-      kommoApiKey: input.kommoApiKey,
       kommo: {
-        salesbotId: input.kommoSalesbotId,
+        longLivedToken: input.longLivedToken,
+        responsibleUserId: input.responsibleUserId,
+        subdomain: input.kommoSubdomain,
+        salesbotId: input.salesbotId,
       },
       defaultCountry: input.defaultCountry,
       timezone: input.timezone,
@@ -75,11 +80,11 @@ export class BotConfigService {
       description: input.description,
       fieldsProfile: input.fieldsProfile,
       openai: {
-        token: input.openai.token,
+        apiKey: input.openai.apiKey,
         // assistants se agregará/actualizará luego desde el UseCase
       },
       placeholders,
-      isActive: true, // o como prefieras
+      isEnabled: true, // o como prefieras
     };
 
     // Guarda y retorna el BotConfig completo

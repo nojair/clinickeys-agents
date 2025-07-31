@@ -8,13 +8,15 @@ import path from "path";
 import fs from "fs";
 
 export interface AddBotInput {
+  botConfigType: string;
   botConfigId: string;
   clinicSource: string;
   superClinicId: number;
   clinicId: number;
-  kommoSubdomain?: string;
-  kommoApiKey: string;
-  kommoSalesbotId?: number;
+  kommoSubdomain: string;
+  responsibleUserId: string;
+  longLivedToken: string;
+  salesbotId: number;
   defaultCountry: string;
   timezone: string;
   name: string;
@@ -22,7 +24,7 @@ export interface AddBotInput {
   fieldsProfile: string;
   placeholders?: Record<string, string>;
   openai: {
-    token: string;
+    apiKey: string;
   };
   // Nueva entrada: permite restringir qué assistants crear o pasar lista explícita
   assistantsToCreate?: string[]; // Ej: ["reception", "marketing"]
@@ -30,11 +32,11 @@ export interface AddBotInput {
 
 export class AddBotUseCase {
   private readonly botConfigRepo: IBotConfigRepository;
-  private readonly openaiRepoFactory: (token: string) => IOpenAIAssistantRepository;
+  private readonly openaiRepoFactory: (apiKey: string) => IOpenAIAssistantRepository;
 
   constructor(
     botConfigRepo: IBotConfigRepository,
-    openaiRepoFactory: (token: string) => IOpenAIAssistantRepository // factory DI para OpenAI repo
+    openaiRepoFactory: (apiKey: string) => IOpenAIAssistantRepository // factory DI para OpenAI repo
   ) {
     this.botConfigRepo = botConfigRepo;
     this.openaiRepoFactory = openaiRepoFactory;
@@ -59,7 +61,7 @@ export class AddBotUseCase {
 
     // 3. Generar instrucciones para cada assistant y crear assistant en OpenAI
     const assistants: Record<string, string> = {};
-    const openaiRepo = this.openaiRepoFactory(input.openai.token);
+    const openaiRepo = this.openaiRepoFactory(input.openai.apiKey);
     for (const fileName of assistantFiles) {
       const assistantKey = path.basename(fileName, ".md");
       const instructionText = generateInstructions(assistantKey, placeholders);
@@ -75,14 +77,17 @@ export class AddBotUseCase {
 
     // 4. Armar y guardar el BotConfigDTO completo
     const toSave: Omit<BotConfigDTO, "pk" | "sk" | "bucket" | "createdAt" | "updatedAt"> = {
+      botConfigType: input.botConfigType,
       botConfigId: input.botConfigId,
       superClinicId: input.superClinicId,
       clinicSource: input.clinicSource,
       clinicId: input.clinicId,
       kommoSubdomain: input.kommoSubdomain,
-      kommoApiKey: input.kommoApiKey,
       kommo: {
-        salesbotId: input.kommoSalesbotId,
+        responsibleUserId: input.responsibleUserId,
+        subdomain: input.kommoSubdomain,
+        longLivedToken: input.longLivedToken,
+        salesbotId: input.salesbotId,
       },
       defaultCountry: input.defaultCountry,
       timezone: input.timezone,
@@ -90,11 +95,11 @@ export class AddBotUseCase {
       description: input.description,
       fieldsProfile: input.fieldsProfile,
       openai: {
-        token: input.openai.token,
+        apiKey: input.openai.apiKey,
         assistants
       },
       placeholders,
-      isActive: true,
+      isEnabled: true,
     };
 
     // 5. Guarda y retorna el BotConfig completo

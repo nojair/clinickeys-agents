@@ -87,7 +87,7 @@ export class RescheduleAppointmentUseCase {
           id_medico: step.params.id_medico,
         }),
         subdomain,
-        kommoToken: botConfig.kommoApiKey,
+        kommoToken: botConfig.longLivedToken,
         leadId,
       });
       Logger.info('[RescheduleAppointment] Disponibilidad:', availability);

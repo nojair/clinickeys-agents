@@ -43,7 +43,7 @@ export class SendRemindersJob {
       let page = 0;
 
       do {
-        const { items: configs, nextCursor } = await this.botConfigRepo.listGlobal(this.pageSize, cursor);
+        const { items: configs, nextCursor } = await this.botConfigRepo.listByBotConfigType("notifications", this.pageSize, cursor);
         cursor = nextCursor;
         page++;
 
@@ -51,9 +51,9 @@ export class SendRemindersJob {
         Logger.info(`[JOB] Página ${page}: procesando ${configs.length} configuraciones`);
 
         for (const cfg of configs) {
-          const { clinicId, clinicSource, kommoApiKey: apiKey, kommoSubdomain: subdomain, kommo: { salesbotId }, timezone } = cfg;
-          if (!subdomain || !salesbotId || !apiKey) {
-            Logger.error('[JOB] Config incompleta', { clinicId, clinicSource, subdomain, salesbotId, apiKey });
+          const { botConfigType, clinicId, clinicSource, kommo: { subdomain, longLivedToken, salesbotId }, timezone } = cfg;
+          if (!botConfigType || !clinicId || !clinicSource || !subdomain || !salesbotId || !longLivedToken) {
+            Logger.error('[JOB] Config incompleta', { botConfigType, clinicId, clinicSource, subdomain, salesbotId, longLivedToken });
             continue;
           }
 
@@ -65,7 +65,7 @@ export class SendRemindersJob {
             `[JOB] Clínica ${clinicId} (${clinicSource}) – ${notifications.length} recordatorios para ${fechaEnvio}`
           );
 
-          const kommoGateway = new KommoApiGateway({ apiKey, subdomain });
+          const kommoGateway = new KommoApiGateway({ longLivedToken, subdomain });
           const kommoRepo = new KommoRepository(kommoGateway);
           const kommoService = new KommoService(kommoRepo, this.patientRepo);
 

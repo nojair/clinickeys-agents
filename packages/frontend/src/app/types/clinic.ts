@@ -77,7 +77,7 @@ export const clinicSchema = z.object({
   api_key: z
     .string()
     .trim()
-    .min(1, { message: "El token de kommo es obligatorio" }),
+    .min(1, { message: "El apiKey de kommo es obligatorio" }),
 
   fieldsProfile: z
     .string()

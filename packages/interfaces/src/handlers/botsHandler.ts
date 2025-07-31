@@ -30,9 +30,9 @@ const tableName = getEnvVar("CLINICS_CONFIG_DB_NAME");
 const botConfigRepo = new BotConfigRepositoryDynamo({ tableName, docClient });
 const botConfigService = new BotConfigService(botConfigRepo);
 
-// Factory que crea un repositorio de assistants para el token recibido
-const openaiRepoFactory = (token: string) =>
-  new OpenAIAssistantRepository(new OpenAIGateway({ apiKey: token }));
+// Factory que crea un repositorio de assistants para el apiKey recibido
+const openaiRepoFactory = (apiKey: string) =>
+  new OpenAIAssistantRepository(new OpenAIGateway({ apiKey: apiKey }));
 
 const controller = new BotController({
   addUseCase: new AddBotUseCase(botConfigRepo, openaiRepoFactory),

@@ -43,7 +43,7 @@ const formSchema = z.object({
     .coerce.number()
     .int("Debe ser un número entero")
     .positive("Debe ser mayor que 0"),
-  api_key: z.string().trim().min(1, "El token de kommo es obligatorio"),
+  api_key: z.string().trim().min(1, "El apiKey de kommo es obligatorio"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -182,7 +182,7 @@ export default function ClinicForm({ initialValues, onClose }: Props) {
       <Field>
         <Label htmlFor="api_key">Token de larga duración en kommo
           <Link
-            href="https://es-developers.kommo.com/docs/token-de-larga-duraci%C3%B3n"
+            href="https://es-developers.kommo.com/docs/apiKey-de-larga-duraci%C3%B3n"
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 underline"

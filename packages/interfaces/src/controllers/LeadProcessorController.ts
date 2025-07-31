@@ -84,13 +84,13 @@ export class LeadProcessorController {
 
     // 2. Gateways & base services
     const kommoGateway = new KommoApiGateway({
-      apiKey: (botConfig as any).kommo.apiKey,
+      longLivedToken: (botConfig as any).kommo.longLivedToken,
       subdomain: (botConfig as any).kommo.subdomain,
     });
     const kommoRepository = new KommoRepository(kommoGateway);
     const kommoService = new KommoService(kommoRepository, patientRepo);
     
-    const openAIGateway = new OpenAIGateway({ apiKey: (botConfig as any).openai.token });
+    const openAIGateway = new OpenAIGateway({ apiKey: (botConfig as any).openai.apiKey });
     const openAIService = new OpenAIService(openAIGateway, this.logger);
     
 

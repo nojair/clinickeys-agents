@@ -22,8 +22,8 @@ export class BotConfigEnricher {
 
     // 2. Instanciar el gateway y service con credenciales del bot
     const gateway = new KommoApiGateway({
-      apiKey: dto.kommoApiKey,
-      subdomain: dto.kommoSubdomain || ""
+      longLivedToken: dto.kommo.longLivedToken,
+      subdomain: dto.kommo.subdomain || ""
     });
     const repository = new KommoRepository(gateway)
     // El KommoService ahora requiere el patientRepository, pero para obtener campos custom solo usa el gateway
@@ -39,11 +39,12 @@ export class BotConfigEnricher {
       "name",
       "timezone",
       "clinicId",
-      "kommoApiKey",
+      "kommo",
       "kommoSubdomain",
       "fieldsProfile",
-      "default_country",
-      "kommoSalesbotId",
+      "defaultCountry",
+      "clinicSource",
+      "botConfigType",
     ];
 
     const hasAll = requiredProps.every((prop) =>

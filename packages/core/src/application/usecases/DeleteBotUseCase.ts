@@ -13,13 +13,13 @@ export interface DeleteBotUseCaseProps {
   /** Repositorio para persistir / eliminar BotConfig */
   botConfigRepo: IBotConfigRepository;
   /** Factory que devuelve un repositorio de assistants dada una API key */
-  openaiRepoFactory: (token: string) => IOpenAIAssistantRepository;
+  openaiRepoFactory: (apiKey: string) => IOpenAIAssistantRepository;
 }
 
 /**
  * UseCase: Eliminar un BotConfig y sus assistants en OpenAI.
  *
- * 1. Recupera el BotConfig para obtener token OpenAI e IDs de assistants.
+ * 1. Recupera el BotConfig para obtener apiKey OpenAI e IDs de assistants.
  * 2. Elimina en paralelo los assistants (si existen).
  * 3. Borra el BotConfig en DynamoDB.
  *
@@ -28,7 +28,7 @@ export interface DeleteBotUseCaseProps {
  */
 export class DeleteBotUseCase {
   private readonly botConfigRepo: IBotConfigRepository;
-  private readonly openaiRepoFactory: (token: string) => IOpenAIAssistantRepository;
+  private readonly openaiRepoFactory: (apiKey: string) => IOpenAIAssistantRepository;
 
   constructor(props: DeleteBotUseCaseProps) {
     this.botConfigRepo = props.botConfigRepo;
@@ -39,17 +39,17 @@ export class DeleteBotUseCase {
     const { botConfigId, clinicSource, clinicId } = input;
 
     // 1. Obtener la configuración actual
-    const dto = await this.botConfigRepo.findByBotConfig(botConfigId, clinicSource, clinicId);
+    const dto = await this.botConfigRepo.findByPrimaryKey(botConfigId, clinicSource, clinicId);
     if (!dto) {
       throw new Error(`BotConfig ${botConfigId} no encontrado (${clinicSource}/${clinicId})`);
     }
 
     // 2. Borrar assistants asociados (si los hay)
-    const token = dto.openai?.token;
+    const apiKey = dto.openai?.apiKey;
     const assistants = dto.openai?.assistants;
 
-    if (token && assistants && Object.keys(assistants).length > 0) {
-      const openaiRepo = this.openaiRepoFactory(token);
+    if (apiKey && assistants && Object.keys(assistants).length > 0) {
+      const openaiRepo = this.openaiRepoFactory(apiKey);
 
       await Promise.allSettled(
         Object.values(assistants).map((assistantId) => openaiRepo.deleteAssistant(assistantId))

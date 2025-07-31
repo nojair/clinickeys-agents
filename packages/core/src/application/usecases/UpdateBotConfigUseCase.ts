@@ -5,13 +5,12 @@ import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig";
 
 // Campos que se permiten actualizar vía PATCH
 export type UpdateBotConfigPayload = Partial<Pick<BotConfigDTO,
-  | "isActive"
+  | "isEnabled"
   | "description"
   | "name"
   | "timezone"
   | "defaultCountry"
   | "kommo"
-  | "kommoApiKey"
   | "kommoSubdomain"
 >>;
 
