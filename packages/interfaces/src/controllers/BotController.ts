@@ -2,7 +2,7 @@
 // packages/core/src/interface/controllers/BotController.ts
 // -----------------------------------------------------------------------------
 
-import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig";
+import { BotConfigDTO, BotConfigType } from "@clinickeys-agents/core/domain/botConfig";
 import {
   AddBotUseCase,
   DeleteBotUseCase,
@@ -43,11 +43,12 @@ export class BotController {
   }
 
   deleteBot(
+    botConfigType: BotConfigType,
     botConfigId: string,
     clinicSource: string,
     clinicId: number
   ): Promise<void> {
-    return this.deleteUseCase.execute({ botConfigId, clinicSource, clinicId });
+    return this.deleteUseCase.execute({ botConfigType, botConfigId, clinicSource, clinicId });
   }
 
   // --- BOT-CONFIG (sólo configuración) -------------------------------------
@@ -55,8 +56,8 @@ export class BotController {
     return this.updateUseCase.execute(input);
   }
 
-  getBotConfig(botConfigId: string, clinicSource: string, clinicId: number): Promise<BotConfigDTO | null> {
-    return this.getUseCase.execute(botConfigId, clinicSource, clinicId);
+  getBotConfig(botConfigType: BotConfigType, botConfigId: string, clinicSource: string, clinicId: number): Promise<BotConfigDTO | null> {
+    return this.getUseCase.execute(botConfigType, botConfigId, clinicSource, clinicId);
   }
 
   listGlobalBotConfigs(input: ListGlobalBotConfigsInput) {

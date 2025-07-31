@@ -37,8 +37,8 @@ export class BotConfigService {
   /**
    * Obtiene un BotConfig enriquecido (campos custom, is_ready, etc.)
    */
-  async getEnrichedBotConfig(botConfigId: string, clinicSource: string, clinicId: number): Promise<BotConfigEnrichedDTO | null> {
-    const dto = await this.repo.findByPrimaryKey(botConfigId, clinicSource, clinicId);
+  async getEnrichedBotConfig(botConfigType: BotConfigType, botConfigId: string, clinicSource: string, clinicId: number): Promise<BotConfigEnrichedDTO | null> {
+    const dto = await this.repo.findByPrimaryKey(botConfigType, botConfigId, clinicSource, clinicId);
     if (!dto) return null;
     return await BotConfigEnricher.enrich(dto);
   }
@@ -46,8 +46,8 @@ export class BotConfigService {
   /**
    * Obtiene un BotConfig "raw" (sin enriquecer).
    */
-  async getBotConfig(botConfigId: string, clinicSource: string, clinicId: number): Promise<BotConfigDTO | null> {
-    return await this.repo.findByPrimaryKey(botConfigId, clinicSource, clinicId);
+  async getBotConfig(botConfigType: BotConfigType, botConfigId: string, clinicSource: string, clinicId: number): Promise<BotConfigDTO | null> {
+    return await this.repo.findByPrimaryKey(botConfigType, botConfigId, clinicSource, clinicId);
   }
 
   /**
@@ -100,15 +100,15 @@ export class BotConfigService {
   /**
    * Aplica un patch a un BotConfig existente.
    */
-  async patchBotConfig(botConfigId: string, clinicSource: string, clinicId: number, updates: Partial<BotConfigDTO>): Promise<void> {
-    await this.repo.patch(botConfigId, clinicSource, clinicId, updates);
+  async patchBotConfig(botConfigType: BotConfigType, botConfigId: string, clinicSource: string, clinicId: number, updates: Partial<BotConfigDTO>): Promise<void> {
+    await this.repo.patch(botConfigType, botConfigId, clinicSource, clinicId, updates);
   }
 
   /**
    * Elimina un BotConfig.
    */
-  async deleteBotConfig(botConfigId: string, clinicSource: string, clinicId: number): Promise<void> {
-    await this.repo.delete(botConfigId, clinicSource, clinicId);
+  async deleteBotConfig(botConfigType: BotConfigType, botConfigId: string, clinicSource: string, clinicId: number): Promise<void> {
+    await this.repo.delete(botConfigType, botConfigId, clinicSource, clinicId);
   }
 
   /**

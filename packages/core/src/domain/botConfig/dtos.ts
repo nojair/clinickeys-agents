@@ -12,76 +12,89 @@ export enum BotConfigType {
 
 /**
  * DTO para la configuración de un Bot.
- * Corresponde a los ítems almacenados en DynamoDB.
+ * Representa directamente los ítems almacenados en DynamoDB (BotConfig table).
+ *
+ *  PK → "CLINIC#<clinicSource>#<clinicId>"
+ *  SK → "BOT_CONFIG#<botConfigType>#<botConfigId>"
  */
 export interface BotConfigDTO {
-  /** Partition Key → "CLINIC#<clinicSource>#<clinicId>" */
-  pk: string;
-  /** Sort Key       → "BOT_CONFIG#<botConfigId>" */
-  sk: string;
+  // =======================
+  // Claves primarias (Dynamo)
+  // =======================
+  /** Partition Key */
+  pk: string; // "CLINIC#<clinicSource>#<clinicId>"
+  /** Sort Key */
+  sk: string; // "BOT_CONFIG#<botConfigType>#<botConfigId>"
 
-  /** Shard bucket (hash(botConfigId) % N) */
+  /** Shard bucket (hash(botConfigId) % N) */
   bucket: number;
 
+  // =======================
   // Identidad y multi‑tenant
-  botConfigId: string;   // UUID v4, único global
-  botConfigType: BotConfigType; // Enum: "notificationBot" | "chatBot"
-  clinicSource: string;  // "legacy", "v2", ...
-  clinicId: number;      // ID en el sistema correspondiente
-  superClinicId: number;
+  // =======================
+  botConfigId: string;                // UUID v4 único global
+  botConfigType: BotConfigType;       // "notificationBot" | "chatBot"
+  clinicSource: string;               // Ej. "legacy", "v2"
+  clinicId: number;                   // ID en el sistema clínico correspondiente
+  superClinicId: number;              // ID de la super‑clínica
 
-  // Datos de CRM (multiplataforma)
-  kommoSubdomain: string;  // ej. "clinicA.kommo.com"
-  
-  // Datos específicos de Kommo
+  // =======================
+  // Datos de CRM Kommo
+  // =======================
+  kommoSubdomain: string;             // Ej. "clinicA.kommo.com"
   kommo: {
-    subdomain: string;  // ej. "clinicA.kommo.com"
+    subdomain: string;
     longLivedToken: string;
     responsibleUserId: string;
-    salesbotId: number;     // ID del salesbot de Kommo, si aplica
-  }
+    salesbotId: number;
+  };
 
-  // Configuración de OpenAI
-  openai?: {
-    /* OPENAI apiKey */
+  // =======================
+  // Configuración de OpenAI (obligatoria)
+  // =======================
+  openai: {
     apiKey: string;
-    /** Asistentes OpenAI registrados en la cuenta */
     assistants?: {
-      /** Otros asistentes y sus IDs pueden agregarse aquí si es necesario */
       [key: string]: string;
     };
   };
 
+  // =======================
   // Configuración regional
-  defaultCountry: string; // ISO 3166‑1 alpha‑2, ej. "PE"
-  timezone: string;        // IANA TZ, ej. "America/Lima"
+  // =======================
+  defaultCountry: string;             // ISO 3166‑1 alpha‑2
+  timezone: string;                   // IANA TZ, ej. "America/Lima"
 
+  // =======================
   // Metadatos de presentación
-  name: string;            // Nombre legible del bot
-  description: string;     // Descripción libre (Markdown permitido)
+  // =======================
+  name: string;                       // Nombre legible del bot
+  description: string;                // Descripción (Markdown permitido)
 
-  // Estado lógico (se puede activar más adelante)
-  isEnabled?: boolean;
+  // =======================
+  // Estado lógico
+  // =======================
+  isEnabled?: boolean;                // ON/OFF manual
 
+  // =======================
   // Perfil de campos personalizados
-  fieldsProfile: string; // Perfil de campos personalizados, ej. "default_kommo_profile"
+  // =======================
+  fieldsProfile: string;              // Ej. "default_kommo_profile"
 
+  // =======================
   // Auditoría
-  createdAt: number;       // epoch millis
-  updatedAt: number;       // epoch millis
+  // =======================
+  createdAt: number;                  // epoch millis
+  updatedAt: number;                  // epoch millis
 
-  placeholders: (Record<string, any>);
+  // =======================
+  // Resto de información (flexible)
+  // =======================
+  placeholders: Record<string, any>;
 }
 
 /**
- * Composición de llaves:
- *
- *  PK = `CLINIC#${clinicSource}#${clinicId}` // agrupa por clínica + sistema
- *  SK = `BOT_CONFIG#${botConfigId}`           // ordena por bot dentro de la clínica
- */
-
-/**
- * DTO enriquecido para respuestas de API / UI.
+ * DTO enriquecido para UI / API (agrega campos calculados).
  */
 export interface BotConfigEnrichedDTO extends BotConfigDTO {
   kommo_leads_custom_fields: KommoCustomFieldExistence[];

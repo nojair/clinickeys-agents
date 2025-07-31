@@ -1,15 +1,19 @@
 // packages/core/src/infrastructure/botConfig/BotConfigRepositoryDynamo.ts
 
-import { BotConfigDTO, IBotConfigRepository } from "@clinickeys-agents/core/domain/botConfig";
-import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
-import crc32 from "crc-32";
 import {
+  BotConfigDTO,
+  BotConfigType,
+  IBotConfigRepository,
+} from "@clinickeys-agents/core/domain/botConfig";
+import {
+  DynamoDBDocumentClient,
   GetCommand,
   PutCommand,
   QueryCommand,
   UpdateCommand,
   DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
+import crc32 from "crc-32";
 
 export interface BotConfigRepositoryDynamoProps {
   tableName: string;
@@ -19,130 +23,133 @@ export interface BotConfigRepositoryDynamoProps {
 
 /**
  * Repositorio DynamoDB para BotConfig.
- * Encapsula hashing (bucket), composición de PK/SK y paginación.
+ * - Compose PK/SK según convención.
+ * - Maneja bucket sharding.
+ * - Patch granular: solo actualiza campos con valor no-falsy (ignora null/\"\"/undefined).
  */
 export class BotConfigRepositoryDynamo implements IBotConfigRepository {
   private readonly tableName: string;
   private readonly docClient: DynamoDBDocumentClient;
   private readonly buckets: number;
 
-  // -------------------- ctor --------------------
   constructor(props: BotConfigRepositoryDynamoProps) {
     this.tableName = props.tableName;
     this.docClient = props.docClient;
-    this.buckets = props.buckets ?? 10; // default 10 buckets
+    this.buckets = props.buckets ?? 10;
   }
 
-  // --------------------------------- helpers ---------------------------------
+  // ---------------------------- helpers ----------------------------
   private bucketOf(id: string): number {
-    // Usamos CRC32 sobre UTF‑8 (str) y lo convertimos a unsigned 32‑bit con >>> 0
     return (crc32.str(id, 0) >>> 0) % this.buckets;
   }
 
-  private pkOf(source: string, clinicId: number) {
+  private pkOf(source: string, clinicId: number): string {
     return `CLINIC#${source}#${clinicId}`;
   }
 
-  private skOf(botConfigId: string) {
-    return `BOT_CONFIG#${botConfigId}`;
+  private skOf(type: BotConfigType, id: string): string {
+    return `BOT_CONFIG#${type}#${id}`;
   }
 
-  // -------------------- CRUD --------------------
   /**
-   * Crear un nuevo BotConfig.
+   * Convierte un objeto arbitrario en paths planos ignorando valores nulos/\"\"/undefined.
+   * Ej: flatten({ kommo: { longLivedToken: "abc", salesbotId: null }, name: "X" })
+   * → { "kommo.longLivedToken": "abc", "name": "X" }
    */
-  async create(dto: Omit<BotConfigDTO, "pk" | "sk" | "bucket" | "createdAt" | "updatedAt">): Promise<BotConfigDTO> {
+  private flatten(obj: Record<string, any>, prefix = ""): Record<string, any> {
+    const out: Record<string, any> = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (v === undefined || v === null || v === "") continue; // ignorar vacíos
+      const path = prefix ? `${prefix}.${k}` : k;
+      if (typeof v === "object" && !Array.isArray(v)) {
+        Object.assign(out, this.flatten(v, path));
+      } else {
+        out[path] = v;
+      }
+    }
+    return out;
+  }
+
+  // ---------------------------- CRUD ----------------------------
+  async create(
+    dto: Omit<
+      BotConfigDTO,
+      "pk" | "sk" | "bucket" | "createdAt" | "updatedAt"
+    >,
+  ): Promise<BotConfigDTO> {
     const now = Date.now();
     const item: BotConfigDTO = {
       ...dto,
       pk: this.pkOf(dto.clinicSource, dto.clinicId),
-      sk: this.skOf(dto.botConfigId),
+      sk: this.skOf(dto.botConfigType, dto.botConfigId),
       bucket: this.bucketOf(dto.botConfigId),
       createdAt: now,
       updatedAt: now,
     } as BotConfigDTO;
 
     await this.docClient.send(
-      new PutCommand({ TableName: this.tableName, Item: item })
+      new PutCommand({ TableName: this.tableName, Item: item }),
     );
-
     return item;
   }
 
-  /**
-   * Obtener un BotConfig único (clave compuesta).
-   */
   async findByPrimaryKey(
+    botConfigType: BotConfigType,
     botConfigId: string,
     clinicSource: string,
-    clinicId: number
+    clinicId: number,
   ): Promise<BotConfigDTO | null> {
     const pk = this.pkOf(clinicSource, clinicId);
-    const sk = this.skOf(botConfigId);
+    const sk = this.skOf(botConfigType, botConfigId);
     const res = await this.docClient.send(
-      new GetCommand({ TableName: this.tableName, Key: { pk, sk } })
+      new GetCommand({ TableName: this.tableName, Key: { pk, sk } }),
     );
     return (res.Item as BotConfigDTO) ?? null;
   }
 
-  /**
- * Buscar todos los BotConfig por tipo de bot (GSI byBotConfigType).
- */
   async listByBotConfigType(
-    botConfigType: string,
+    botConfigType: BotConfigType,
     limit = 50,
-    cursor?: Record<string, unknown>
+    cursor?: Record<string, unknown>,
   ): Promise<{ items: BotConfigDTO[]; nextCursor?: Record<string, unknown> }> {
     const res = await this.docClient.send(
       new QueryCommand({
         TableName: this.tableName,
         IndexName: "byBotConfigType",
-        KeyConditionExpression: "botConfigType = :type",
-        ExpressionAttributeValues: { ":type": botConfigType },
+        KeyConditionExpression: "botConfigType = :t",
+        ExpressionAttributeValues: { ":t": botConfigType },
         ScanIndexForward: false,
         Limit: limit,
         ExclusiveStartKey: cursor,
-      })
+      }),
     );
-    return {
-      items: (res.Items as BotConfigDTO[]) ?? [],
-      nextCursor: res.LastEvaluatedKey,
-    };
+    return { items: (res.Items as BotConfigDTO[]) ?? [], nextCursor: res.LastEvaluatedKey };
   }
 
-  /**
- * Buscar todos los BotConfig por subdominio Kommo (GSI byKommoSubdomain).
- */
   async listByKommoSubdomain(
-    kommoSubdomain: string,
+    subdomain: string,
     limit = 50,
-    cursor?: Record<string, unknown>
+    cursor?: Record<string, unknown>,
   ): Promise<{ items: BotConfigDTO[]; nextCursor?: Record<string, unknown> }> {
     const res = await this.docClient.send(
       new QueryCommand({
         TableName: this.tableName,
         IndexName: "byKommoSubdomain",
         KeyConditionExpression: "kommoSubdomain = :sd",
-        ExpressionAttributeValues: { ":sd": kommoSubdomain },
+        ExpressionAttributeValues: { ":sd": subdomain },
         ScanIndexForward: false,
         Limit: limit,
         ExclusiveStartKey: cursor,
-      })
+      }),
     );
-    return {
-      items: (res.Items as BotConfigDTO[]) ?? [],
-      nextCursor: res.LastEvaluatedKey,
-    };
+    return { items: (res.Items as BotConfigDTO[]) ?? [], nextCursor: res.LastEvaluatedKey };
   }
 
-  /**
-   * Listar todos los BotConfig de una clínica (paginado).
-   */
   async listByClinic(
     clinicSource: string,
     clinicId: number,
     limit = 50,
-    cursor?: Record<string, unknown>
+    cursor?: Record<string, unknown>,
   ): Promise<{ items: BotConfigDTO[]; nextCursor?: Record<string, unknown> }> {
     const pk = this.pkOf(clinicSource, clinicId);
     const res = await this.docClient.send(
@@ -152,142 +159,134 @@ export class BotConfigRepositoryDynamo implements IBotConfigRepository {
         ExpressionAttributeValues: { ":pk": pk },
         Limit: limit,
         ExclusiveStartKey: cursor,
-      })
+      }),
     );
-    return {
-      items: (res.Items as BotConfigDTO[]) ?? [],
-      nextCursor: res.LastEvaluatedKey,
-    };
+    return { items: (res.Items as BotConfigDTO[]) ?? [], nextCursor: res.LastEvaluatedKey };
   }
 
-  /**
-   * Listar BotConfig por fuente (clinicSource) usando GSI byClinicSource.
-   */
   async listBySource(
     clinicSource: string,
     limit = 50,
-    cursor?: Record<string, unknown>
+    cursor?: Record<string, unknown>,
   ): Promise<{ items: BotConfigDTO[]; nextCursor?: Record<string, unknown> }> {
     const res = await this.docClient.send(
       new QueryCommand({
         TableName: this.tableName,
-        IndexName: "byClinicSource",
+        IndexName: "byClinicSourceCreated",
         KeyConditionExpression: "clinicSource = :src",
         ExpressionAttributeValues: { ":src": clinicSource },
         ScanIndexForward: false,
         Limit: limit,
         ExclusiveStartKey: cursor,
-      })
+      }),
     );
-    return {
-      items: (res.Items as BotConfigDTO[]) ?? [],
-      nextCursor: res.LastEvaluatedKey,
-    };
+    return { items: (res.Items as BotConfigDTO[]) ?? [], nextCursor: res.LastEvaluatedKey };
   }
 
-  /**
-   * Feed global paginado usando sharding por bucket.
-   * Devuelve hasta `limit` resultados ordenados desc. por createdAt.
-   * El cursor es un mapa bucket→LastEvaluatedKey.
-   */
   async listGlobal(
     limit = 100,
-    cursor: Record<string, Record<string, unknown>> = {}
+    cursor: Record<string, Record<string, unknown>> = {},
   ): Promise<{ items: BotConfigDTO[]; nextCursor: Record<string, Record<string, unknown>> }> {
     const perBucket = Math.ceil(limit / this.buckets);
 
-    const queries = [...Array(this.buckets).keys()].map(async (b) => {
-      const res = await this.docClient.send(
-        new QueryCommand({
-          TableName: this.tableName,
-          IndexName: "byBucketCreated",
-          KeyConditionExpression: "bucket = :b",
-          ExpressionAttributeValues: { ":b": b },
-          ScanIndexForward: false,
-          Limit: perBucket,
-          ExclusiveStartKey: cursor[b],
-        })
-      );
-      return { bucket: b, items: res.Items as BotConfigDTO[] ?? [], next: res.LastEvaluatedKey };
-    });
+    const pages = await Promise.all(
+      [...Array(this.buckets).keys()].map(async (b) => {
+        const res = await this.docClient.send(
+          new QueryCommand({
+            TableName: this.tableName,
+            IndexName: "byBucketCreated",
+            KeyConditionExpression: "bucket = :b",
+            ExpressionAttributeValues: { ":b": b },
+            ScanIndexForward: false,
+            Limit: perBucket,
+            ExclusiveStartKey: cursor[b],
+          }),
+        );
+        return { bucket: b, items: (res.Items as BotConfigDTO[]) ?? [], next: res.LastEvaluatedKey };
+      }),
+    );
 
-    const pages = await Promise.all(queries);
-    const merged = pages.flatMap(p => p.items).sort((a, b) => b.createdAt - a.createdAt).slice(0, limit);
+    const merged = pages
+      .flatMap((p) => p.items)
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, limit);
 
     const nextCursor: Record<string, Record<string, unknown>> = {};
-    pages.forEach(p => { if (p.next) nextCursor[p.bucket] = p.next; });
+    pages.forEach((p) => {
+      if (p.next) nextCursor[p.bucket] = p.next;
+    });
 
     return { items: merged, nextCursor };
   }
 
+  // ---------------------------- PATCH ----------------------------
   /**
-   * Actualizar parcialmente un BotConfig. No se permite cambiar clinicId ni clinicSource.
+   * Parche granular: solo actualiza claves con valor no-falsy.
+   * Soporta paths anidados (kommo.longLivedToken, openai.apiKey, placeholders.foo, …)
    */
   async patch(
+    botConfigType: BotConfigType,
     botConfigId: string,
     clinicSource: string,
     clinicId: number,
-    update: Partial<Pick<BotConfigDTO,
-      | "isEnabled"
-      | "description"
-      | "name"
-      | "timezone"
-      | "defaultCountry"
-      | "kommo"
-      | "kommoSubdomain"
-    >>
+    update: Partial<
+      Pick<
+        BotConfigDTO,
+        | "name"
+        | "kommo"
+        | "openai"
+        | "timezone"
+        | "isEnabled"
+        | "description"
+        | "placeholders"
+        | "defaultCountry"
+        | "kommoSubdomain"
+      >
+    >,
   ): Promise<void> {
+    const flattened = this.flatten(update as Record<string, any>);
+    if (Object.keys(flattened).length === 0) return;
+
     const pk = this.pkOf(clinicSource, clinicId);
-    const sk = this.skOf(botConfigId);
+    const sk = this.skOf(botConfigType, botConfigId);
     const now = Date.now();
 
-    const exp: string[] = ["updatedAt = :upd"];
-    const attrs: Record<string, unknown> = { ":upd": now };
+    const exprParts: string[] = ["updatedAt = :upd"];
+    const exprNames: Record<string, string> = {};
+    const exprValues: Record<string, any> = { ":upd": now };
 
-    const add = (field: string, val: unknown) => {
-      if (val !== undefined) {
-        const key = `:${field}`;
-        exp.push(`${field} = ${key}`);
-        attrs[key] = val;
-      }
-    };
-
-    add("isEnabled", update.isEnabled);
-    add("description", update.description);
-    add("name", update.name);
-    add("timezone", update.timezone);
-    add("defaultCountry", update.defaultCountry);
-    add("kommo", update.kommo);
-    add("kommoSubdomain", update.kommoSubdomain);
-
-    // Manejo para patch de kommo.salesbotId
-    if (update.kommo) {
-      if (update.kommo.salesbotId !== undefined) {
-        exp.push("kommo.salesbotId = :salesbotId");
-        attrs[":salesbotId"] = update.kommo.salesbotId;
-      }
+    for (const [path, val] of Object.entries(flattened)) {
+      const parts = path.split(".");
+      const placeholder = parts.join("_"); // e.g. kommo_longLivedToken
+      const namePath = parts.map((p) => `#${p}`).join(".");
+      exprParts.push(`${namePath} = :${placeholder}`);
+      parts.forEach((p) => {
+        exprNames[`#${p}`] = p;
+      });
+      exprValues[`:${placeholder}`] = val;
     }
-
-    if (exp.length === 1) return; // sólo updatedAt, nada más que actualizar
 
     await this.docClient.send(
       new UpdateCommand({
         TableName: this.tableName,
         Key: { pk, sk },
-        UpdateExpression: `SET ${exp.join(", ")}`,
-        ExpressionAttributeValues: attrs,
-      })
+        UpdateExpression: `SET ${exprParts.join(", ")}`,
+        ExpressionAttributeNames: exprNames,
+        ExpressionAttributeValues: exprValues,
+      }),
     );
   }
 
-  /**
-   * Eliminar un BotConfig.
-   */
-  async delete(botConfigId: string, clinicSource: string, clinicId: number): Promise<void> {
+  async delete(
+    botConfigType: BotConfigType,
+    botConfigId: string,
+    clinicSource: string,
+    clinicId: number,
+  ): Promise<void> {
     const pk = this.pkOf(clinicSource, clinicId);
-    const sk = this.skOf(botConfigId);
+    const sk = this.skOf(botConfigType, botConfigId);
     await this.docClient.send(
-      new DeleteCommand({ TableName: this.tableName, Key: { pk, sk } })
+      new DeleteCommand({ TableName: this.tableName, Key: { pk, sk } }),
     );
   }
 }

@@ -1,9 +1,11 @@
 // packages/core/src/application/usecases/RecognizeUserIntentUseCase.ts
 
+import { BotConfigType } from '@clinickeys-agents/core/domain/botConfig';
 import { FetchPatientInfoUseCase } from './FetchPatientInfoUseCase';
 import { AppError } from '@clinickeys-agents/core/utils';
 
 export interface RecognizeUserIntentInput {
+  botConfigType: BotConfigType;
   botConfigId: string;
   clinicSource: string;
   clinicId: number;
@@ -27,10 +29,11 @@ export class RecognizeUserIntentUseCase {
   }
 
   async execute(input: RecognizeUserIntentInput): Promise<RecognizeUserIntentOutput> {
-    const { botConfigId, clinicSource, clinicId, leadId, tiempoActualDT, userMessage, assistantService } = input;
+    const { botConfigType, botConfigId, clinicSource, clinicId, leadId, tiempoActualDT, userMessage, assistantService } = input;
 
     // 1. Obtener contexto paciente y clínica
     const patientInfo = await this.fetchPatientInfoUseCase.execute({
+      botConfigType,
       botConfigId,
       clinicSource,
       clinicId,

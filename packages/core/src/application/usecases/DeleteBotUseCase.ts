@@ -1,9 +1,10 @@
 // packages/core/src/application/usecases/DeleteBotUseCase.ts
 
-import { IBotConfigRepository } from "@clinickeys-agents/core/domain/botConfig";
+import { IBotConfigRepository, BotConfigType } from "@clinickeys-agents/core/domain/botConfig";
 import { IOpenAIAssistantRepository } from "@clinickeys-agents/core/domain/openai";
 
 export interface DeleteBotConfigInput {
+  botConfigType: BotConfigType;
   botConfigId: string;
   clinicSource: string;
   clinicId: number;
@@ -36,10 +37,10 @@ export class DeleteBotUseCase {
   }
 
   async execute(input: DeleteBotConfigInput): Promise<void> {
-    const { botConfigId, clinicSource, clinicId } = input;
+    const { botConfigType, botConfigId, clinicSource, clinicId } = input;
 
     // 1. Obtener la configuración actual
-    const dto = await this.botConfigRepo.findByPrimaryKey(botConfigId, clinicSource, clinicId);
+    const dto = await this.botConfigRepo.findByPrimaryKey(botConfigType, botConfigId, clinicSource, clinicId);
     if (!dto) {
       throw new Error(`BotConfig ${botConfigId} no encontrado (${clinicSource}/${clinicId})`);
     }
@@ -57,6 +58,6 @@ export class DeleteBotUseCase {
     }
 
     // 3. Borrar el BotConfig
-    await this.botConfigRepo.delete(botConfigId, clinicSource, clinicId);
+    await this.botConfigRepo.delete(botConfigType, botConfigId, clinicSource, clinicId);
   }
 }

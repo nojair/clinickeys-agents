@@ -1,9 +1,11 @@
 import { KommoContactResponse } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import { KommoService } from '@clinickeys-agents/core/application/services';
+import { BotConfigType } from '@clinickeys-agents/core/domain/botConfig';
 import { FetchBotConfigUseCase } from './FetchBotConfigUseCase';
 import { AppError } from '@clinickeys-agents/core/utils';
 
 export interface FetchKommoDataInput {
+  botConfigType: BotConfigType;
   botConfigId: string;
   clinicSource: string;
   clinicId: number;
@@ -31,9 +33,10 @@ export class FetchKommoDataUseCase {
   }
 
   async execute(input: FetchKommoDataInput): Promise<FetchKommoDataOutput> {
-    const { botConfigId, clinicSource, clinicId, leadId } = input;
+    const { botConfigType, botConfigId, clinicSource, clinicId, leadId } = input;
     // 1. Obtener la configuración del bot
     const { botConfig } = await this.fetchBotConfigUseCase.execute({
+      botConfigType,
       botConfigId,
       clinicSource,
       clinicId

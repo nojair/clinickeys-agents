@@ -1,6 +1,6 @@
 // packages/core/src/domain/botConfig/IBotConfigRepository.ts
 
-import { BotConfigDTO } from "./dtos";
+import { BotConfigDTO, BotConfigType } from "./dtos";
 import { UpdateBotConfigPayload } from "@clinickeys-agents/core/application/usecases";
 
 /**
@@ -15,7 +15,7 @@ export interface IBotConfigRepository {
   /**
    * Obtiene un BotConfig único por sus claves primarias lógicas.
    */
-  findByPrimaryKey(botConfigId: string, clinicSource: string, clinicId: number): Promise<BotConfigDTO | null>;
+  findByPrimaryKey(botConfigType: BotConfigType, botConfigId: string, clinicSource: string, clinicId: number): Promise<BotConfigDTO | null>;
 
   /**
    * Lista todos los BotConfig por subdominio Kommo (GSI byKommoSubdomain).
@@ -53,10 +53,10 @@ export interface IBotConfigRepository {
   /**
    * Parche parcial de campos mutables.
    */
-  patch(botConfigId: string, clinicSource: string, clinicId: number, updates: UpdateBotConfigPayload): Promise<void>;
+  patch(botConfigType: BotConfigType, botConfigId: string, clinicSource: string, clinicId: number, updates: UpdateBotConfigPayload): Promise<void>;
 
   /**
    * Elimina un BotConfig.
    */
-  delete(botConfigId: string, clinicSource: string, clinicId: number): Promise<void>;
+  delete(botConfigType: BotConfigType, botConfigId: string, clinicSource: string, clinicId: number): Promise<void>;
 }

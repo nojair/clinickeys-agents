@@ -7,6 +7,7 @@ import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructur
 import { OpenAIGateway } from "@clinickeys-agents/core/infrastructure/integrations/openai";
 import { OpenAIAssistantRepository } from "@clinickeys-agents/core/infrastructure/openai";
 import { BotConfigService } from "@clinickeys-agents/core/application/services";
+import { BotConfigType } from "@clinickeys-agents/core/domain/botConfig";
 import { BotController } from "../controllers/BotController";
 import {
   AddBotUseCase,
@@ -56,10 +57,15 @@ export const handler: Handler<E, R> = async (event) => {
     }
 
     // --- DELETE BOT ---------------------------------------------------------
-    const deleteMatch = path.match(/^\/bot\/([^\/]+)\/([^\/]+)\/([^\/]+)$/);
+    const deleteMatch = path.match(/^\/bot\/([^\/]+)\/([^\/]+)\/([^\/]+)\/([^\/]+)$/);
     if (method === "DELETE" && deleteMatch) {
-      const [, botConfigId, clinicSource, clinicIdStr] = deleteMatch;
-      await controller.deleteBot(botConfigId, clinicSource, Number(clinicIdStr));
+      const [, botConfigType, botConfigId, clinicSource, clinicIdStr] = deleteMatch;
+      await controller.deleteBot(
+        botConfigType as BotConfigType,
+        botConfigId,
+        clinicSource,
+        Number(clinicIdStr)
+      );
       return { statusCode: 204, body: "" };
     }
 
@@ -71,11 +77,12 @@ export const handler: Handler<E, R> = async (event) => {
 
     // --- GET ONE BOT-CONFIG -------------------------------------------------
     if (method === "GET" && /\/bot-config\/?$/.test(path)) {
-      const { botConfigId, clinicSource, clinicId } = qs;
+      const { botConfigType, botConfigId, clinicSource, clinicId } = qs;
       const config = await controller.getBotConfig(
+        botConfigType as BotConfigType,
         botConfigId!,
         clinicSource!,
-        Number(clinicId!),
+        Number(clinicId!)
       );
       return { statusCode: 200, body: JSON.stringify(config) };
     }

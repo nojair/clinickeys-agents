@@ -42,6 +42,7 @@ import { PresupuestoRepositoryMySQL } from "@clinickeys-agents/core/infrastructu
 import { Logger } from "@clinickeys-agents/core/infrastructure/external";
 
 import { LeadQueueMessageDTO } from "@clinickeys-agents/core/domain/kommo";
+import { BotConfigType } from "@clinickeys-agents/core/domain/botConfig";
 
 /**
  * Controlador que procesa los mensajes provenientes de la cola FIFO.
@@ -68,11 +69,11 @@ export class LeadProcessorController {
       throw err;
     }
 
-    const { botConfigId, clinicSource, clinicId, salesbotId } = msg.pathParameters;
-    if (!botConfigId || !clinicSource || !clinicId) throw new Error("Missing path params");
+    const { botConfigType, botConfigId, clinicSource, clinicId, salesbotId } = msg.pathParameters;
+    if (!botConfigType || !botConfigId || !clinicSource || !clinicId) throw new Error("Missing path params");
 
     // 1. BotConfig
-    const botConfig = await this.getBotConfigUC.execute(botConfigId, clinicSource, Number(clinicId));
+    const botConfig = await this.getBotConfigUC.execute(botConfigType as BotConfigType, botConfigId, clinicSource, Number(clinicId));
     if (!botConfig) throw new Error("BotConfig not found");
 
     const appointmentRepo = new AppointmentRepositoryMySQL()

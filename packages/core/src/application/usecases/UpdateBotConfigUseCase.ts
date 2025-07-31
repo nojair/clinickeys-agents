@@ -1,7 +1,7 @@
 // packages/core/src/application/usecases/UpdateBotConfigUseCase.ts
 
 import { BotConfigService } from "@clinickeys-agents/core/application/services";
-import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig";
+import { BotConfigDTO, BotConfigType } from '@clinickeys-agents/core/domain/botConfig';
 
 // Campos que se permiten actualizar vía PATCH
 export type UpdateBotConfigPayload = Partial<Pick<BotConfigDTO,
@@ -15,6 +15,7 @@ export type UpdateBotConfigPayload = Partial<Pick<BotConfigDTO,
 >>;
 
 export interface UpdateBotConfigInput {
+  botConfigType: BotConfigType;
   botConfigId: string;
   clinicSource: string;
   clinicId: number;
@@ -35,6 +36,7 @@ export class UpdateBotConfigUseCase {
   async execute(input: UpdateBotConfigInput): Promise<void> {
     if (!Object.keys(input.updates).length) return; // nada que hacer
     await this.botConfigService.patchBotConfig(
+      input.botConfigType,
       input.botConfigId,
       input.clinicSource,
       input.clinicId,

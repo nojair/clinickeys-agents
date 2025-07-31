@@ -1,11 +1,13 @@
 // packages/core/src/application/usecases/ProcessLeadUseCase.ts
 
+import { BotConfigType } from '@clinickeys-agents/core/domain/botConfig';
 import { FetchPatientInfoUseCase } from './FetchPatientInfoUseCase';
 import { AppError } from '@clinickeys-agents/core/utils';
 
 export interface ProcessLeadInput {
   event: any;
   pathParams: {
+    botConfigType: BotConfigType;
     botConfigId: string;
     clinicSource: string;
     clinicId: string;
@@ -16,6 +18,7 @@ export interface ProcessLeadInput {
 export interface ProcessLeadOutput {
   leadId: number;
   pathParams: {
+    botConfigType: BotConfigType;
     botConfigId: string;
     clinicSource: string;
     clinicId: string;
@@ -51,11 +54,12 @@ export class ProcessLeadUseCase {
       });
     }
 
-    const { botConfigId, clinicSource, clinicId } = pathParams;
+    const { botConfigType, botConfigId, clinicSource, clinicId } = pathParams;
     const leadId = body.leads.add[0].id;
 
     // Llamar a FetchPatientInfoUseCase
     const patientInfo = await this.fetchPatientInfoUseCase.execute({
+      botConfigType,
       botConfigId,
       clinicSource,
       clinicId: Number(clinicId),
@@ -65,7 +69,7 @@ export class ProcessLeadUseCase {
 
     return {
       leadId,
-      pathParams: { botConfigId, clinicSource, clinicId },
+      pathParams: { botConfigType, botConfigId, clinicSource, clinicId },
       patient: patientInfo.patient,
       appointments: patientInfo.appointments,
       packsBonos: patientInfo.packsBonos,

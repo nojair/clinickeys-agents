@@ -1,8 +1,10 @@
 import { PatientService } from '@clinickeys-agents/core/application/services';
+import { BotConfigType } from '@clinickeys-agents/core/domain/botConfig';
 import { FetchKommoDataUseCase } from './FetchKommoDataUseCase';
 import { AppError } from '@clinickeys-agents/core/utils';
 
 export interface FetchPatientInfoInput {
+  botConfigType: BotConfigType;
   botConfigId: string;
   clinicSource: string;
   clinicId: number;
@@ -30,10 +32,11 @@ export class FetchPatientInfoUseCase {
   }
 
   async execute(input: FetchPatientInfoInput): Promise<FetchPatientInfoOutput> {
-    const { botConfigId, clinicSource, clinicId, leadId, tiempoActualDT } = input;
+    const { botConfigType, botConfigId, clinicSource, clinicId, leadId, tiempoActualDT } = input;
 
     // 1. Obtener datos de Kommo
     const kommoData = await this.fetchKommoDataUseCase.execute({
+      botConfigType,
       botConfigId,
       clinicSource,
       clinicId,
