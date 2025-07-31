@@ -51,8 +51,7 @@ export class SendRemindersJob {
         Logger.info(`[JOB] Página ${page}: procesando ${configs.length} configuraciones`);
 
         for (const cfg of configs) {
-          if (cfg.crmType !== 'kommo') continue;
-          const { clinicId, clinicSource, crmApiKey: apiKey, crmSubdomain: subdomain, kommo: { salesbotId }, timezone } = cfg;
+          const { clinicId, clinicSource, kommoApiKey: apiKey, kommoSubdomain: subdomain, kommo: { salesbotId }, timezone } = cfg;
           if (!subdomain || !salesbotId || !apiKey) {
             Logger.error('[JOB] Config incompleta', { clinicId, clinicSource, subdomain, salesbotId, apiKey });
             continue;

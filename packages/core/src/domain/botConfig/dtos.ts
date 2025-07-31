@@ -22,9 +22,8 @@ export interface BotConfigDTO {
   superClinicId: number;
 
   // Datos de CRM (multiplataforma)
-  crmType: "kommo" | "hubspot" | string; // Permite nuevos CRMs
-  crmSubdomain?: string;  // ej. "clinicA.kommo.com"
-  crmApiKey: string;
+  kommoSubdomain?: string;  // ej. "clinicA.kommo.com"
+  kommoApiKey: string;
 
   // Datos específicos de Kommo
   kommo: {

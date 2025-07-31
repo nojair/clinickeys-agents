@@ -68,7 +68,7 @@ export class CheckAvailabilityUseCase {
           medico: step.params.medico,
         }),
         subdomain,
-        kommoToken: botConfig.crmApiKey,
+        kommoToken: botConfig.kommoApiKey,
         leadId,
       });
       Logger.info(`[CheckAvailability] Paso '${step.tipo}' respuesta:`, availability);

@@ -183,9 +183,8 @@ export class BotConfigRepositoryDynamo {
       | "name"
       | "timezone"
       | "defaultCountry"
-      | "crmApiKey"
-      | "crmSubdomain"
-      | "crmType"
+      | "kommoApiKey"
+      | "kommoSubdomain"
     >> & {
       kommo?: {
         salesbotId?: number;
@@ -213,9 +212,8 @@ export class BotConfigRepositoryDynamo {
     add("name", update.name);
     add("timezone", update.timezone);
     add("defaultCountry", update.defaultCountry);
-    add("crmApiKey", update.crmApiKey);
-    add("crmSubdomain", update.crmSubdomain);
-    add("crmType", update.crmType);
+    add("kommoApiKey", update.kommoApiKey);
+    add("kommoSubdomain", update.kommoSubdomain);
 
     // Manejo para patch de kommo.salesbotId y kommo.chatSalesbotId de forma independiente
     if (update.kommo) {

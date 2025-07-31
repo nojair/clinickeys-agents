@@ -18,9 +18,8 @@ export class BotConfig {
   readonly clinicId: number;
 
   // Datos del CRM
-  readonly crmType: string;
-  readonly crmSubdomain?: string;
-  readonly crmApiKey: string;
+  readonly kommoSubdomain?: string;
+  readonly kommoApiKey: string;
   readonly kommoSalesbotId?: number;
 
   // Configuración regional
@@ -53,9 +52,8 @@ export class BotConfig {
     this.clinicId = dto.clinicId;
 
     // CRM
-    this.crmType = dto.crmType;
-    this.crmSubdomain = dto.crmSubdomain;
-    this.crmApiKey = dto.crmApiKey;
+    this.kommoSubdomain = dto.kommoSubdomain;
+    this.kommoApiKey = dto.kommoApiKey;
 
     // Kommo específico
     this.kommo = dto.kommo;

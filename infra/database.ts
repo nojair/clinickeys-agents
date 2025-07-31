@@ -5,41 +5,127 @@ import { SUFFIX } from "./config";
 /**
  * BotConfig table
  *
+ *  Cada registro representa la configuración de UN BOT específico para una clínica.
+ *
  *  PK → "CLINIC#<clinicSource>#<clinicId>"
- *  SK → "BOT_CONFIG#<botConfigId>"
+ *  SK → "BOT_CONFIG#<botType>#<botConfigId>"
+ *
+ *  Ejemplo de valores:
+ *    pk: "CLINIC#v2#c123"
+ *    sk: "BOT_CONFIG#notificationBot#abc123"
  *
  *  GSIs disponibles:
- *   • byCrm → listado/lookup por CRM + subdominio
+ *   • byKommoSubdomain → listado/lookup por CRM + subdominio
+ *   • byBucketCreated → feed global shard‑bucket → creado más reciente
+ *   • bySourceCreated → feed por fuente
  */
+
 export const botConfigDynamo = new sst.aws.Dynamo(`BotConfigDynamo${SUFFIX}`, {
   fields: {
+    // =======================
     // Claves primarias
-    pk: "string", // "CLINIC#<clinicSource>#<clinicId>"
-    sk: "string", // "BOT_CONFIG#<botConfigId>"
+    // =======================
 
-    // Shard bucket para feed global
-    bucket: "number", // hash(botConfigId) % N (0‑9)
+    /**
+     * Clave principal (hash)
+     * Formato: "CLINIC#<clinicSource>#<clinicId>"
+     */
+    pk: "string",
 
-    // Identidad del bot
-    // botConfigId: "string",
+    /**
+     * Clave de ordenamiento (range)
+     * Formato: "BOT_CONFIG#<botType>#<botConfigId>"
+     */
+    sk: "string",
 
+    // =======================
+    // Identidad y tipo de bot
+    // =======================
+
+    /**
+     * Tipo de bot al que corresponde esta configuración.
+     * Ejemplo: "notificationBot", "chatBot", "ventasBot", etc.
+     */
+    botType: "string",
+
+    // =======================
+    // Estado y control
+    // =======================
+
+    /**
+     * Permite activar o desactivar manualmente el bot (ON/OFF).
+     */
+    isEnabled: "binary",
+
+    /**
+     * Indica si el bot ya está listo para operar (servicios conectados, configuración OK, etc).
+     */
+    isReady: "binary",
+
+    // =======================
     // Clínica multi‑fuente (desnormalizado)
-    // superClinicId: "string",
-    // clinicId: "string",
-    clinicSource: "string", // "legacy", "v2", ...
+    // =======================
 
-    // CRM genérico
-    crmType: "string",      // "kommo", "hubspot", ...
-    crmSubdomain: "string", // "clinicA.kommo.com"
+    /**
+     * Fuente de la clínica: Ej. "legacy", "v2", etc.
+     */
+    clinicSource: "string",
 
-    // Estado y metadatos
-    // isActive: "binary",
-    // name: "string",
-    // description: "string",
+    // =======================
+    // Shard bucket para feeds globales
+    // =======================
 
-    // Fechas (epoch millis)
+    /**
+     * Shard para distribuir la carga en feeds globales.
+     * Calculado: hash(botConfigId) % N (por ejemplo, N = 10)
+     */
+    bucket: "number",
+
+    // =======================
+    // Kommo (agrupado)
+    // =======================
+
+    /**
+     * Subdominio Kommo (campo duplicado a nivel raíz, útil para indexar por GSI)
+     */
+    kommoSubdomain: "string",
+
+    /**
+     * Datos relacionados al CRM Kommo.
+     * - subdomain: Subdominio Kommo (ejemplo: "clinicA.kommo.com").
+     * - longLivedToken: Token persistente para API Kommo.
+     * - salesbotId: Identificador del Salesbot Kommo (si aplica).
+     * - [agrega aquí futuras props de integración Kommo]
+     */
+    // kommo: "map", // { subdomain: string, longLivedToken: string, salesbotId: string, ... }
+
+    // =======================
+    // OpenAI (agrupado)
+    // =======================
+
+    /**
+     * Datos relacionados a OpenAI.
+     * - apiKey: API key para acceso a OpenAI.
+     * - assistantIds: Diccionario de IDs de asistentes OpenAI, agrupados por contexto.
+     *    Ejemplo: { "spanishQA": "...", "medicalBot": "..." }
+     */
+    // openai: "map", // { apiKey: string, assistantIds: Record<string, string> }
+
+    // =======================
+    // Fechas y metadatos
+    // =======================
+
+    /**
+     * Fecha de creación (epoch millis)
+     */
     createdAt: "number",
-    // updatedAt: "number",
+
+    /**
+     * Fecha de última actualización (epoch millis)
+     */
+    // updatedAt: "number", // ← Puedes omitirlo hasta que lo necesites, pero ya queda documentado
+
+    // ...otros campos futuros
   },
 
   primaryIndex: {
@@ -49,9 +135,9 @@ export const botConfigDynamo = new sst.aws.Dynamo(`BotConfigDynamo${SUFFIX}`, {
 
   globalIndexes: {
     /** Lookup y listado por CRM + subdominio */
-    byCrm: {
-      hashKey: "crmType",
-      rangeKey: "crmSubdomain",
+    byKommoSubdomain: {
+      hashKey: "kommoSubdomain",
+      rangeKey: "createdAt",
       projection: "all",
     },
 

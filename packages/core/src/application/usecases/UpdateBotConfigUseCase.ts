@@ -11,9 +11,8 @@ export type UpdateBotConfigPayload = Partial<Pick<BotConfigDTO,
   | "timezone"
   | "defaultCountry"
   | "kommo"
-  | "crmApiKey"
-  | "crmSubdomain"
-  | "crmType"
+  | "kommoApiKey"
+  | "kommoSubdomain"
 >>;
 
 export interface UpdateBotConfigInput {

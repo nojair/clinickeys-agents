@@ -83,7 +83,7 @@ export class CheckReprogramAvailabilityUseCase {
           id_medico: step.params.id_medico,
         }),
         subdomain,
-        kommoToken: botConfig.crmApiKey,
+        kommoToken: botConfig.kommoApiKey,
         leadId,
       });
       Logger.info(`[CheckReprogramAvailability] Paso '${step.tipo}' respuesta:`, availability);

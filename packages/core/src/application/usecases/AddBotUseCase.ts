@@ -12,9 +12,8 @@ export interface AddBotInput {
   clinicSource: string;
   superClinicId: number;
   clinicId: number;
-  crmType: string;
-  crmSubdomain?: string;
-  crmApiKey: string;
+  kommoSubdomain?: string;
+  kommoApiKey: string;
   kommoSalesbotId?: number;
   defaultCountry: string;
   timezone: string;
@@ -80,9 +79,8 @@ export class AddBotUseCase {
       superClinicId: input.superClinicId,
       clinicSource: input.clinicSource,
       clinicId: input.clinicId,
-      crmType: input.crmType,
-      crmSubdomain: input.crmSubdomain,
-      crmApiKey: input.crmApiKey,
+      kommoSubdomain: input.kommoSubdomain,
+      kommoApiKey: input.kommoApiKey,
       kommo: {
         salesbotId: input.kommoSalesbotId,
       },

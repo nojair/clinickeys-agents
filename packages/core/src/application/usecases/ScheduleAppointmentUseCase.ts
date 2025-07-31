@@ -109,7 +109,7 @@ export class ScheduleAppointmentUseCase {
           medico: step.params.medico,
         }),
         subdomain,
-        kommoToken: botConfig.crmApiKey,
+        kommoToken: botConfig.kommoApiKey,
         leadId,
       });
       Logger.info('[ScheduleAppointment] Disponibilidad:', availability);
