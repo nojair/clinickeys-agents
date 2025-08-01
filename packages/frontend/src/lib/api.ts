@@ -3,7 +3,7 @@
  * Utilidades para consumir la API de clínicas
  * ──────────────────────────────────────────────────────────────────────────── */
 
-import { Clinic, ClinicInput } from "@/app/types/clinic";
+import { BotConfig, BotConfigInput } from "@/app/types/BotConfig";
 import { SaasClinic } from "@/app/types/saasClinic";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -45,12 +45,12 @@ async function request<T>(
  * Endpoints CRUD
  * ──────────────────────────────────────────────────────────────────────── */
 
-export function fetchClinics(): Promise<Clinic[]> {
-  return request<Clinic[]>("/clinics");
+export function fetchBotConfigs(): Promise<BotConfig[]> {
+  return request<BotConfig[]>("/botConfigs");
 }
 
-export function createClinic(data: ClinicInput): Promise<Clinic> {
-  return request<Clinic>("/clinics", {
+export function createBotConfig(data: BotConfigInput): Promise<BotConfig> {
+  return request<BotConfig>("/botConfigs", {
     method: "POST",
     body: JSON.stringify({
       ...data,
@@ -61,11 +61,11 @@ export function createClinic(data: ClinicInput): Promise<Clinic> {
   });
 }
 
-export function updateClinic(
+export function updateBotConfig(
   id: string,
-  data: Partial<ClinicInput>,
-): Promise<Clinic> {
-  return request<Clinic>(`/clinics?id=${encodeURIComponent(id)}`, {
+  data: Partial<BotConfigInput>,
+): Promise<BotConfig> {
+  return request<BotConfig>(`/botConfigs?id=${encodeURIComponent(id)}`, {
     method: "PATCH",
     body: JSON.stringify({
       ...data,
@@ -75,8 +75,8 @@ export function updateClinic(
   });
 }
 
-export function deleteClinic(id: string): Promise<void> {
-  return request<void>(`/clinics?id=${encodeURIComponent(id)}`, {
+export function deleteBotConfig(id: string): Promise<void> {
+  return request<void>(`/botConfigs?id=${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
 }
@@ -86,5 +86,5 @@ export function deleteClinic(id: string): Promise<void> {
  * ──────────────────────────────────────────────────────────────────────── */
 
 export function fetchSaasClinics(): Promise<SaasClinic[]> {
-  return request<SaasClinic[]>("/saas/clinics");
+  return request<SaasClinic[]>("/saas/botConfigs");
 }

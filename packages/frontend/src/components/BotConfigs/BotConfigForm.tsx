@@ -1,4 +1,4 @@
-// packages/frontend/src/components/clinics/ClinicForm.tsx
+// packages/frontend/src/components/botConfigs/BotConfigForm.tsx
 
 "use client";
 
@@ -12,8 +12,8 @@ import * as ct from "countries-and-timezones";
 import { toast } from "sonner";
 import { CheckCircle2, Bell } from "lucide-react";
 
-import { Clinic, ClinicInput } from "@/app/types/clinic";
-import { useClinics } from "@/hooks/useClinics";
+import { BotConfig, BotConfigInput } from "@/app/types/BotConfig";
+import { useBotConfig } from "@/hooks/useBotConfigs";
 import { useSaasClinics } from "@/hooks/useSaasClinics";
 
 import { Button } from "@/components/ui/button";
@@ -50,12 +50,12 @@ type FormValues = z.infer<typeof formSchema>;
 type Option = { value: string; label: string };
 
 interface Props {
-  initialValues: Clinic | null;
+  initialValues: BotConfig | null;
   onClose: () => void;
 }
 
-export default function ClinicForm({ initialValues, onClose }: Props) {
-  const { create, update } = useClinics();
+export default function BotConfigForm({ initialValues, onClose }: Props) {
+  const { create, update } = useBotConfig();
   const {
     query: { data: saasClinics = [], isLoading: loadingSaas },
   } = useSaasClinics();
@@ -96,13 +96,13 @@ export default function ClinicForm({ initialValues, onClose }: Props) {
       toast.error("Debes seleccionar una clínica del SAAS");
       return;
     }
-    const clinic = saasClinics.find((c) => String(c.clinicId) === selectedOption.value);
-    if (!clinic) {
+    const botConfig = saasClinics.find((c) => String(c.clinicId) === selectedOption.value);
+    if (!botConfig) {
       toast.error("La clínica seleccionada ya no está disponible");
       return;
     }
 
-    const payload: ClinicInput = {
+    const payload: BotConfigInput = {
       clinicId: selectedOption.value,
       name: selectedOption.label,
       ...data,

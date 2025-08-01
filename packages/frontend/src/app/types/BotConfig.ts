@@ -1,4 +1,4 @@
-// packages/frontend/src/app/types/clinic.ts
+// packages/frontend/src/app/types/botConfig.ts
 
 import { z } from "zod";
 
@@ -13,7 +13,7 @@ export interface KommoLeadCustomField {
   exists: boolean;
 }
 
-export interface Clinic {
+export interface BotConfig {
   /** ID de la clínica */
   clinicId: string;
   /** Nombre visible de la clínica */
@@ -89,4 +89,4 @@ export const clinicSchema = z.object({
 });
 
 /* Derivado útil para formularios */
-export type ClinicInput = z.infer<typeof clinicSchema>;
+export type BotConfigInput = z.infer<typeof clinicSchema>;

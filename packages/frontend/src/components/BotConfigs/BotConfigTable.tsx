@@ -1,14 +1,14 @@
-// packages/frontend/src/components/clinics/ClinicsTable.tsx
+// packages/frontend/src/components/botConfigs/BotConfigTable.tsx
 
 "use client";
 
 import * as React from "react";
 import { Plus, Pencil, Trash2, CheckCircle2, Bell } from "lucide-react";
 
-import { useClinics } from "@/hooks/useClinics";
-import { Clinic } from "@/app/types/clinic";
+import { useBotConfig } from "@/hooks/useBotConfigs";
+import { BotConfig } from "@/app/types/BotConfig";
 
-import ClinicForm from "@/components/clinics/ClinicForm";
+import BotConfigForm from "@/components/BotConfigs/BotConfigForm";
 import {
   Dialog,
   DialogTrigger,
@@ -20,15 +20,15 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-export default function ClinicsTable() {
-  const { query, remove } = useClinics();
-  const [selected, setSelected] = React.useState<Clinic | null>(null);
+export default function BotConfigTable() {
+  const { query, remove } = useBotConfig();
+  const [selected, setSelected] = React.useState<BotConfig | null>(null);
   const [mode, setMode] = React.useState<"create" | "edit" | null>(null);
-  const [deleteTarget, setDeleteTarget] = React.useState<Clinic | null>(null);
+  const [deleteTarget, setDeleteTarget] = React.useState<BotConfig | null>(null);
 
   const isLoading = query.isLoading;
   const error = query.error;
-  const clinics = query.data ?? [];
+  const botConfigs = query.data ?? [];
 
   return (
     <div className="p-6 space-y-4">
@@ -51,7 +51,7 @@ export default function ClinicsTable() {
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
-            <ClinicForm
+            <BotConfigForm
               initialValues={null}
               onClose={() => {
                 setMode(null);
@@ -86,7 +86,7 @@ export default function ClinicsTable() {
               </Td>
             </tr>
           ) : (
-            clinics.map((c) => (
+            botConfigs.map((c) => (
               <tr key={c.clinicId} className="border-b">
                 <Td>{c.name}</Td>
                 <Td>{c.subdomain}</Td>
@@ -130,7 +130,7 @@ export default function ClinicsTable() {
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="max-w-lg">
-                        <ClinicForm
+                        <BotConfigForm
                           initialValues={c}
                           onClose={() => {
                             setMode(null);

@@ -1,10 +1,10 @@
 /* ──────────────────────────────────────────────────────────────────────────────
- * Archivo: packages/frontend/src/app/clinics/page.tsx
- * Página “/clinics” — muestra la tabla de clínicas
+ * Archivo: packages/frontend/src/app/botConfigs/page.tsx
+ * Página “/botConfigs” — muestra la tabla de clínicas
  * ──────────────────────────────────────────────────────────────────────────── */
 
-import ClinicsTable from "@/components/clinics/ClinicsTable";
+import BotConfigTable from "@/components/BotConfigs/BotConfigTable";
 
-export default function ClinicsPage() {
-  return <ClinicsTable />;
+export default function BotConfigsPage() {
+  return <BotConfigTable />;
 }

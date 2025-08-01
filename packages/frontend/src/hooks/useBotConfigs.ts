@@ -1,4 +1,4 @@
-// packages/frontend/src/hooks/useClinics.ts
+// packages/frontend/src/hooks/useBotConfigs.ts
 
 import {
   useQuery,
@@ -10,28 +10,28 @@ import {
 import { toast } from "sonner";
 
 import {
-  fetchClinics,
-  createClinic as apiCreate,
-  updateClinic as apiUpdate,
-  deleteClinic as apiDelete,
+  fetchBotConfigs,
+  createBotConfig as apiCreate,
+  updateBotConfig as apiUpdate,
+  deleteBotConfig as apiDelete,
 } from "@/lib/api";
-import { Clinic, ClinicInput } from "@/app/types/clinic";
+import { BotConfig, BotConfigInput } from "@/app/types/BotConfig";
 
 /* ──────────────────────────────────────────────────────────────────────────
  * Tipos de retorno
  * ──────────────────────────────────────────────────────────────────────── */
 
-type CreatePayload = ClinicInput;
-type UpdatePayload = { id: string; data: Partial<ClinicInput> };
+type CreatePayload = BotConfigInput;
+type UpdatePayload = { id: string; data: Partial<BotConfigInput> };
 type DeletePayload = { id: string };
 
-export interface UseClinicsResult {
+export interface UseBotConfigResult {
   /** Query con la lista de clínicas */
-  query: UseQueryResult<Clinic[], Error>;
+  query: UseQueryResult<BotConfig[], Error>;
   /** Mutación: crear */
-  create: UseMutationResult<Clinic, Error, CreatePayload>;
+  create: UseMutationResult<BotConfig, Error, CreatePayload>;
   /** Mutación: actualizar */
-  update: UseMutationResult<Clinic, Error, UpdatePayload>;
+  update: UseMutationResult<BotConfig, Error, UpdatePayload>;
   /** Mutación: eliminar */
   remove: UseMutationResult<void, Error, DeletePayload>;
 }
@@ -40,13 +40,13 @@ export interface UseClinicsResult {
  * Hook principal
  * ──────────────────────────────────────────────────────────────────────── */
 
-export function useClinics(): UseClinicsResult {
+export function useBotConfig(): UseBotConfigResult {
   const qc = useQueryClient();
 
   /* ------------------------- Query lista clínicas ---------------------- */
   const query = useQuery({
-    queryKey: ["clinics"],
-    queryFn: fetchClinics,
+    queryKey: ["botConfigs"],
+    queryFn: fetchBotConfigs,
     staleTime: 1000 * 60 * 5,         // 5 minutos
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -56,9 +56,9 @@ export function useClinics(): UseClinicsResult {
   /* ------------------------- Crear clínica ---------------------------- */
   const create = useMutation({
     mutationFn: (payload: CreatePayload) => apiCreate(payload),
-    onSuccess: (clinic) => {
-      qc.invalidateQueries({ queryKey: ["clinics"] });
-      toast.success(`Clínica “${clinic.name}” creada`);
+    onSuccess: (botConfig) => {
+      qc.invalidateQueries({ queryKey: ["botConfigs"] });
+      toast.success(`Clínica “${botConfig.name}” creada`);
     },
     onError: (err: Error) => {
       toast.error(`Error creando clínica: ${err.message}`);
@@ -68,9 +68,9 @@ export function useClinics(): UseClinicsResult {
   /* ------------------------- Actualizar clínica ----------------------- */
   const update = useMutation({
     mutationFn: ({ id, data }: UpdatePayload) => apiUpdate(id, data),
-    onSuccess: (clinic) => {
-      qc.invalidateQueries({ queryKey: ["clinics"] });
-      toast.success(`Clínica “${clinic.name}” actualizada`);
+    onSuccess: (botConfig) => {
+      qc.invalidateQueries({ queryKey: ["botConfigs"] });
+      toast.success(`Clínica “${botConfig.name}” actualizada`);
     },
     onError: (err: Error) => {
       toast.error(`Error actualizando clínica: ${err.message}`);
@@ -81,7 +81,7 @@ export function useClinics(): UseClinicsResult {
   const remove = useMutation({
     mutationFn: ({ id }: DeletePayload) => apiDelete(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["clinics"] });
+      qc.invalidateQueries({ queryKey: ["botConfigs"] });
       toast.success("Clínica eliminada");
     },
     onError: (err: Error) => {
