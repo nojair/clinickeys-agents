@@ -52,20 +52,31 @@ export const handler: Handler<E, R> = async (event) => {
 
     // --- CREATE BOT ---------------------------------------------------------
     if (method === "POST" && path === "/bot") {
-      await controller.addBot(body as AddBotInput);
-      return { statusCode: 201, body: JSON.stringify({ ok: true }) };
+      if (!body || !body.botConfigType) {
+        return { statusCode: 400, body: JSON.stringify({ error: "Missing botConfigType" }) };
+      }
+      if (body.botConfigType === BotConfigType.ChatBot) {
+        await controller.addChatBot(body);
+        return { statusCode: 201, body: JSON.stringify({ ok: true, botConfigType: BotConfigType.ChatBot }) };
+      } else if (body.botConfigType === BotConfigType.NotificationBot) {
+        await controller.addNotificationBot(body);
+        return { statusCode: 201, body: JSON.stringify({ ok: true, botConfigType: BotConfigType.NotificationBot }) };
+      } else {
+        return { statusCode: 400, body: JSON.stringify({ error: "Unknown botConfigType" }) };
+      }
     }
 
     // --- DELETE BOT ---------------------------------------------------------
     const deleteMatch = path.match(/^\/bot\/([^\/]+)\/([^\/]+)\/([^\/]+)\/([^\/]+)$/);
     if (method === "DELETE" && deleteMatch) {
       const [, botConfigType, botConfigId, clinicSource, clinicIdStr] = deleteMatch;
-      await controller.deleteBot(
-        botConfigType as BotConfigType,
-        botConfigId,
-        clinicSource,
-        Number(clinicIdStr)
-      );
+      if (botConfigType === BotConfigType.ChatBot) {
+        await controller.deleteChatBot(botConfigId, clinicSource, Number(clinicIdStr));
+      } else if (botConfigType === BotConfigType.NotificationBot) {
+        await controller.deleteNotificationBot(botConfigId, clinicSource, Number(clinicIdStr));
+      } else {
+        return { statusCode: 400, body: JSON.stringify({ error: "Unknown botConfigType" }) };
+      }
       return { statusCode: 204, body: "" };
     }
 

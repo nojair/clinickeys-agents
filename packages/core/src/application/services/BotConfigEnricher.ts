@@ -35,13 +35,28 @@ const CHAT_BOT_CUSTOM_FIELDS = [
   "triggeredByMachine",
 ] as const;
 
-const REQUIRED_PROPS = [
+// Props requeridos solo para ChatBot
+const CHAT_BOT_REQUIRED_PROPS = [
   "name",
   "kommo",
   "openai",
   "timezone",
   "clinicId",
   "placeholders",
+  "clinicSource",
+  "superClinicId",
+  "botConfigType",
+  "fieldsProfile",
+  "kommoSubdomain",
+  "defaultCountry",
+] as const;
+
+// Props requeridos solo para NotificationBot
+const NOTIFICATION_BOT_REQUIRED_PROPS = [
+  "name",
+  "kommo",
+  "timezone",
+  "clinicId",
   "clinicSource",
   "superClinicId",
   "botConfigType",
@@ -62,9 +77,20 @@ const REQUIRED_OPENAI_PROPS = ["apiKey"] as const;
 export class BotConfigEnricher {
   public static async enrich(botConfig: BotConfigDTO): Promise<BotConfigEnrichedDTO> {
     const missingProps: string[] = [];
+    let requiredProps: readonly string[] = [];
+    let requiredCustomFields: readonly string[] = [];
+
+    // Definir props y custom fields según tipo de bot
+    if (botConfig.botConfigType === BotConfigType.ChatBot) {
+      requiredProps = CHAT_BOT_REQUIRED_PROPS;
+      requiredCustomFields = CHAT_BOT_CUSTOM_FIELDS;
+    } else if (botConfig.botConfigType === BotConfigType.NotificationBot) {
+      requiredProps = NOTIFICATION_BOT_REQUIRED_PROPS;
+      requiredCustomFields = NOTIFICATION_BOT_CUSTOM_FIELDS;
+    }
 
     // 1. Validar propiedades raíz obligatorias
-    for (const prop of REQUIRED_PROPS) {
+    for (const prop of requiredProps) {
       if ((botConfig as any)[prop] === undefined || (botConfig as any)[prop] === null) {
         missingProps.push(prop);
       }
@@ -75,32 +101,34 @@ export class BotConfigEnricher {
       missingProps.push('kommo (object)');
     } else {
       for (const kprop of REQUIRED_KOMMO_PROPS) {
-        if ((botConfig.kommo as any)[kprop] === undefined || (botConfig.kommo as any)[kprop] === null || (botConfig.kommo as any)[kprop] === "") {
+        if (
+          (botConfig.kommo as any)[kprop] === undefined ||
+          (botConfig.kommo as any)[kprop] === null ||
+          (botConfig.kommo as any)[kprop] === ""
+        ) {
           missingProps.push(`kommo.${kprop}`);
         }
       }
     }
 
-    // 3. Validar openai (objeto y sus props)
-    if (typeof botConfig.openai !== 'object' || botConfig.openai === null) {
-      missingProps.push('openai (object)');
-    } else {
-      for (const oprop of REQUIRED_OPENAI_PROPS) {
-        if ((botConfig.openai as any)[oprop] === undefined || (botConfig.openai as any)[oprop] === null || (botConfig.openai as any)[oprop] === "") {
-          missingProps.push(`openai.${oprop}`);
+    // 3. Validar openai (objeto y sus props) SOLO para chatBot
+    if (botConfig.botConfigType === BotConfigType.ChatBot) {
+      if (typeof botConfig.openai !== 'object' || botConfig.openai === null) {
+        missingProps.push('openai (object)');
+      } else {
+        for (const oprop of REQUIRED_OPENAI_PROPS) {
+          if (
+            (botConfig.openai as any)[oprop] === undefined ||
+            (botConfig.openai as any)[oprop] === null ||
+            (botConfig.openai as any)[oprop] === ""
+          ) {
+            missingProps.push(`openai.${oprop}`);
+          }
         }
       }
     }
 
     // 4. Validar custom fields según tipo de bot
-    let requiredCustomFields: readonly string[] = [];
-    if (botConfig.botConfigType === BotConfigType.NotificationBot) {
-      requiredCustomFields = NOTIFICATION_BOT_CUSTOM_FIELDS;
-    } else if (botConfig.botConfigType === BotConfigType.ChatBot) {
-      requiredCustomFields = CHAT_BOT_CUSTOM_FIELDS;
-    }
-
-    // Obtener custom fields del perfil correspondiente
     let profile = (profiles as any)[botConfig.fieldsProfile];
     let customFieldsActual: KommoCustomFieldExistence[] = [];
     if (profile && profile.lead && Array.isArray(profile.lead.custom_field_config)) {
@@ -114,7 +142,7 @@ export class BotConfigEnricher {
       ...botConfig,
       kommo_leads_custom_fields: customFieldsActual,
       is_ready,
-      // missingProps,
+      // missingProps, // descomenta si quieres debuggear
       // missingCustomFields,
     };
   }

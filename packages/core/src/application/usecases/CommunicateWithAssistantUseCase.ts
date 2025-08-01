@@ -96,11 +96,12 @@ export class CommunicateWithAssistantUseCase {
   }
 
   public async execute(input: CommunicateInput): Promise<CommunicateOutput> {
-    const { botConfig, leadId, mergedCustomFields, salesbotId, userMessage, threadId } = input;
+    const { botConfig, leadId, mergedCustomFields, salesbotId, userMessage } = input;
 
     try {
       /** 1) Detectar intención usando nueva firma */
       const intentResult = await this.recognizeIntentUC.execute({
+        botConfigType: botConfig.botConfigType,
         botConfigId: botConfig.botConfigId,
         clinicSource: botConfig.clinicSource,
         clinicId: botConfig.clinicId,

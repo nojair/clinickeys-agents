@@ -23,11 +23,10 @@ export interface AddBotInput {
   description: string;
   fieldsProfile: string;
   placeholders?: Record<string, string>;
-  openai: {
+  openai?: {
     apiKey: string;
   };
-  // Nueva entrada: permite restringir qué assistants crear o pasar lista explícita
-  assistantsToCreate?: string[]; // Ej: ["reception", "marketing"]
+  assistantsToCreate?: string[];
 }
 
 export class AddBotUseCase {
@@ -36,74 +35,99 @@ export class AddBotUseCase {
 
   constructor(
     botConfigRepo: IBotConfigRepository,
-    openaiRepoFactory: (apiKey: string) => IOpenAIAssistantRepository // factory DI para OpenAI repo
+    openaiRepoFactory: (apiKey: string) => IOpenAIAssistantRepository
   ) {
     this.botConfigRepo = botConfigRepo;
     this.openaiRepoFactory = openaiRepoFactory;
   }
 
   async execute(input: AddBotInput): Promise<BotConfigDTO> {
-    // 1. Merge placeholders
-    const placeholders: Record<string, string> = { ...defaultPlaceholders, ...(input.placeholders || {}) };
+    if (input.botConfigType === BotConfigType.ChatBot) {
+      // --- FLUJO PARA CHATBOT ---
+      if (!input.openai || !input.openai.apiKey) {
+        throw new Error("openai.apiKey es obligatorio para chatBot");
+      }
+      const placeholders: Record<string, string> = { ...defaultPlaceholders, ...(input.placeholders || {}) };
 
-    // 2. Buscar todos los templates .md disponibles
-    const templateDir = path.resolve(__dirname, "..", "..", ".ia", "instructions", "templates");
-    let assistantFiles = fs.readdirSync(templateDir).filter((file) => file.endsWith(".md"));
-    
-    // Si hay restricción, solo usar esos
-    if (input.assistantsToCreate && input.assistantsToCreate.length > 0) {
-      assistantFiles = assistantFiles.filter((file) => input.assistantsToCreate!.includes(path.basename(file, ".md")));
+      const templateDir = path.resolve(__dirname, "..", "..", ".ia", "instructions", "templates");
+      let assistantFiles = fs.readdirSync(templateDir).filter((file) => file.endsWith(".md"));
+      if (input.assistantsToCreate && input.assistantsToCreate.length > 0) {
+        assistantFiles = assistantFiles.filter((file) => input.assistantsToCreate!.includes(path.basename(file, ".md")));
+      }
+      if (assistantFiles.length === 0) {
+        throw new Error("No hay templates .md disponibles para crear assistants.");
+      }
+
+      const assistants: Record<string, string> = {};
+      const openaiRepo = this.openaiRepoFactory(input.openai.apiKey);
+      for (const fileName of assistantFiles) {
+        const assistantKey = path.basename(fileName, ".md");
+        const instructionText = generateInstructions(assistantKey, placeholders);
+        const assistant = await openaiRepo.createAssistant({
+          name: assistantKey,
+          instructions: instructionText,
+          top_p: 0.01,
+          temperature: 0.01,
+        });
+        assistants[assistantKey] = assistant.id;
+      }
+
+      const toSave: Omit<BotConfigDTO, "pk" | "sk" | "bucket" | "createdAt" | "updatedAt"> = {
+        botConfigType: input.botConfigType,
+        botConfigId: input.botConfigId,
+        superClinicId: input.superClinicId,
+        clinicSource: input.clinicSource,
+        clinicId: input.clinicId,
+        kommoSubdomain: input.kommoSubdomain,
+        kommo: {
+          responsibleUserId: input.responsibleUserId,
+          subdomain: input.kommoSubdomain,
+          longLivedToken: input.longLivedToken,
+          salesbotId: input.salesbotId,
+        },
+        defaultCountry: input.defaultCountry,
+        timezone: input.timezone,
+        name: input.name,
+        description: input.description,
+        fieldsProfile: input.fieldsProfile,
+        openai: {
+          apiKey: input.openai.apiKey,
+          assistants,
+        },
+        placeholders,
+        isEnabled: true,
+      };
+      const savedDto = await this.botConfigRepo.create(toSave);
+      return savedDto;
     }
-
-    if (assistantFiles.length === 0) {
-      throw new Error("No hay templates .md disponibles para crear assistants.");
+    // --- FLUJO PARA NOTIFICATION BOT ---
+    else if (input.botConfigType === BotConfigType.NotificationBot) {
+      const toSave: Omit<BotConfigDTO, "pk" | "sk" | "bucket" | "createdAt" | "updatedAt"> = {
+        botConfigType: input.botConfigType,
+        botConfigId: input.botConfigId,
+        superClinicId: input.superClinicId,
+        clinicSource: input.clinicSource,
+        clinicId: input.clinicId,
+        kommoSubdomain: input.kommoSubdomain,
+        kommo: {
+          responsibleUserId: input.responsibleUserId,
+          subdomain: input.kommoSubdomain,
+          longLivedToken: input.longLivedToken,
+          salesbotId: input.salesbotId,
+        },
+        defaultCountry: input.defaultCountry,
+        timezone: input.timezone,
+        name: input.name,
+        description: input.description,
+        fieldsProfile: input.fieldsProfile,
+        isEnabled: true,
+        // NO openai, NO placeholders
+      };
+      const savedDto = await this.botConfigRepo.create(toSave);
+      return savedDto;
     }
-
-    // 3. Generar instrucciones para cada assistant y crear assistant en OpenAI
-    const assistants: Record<string, string> = {};
-    const openaiRepo = this.openaiRepoFactory(input.openai.apiKey);
-    for (const fileName of assistantFiles) {
-      const assistantKey = path.basename(fileName, ".md");
-      const instructionText = generateInstructions(assistantKey, placeholders);
-
-      const assistant = await openaiRepo.createAssistant({
-        name: assistantKey,
-        instructions: instructionText,
-        top_p: 0.01,
-        temperature: 0.01,
-      });
-      assistants[assistantKey] = assistant.id;
+    else {
+      throw new Error("Tipo de botConfigType no soportado en AddBotUseCase");
     }
-
-    // 4. Armar y guardar el BotConfigDTO completo
-    const toSave: Omit<BotConfigDTO, "pk" | "sk" | "bucket" | "createdAt" | "updatedAt"> = {
-      botConfigType: input.botConfigType,
-      botConfigId: input.botConfigId,
-      superClinicId: input.superClinicId,
-      clinicSource: input.clinicSource,
-      clinicId: input.clinicId,
-      kommoSubdomain: input.kommoSubdomain,
-      kommo: {
-        responsibleUserId: input.responsibleUserId,
-        subdomain: input.kommoSubdomain,
-        longLivedToken: input.longLivedToken,
-        salesbotId: input.salesbotId,
-      },
-      defaultCountry: input.defaultCountry,
-      timezone: input.timezone,
-      name: input.name,
-      description: input.description,
-      fieldsProfile: input.fieldsProfile,
-      openai: {
-        apiKey: input.openai.apiKey,
-        assistants
-      },
-      placeholders,
-      isEnabled: true,
-    };
-
-    // 5. Guarda y retorna el BotConfig completo
-    const savedDto = await this.botConfigRepo.create(toSave);
-    return savedDto;
   }
 }

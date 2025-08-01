@@ -37,18 +37,34 @@ export class BotController {
     this.listGlobalUseCase = props.listGlobalUseCase;
   }
 
-  // --- BOT (config + assistants) -------------------------------------------
-  addBot(input: AddBotInput): Promise<BotConfigDTO> {
-    return this.addUseCase.execute(input);
+  // --- CHAT BOT (config + assistants) --------------------------------------
+  addChatBot(input: AddBotInput): Promise<BotConfigDTO> {
+    // Aquí se asume que input ya es validado y corresponde a chatBot
+    return this.addUseCase.execute({ ...input, botConfigType: BotConfigType.ChatBot });
   }
 
-  deleteBot(
-    botConfigType: BotConfigType,
-    botConfigId: string,
-    clinicSource: string,
-    clinicId: number
-  ): Promise<void> {
-    return this.deleteUseCase.execute({ botConfigType, botConfigId, clinicSource, clinicId });
+  deleteChatBot(botConfigId: string, clinicSource: string, clinicId: number): Promise<void> {
+    return this.deleteUseCase.execute({
+      botConfigType: BotConfigType.ChatBot,
+      botConfigId,
+      clinicSource,
+      clinicId,
+    });
+  }
+
+  // --- NOTIFICATION BOT (sólo registro) -----------------------------------
+  addNotificationBot(input: AddBotInput): Promise<BotConfigDTO> {
+    // Aquí se asume que input ya es validado y corresponde a notificationBot
+    return this.addUseCase.execute({ ...input, botConfigType: BotConfigType.NotificationBot });
+  }
+
+  deleteNotificationBot(botConfigId: string, clinicSource: string, clinicId: number): Promise<void> {
+    return this.deleteUseCase.execute({
+      botConfigType: BotConfigType.NotificationBot,
+      botConfigId,
+      clinicSource,
+      clinicId,
+    });
   }
 
   // --- BOT-CONFIG (sólo configuración) -------------------------------------
@@ -56,7 +72,12 @@ export class BotController {
     return this.updateUseCase.execute(input);
   }
 
-  getBotConfig(botConfigType: BotConfigType, botConfigId: string, clinicSource: string, clinicId: number): Promise<BotConfigDTO | null> {
+  getBotConfig(
+    botConfigType: BotConfigType,
+    botConfigId: string,
+    clinicSource: string,
+    clinicId: number
+  ): Promise<BotConfigDTO | null> {
     return this.getUseCase.execute(botConfigType, botConfigId, clinicSource, clinicId);
   }
 
