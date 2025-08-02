@@ -1,6 +1,6 @@
 // packages/core/src/infrastructure/external/HttpClient.ts
 
-import { ok, hdr } from "@clinickeys-agents/core/utils/helpers";
+import { ok, hdr } from "@clinickeys-agents/core/utils";
 
 export interface HttpRequestOptions {
   method?: string;

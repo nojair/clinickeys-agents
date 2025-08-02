@@ -27,7 +27,7 @@ import {
   PLEASE_WAIT_MESSAGE,
   BOT_MESSAGE,
   PATIENT_MESSAGE
-} from '@clinickeys-agents/core/utils/constants';
+} from '@clinickeys-agents/core/utils';
 
 import type { LeadMap, ContactMap } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import type { IPatientRepository } from '@clinickeys-agents/core/domain/patient';

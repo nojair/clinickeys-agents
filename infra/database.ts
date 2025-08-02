@@ -54,13 +54,13 @@ export const botConfigDynamo = new sst.aws.Dynamo(`BotConfigDynamo${SUFFIX}`, {
 
     /**
      * Permite activar o desactivar manualmente el bot (ON/OFF).
-     */
-    isEnabled: "binary",
+    //  */
+    // isEnabled: "binary",
 
     /**
      * Indica si el bot ya está listo para operar (servicios conectados, configuración OK, etc).
      */
-    isReady: "binary",
+    // isReady: "binary",
 
     // =======================
     // Clínica multi‑fuente (desnormalizado)

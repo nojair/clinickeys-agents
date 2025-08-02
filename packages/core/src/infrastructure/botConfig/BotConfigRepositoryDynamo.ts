@@ -195,7 +195,8 @@ export class BotConfigRepositoryDynamo implements IBotConfigRepository {
           new QueryCommand({
             TableName: this.tableName,
             IndexName: "byBucketCreated",
-            KeyConditionExpression: "bucket = :b",
+            KeyConditionExpression: "#bucket = :b",
+            ExpressionAttributeNames: { "#bucket": "bucket" },
             ExpressionAttributeValues: { ":b": b },
             ScanIndexForward: false,
             Limit: perBucket,

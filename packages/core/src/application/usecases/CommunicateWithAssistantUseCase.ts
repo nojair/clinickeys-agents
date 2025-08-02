@@ -20,7 +20,7 @@ import {
   PLEASE_WAIT_MESSAGE,
   BOT_MESSAGE,
   THREAD_ID,
-} from '@clinickeys-agents/core/utils/constants';
+} from '@clinickeys-agents/core/utils';
 
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 import type { BotConfigDTO } from '@clinickeys-agents/core/domain/botConfig';

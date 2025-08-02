@@ -21,7 +21,7 @@ import {
   APPOINTMENT_END_TIME,
   APPOINTMENT_START_TIME,
   APPOINTMENT_WEEKDAY_NAME,
-} from '@clinickeys-agents/core/utils/constants';
+} from '@clinickeys-agents/core/utils';
 
 export interface SendRemindersJobProps {
   notificationsRepo: INotificationRepository;

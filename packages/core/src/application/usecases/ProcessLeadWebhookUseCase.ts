@@ -17,7 +17,9 @@ export class ProcessLeadWebhookUseCase {
 
   /**
    * @param kommoEvent   payload del webhook ya normalizado
-   * @param pathParams   parámetros de la ruta capturados por API Gateway
+   * @param pathParams   parámetros de la ruta capturados por API Gateway
+   *                      (en este caso, debe ser un array, o el objeto con índices 0...4)
+   *                      Ej: { "0": "chatBot", "1": "abc123", "2": "kommo", "3": "321", "4": "654" }
    */
   async execute(
     kommoEvent: KommoLeadEventDTO,
@@ -31,15 +33,36 @@ export class ProcessLeadWebhookUseCase {
       throw new Error("Lead ID missing in KommoLeadEventDTO");
     }
 
-    // Limpiar undefined en path parameters para cumplir con el tipo estricto
-    const cleanPathParams = Object.fromEntries(
-      Object.entries(pathParams).filter(([, v]) => v !== undefined)
-    ) as Record<string, string>;
+    // Extraer por orden exacto los valores de pathParams
+    // (esperando que vengan en pathParams["0"], pathParams["1"], etc)
+    const botConfigType = pathParams["0"];
+    const botConfigId = pathParams["1"];
+    const clinicSource = pathParams["2"];
+    const clinicId = pathParams["3"];
+    const salesbotId = pathParams["4"];
+
+    // Validar todos los requeridos (los primeros 4)
+    if (!botConfigType || !botConfigId || !clinicSource || !clinicId) {
+      throw new Error(
+        "Missing required path parameters: botConfigType, botConfigId, clinicSource, clinicId"
+      );
+    }
+
+    // Armar el objeto pathParameters
+    const orderedPathParameters: Record<string, string> = {
+      botConfigType,
+      botConfigId,
+      clinicSource,
+      clinicId,
+    };
+    if (salesbotId) {
+      orderedPathParameters.salesbotId = salesbotId;
+    }
 
     // Construcción del mensaje de cola
     const queueMessage: LeadQueueMessageDTO = {
       kommo: kommoEvent,
-      pathParameters: cleanPathParams,
+      pathParameters: orderedPathParameters,
       enqueuedAt: new Date().toISOString(),
     };
 

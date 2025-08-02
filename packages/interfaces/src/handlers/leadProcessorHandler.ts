@@ -2,7 +2,7 @@
 
 import type { Handler, SQSEvent } from "aws-lambda";
 
-import { createDynamoDocumentClient, getEnvVar } from "@clinickeys-agents/core/infrastructure/helpers";
+import { createMySQLPool, createDynamoDocumentClient, getEnvVar } from "@clinickeys-agents/core/infrastructure/helpers";
 import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/botConfig";
 import { GetBotConfigUseCase } from "@clinickeys-agents/core/application/usecases";
 import { LeadProcessorController } from "../controllers/LeadProcessorController";
@@ -20,6 +20,17 @@ const botConfigTable = getEnvVar("CLINICS_CONFIG_DB_NAME");
 const botConfigRepo = new BotConfigRepositoryDynamo({ tableName: botConfigTable, docClient });
 const botConfigService = new BotConfigService(botConfigRepo);
 const getBotConfigUC = new GetBotConfigUseCase({botConfigService});
+
+createMySQLPool({
+  host: getEnvVar("CLINICS_DATA_DB_HOST"),
+  user: getEnvVar("CLINICS_DATA_DB_USER"),
+  password: getEnvVar("CLINICS_DATA_DB_PASSWORD"),
+  database: getEnvVar("CLINICS_DATA_DB_NAME"),
+  port: getEnvVar("CLINICS_DATA_DB_PORT") ? Number(getEnvVar("CLINICS_DATA_DB_PORT")) : 3306,
+  waitForConnections: true,
+  connectionLimit: 2,
+  queueLimit: 0,
+});
 
 // Controller instanciado con la dependencia principal
 const controller = new LeadProcessorController(getBotConfigUC, logger);

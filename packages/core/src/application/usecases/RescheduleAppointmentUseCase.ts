@@ -1,4 +1,4 @@
-import { ConsultaCitaSchema } from '@clinickeys-agents/core/utils/schemas';
+import { ConsultaCitaSchema } from '@clinickeys-agents/core/utils';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 import { readFile } from 'fs/promises';
 import path from 'path';

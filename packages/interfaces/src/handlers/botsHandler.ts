@@ -9,13 +9,14 @@ import { OpenAIAssistantRepository } from "@clinickeys-agents/core/infrastructur
 import { BotConfigService } from "@clinickeys-agents/core/application/services";
 import { BotConfigType } from "@clinickeys-agents/core/domain/botConfig";
 import { BotController } from "../controllers/BotController";
+import { defaultPlaceholders } from "@clinickeys-agents/core/utils";
+import { Resource } from "sst";
 import {
   AddBotUseCase,
   UpdateBotConfigUseCase,
   DeleteBotUseCase,
   GetBotConfigUseCase,
   ListGlobalBotConfigsUseCase,
-  type AddBotInput,
   type UpdateBotConfigInput,
   type ListGlobalBotConfigsInput,
 } from "@clinickeys-agents/core/application/usecases";
@@ -49,6 +50,11 @@ export const handler: Handler<E, R> = async (event) => {
     const { method, path } = event.requestContext.http;
     const qs = event.queryStringParameters ?? {};
     const body = event.body ? JSON.parse(event.body) : undefined;
+
+    // ─── GET default placeholders ───────────────────────────────
+    if (method === "GET" && path === "/bot-config/default-placeholders") {
+      return { statusCode: 200, body: JSON.stringify(defaultPlaceholders) };
+    }
 
     // --- CREATE BOT ---------------------------------------------------------
     if (method === "POST" && path === "/bot") {

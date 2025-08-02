@@ -1,6 +1,6 @@
 // packages/core/src/utils/ErrorReporter.ts
 
-import { Logger } from "@clinickeys-agents/core/infrastructure/external/Logger";
+import { Logger } from "@clinickeys-agents/core/infrastructure/external";
 import { AppError } from "./AppError";
 
 /**
