@@ -12,7 +12,7 @@ export interface AddBotInput {
   superClinicId: number;
   clinicId: number;
   kommoSubdomain: string;
-  kommoResponsibleUserId: string;
+  kommoResponsibleUserId: number;
   kommoLongLivedToken: string;
   kommoSalesbotId: number;
   openaiApikey?: string;

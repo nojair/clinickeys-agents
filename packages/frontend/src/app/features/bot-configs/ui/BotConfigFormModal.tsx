@@ -48,41 +48,41 @@ export function BotConfigFormModal({ open, onClose, initialData }: BotConfigForm
   const { createBotConfigMutation, updateBotConfigMutation, isCreating, isUpdating } = useBotConfigs();
 
   const initialFormValues = isEditMode
-    ? {
-        botConfigType: initialData!.botConfigType,
-        description: initialData!.description,
-        kommoSubdomain: initialData!.kommo.subdomain,
-        kommoLongLivedToken: initialData!.kommo.longLivedToken,
-        kommoResponsibleUserId: initialData!.kommo.responsibleUserId,
-        kommoSalesbotId: initialData!.kommo.salesbotId,
-        defaultCountry: initialData!.defaultCountry,
-        timezone: initialData!.timezone,
-        isEnabled: initialData!.isEnabled,
-        clinicId: initialData!.clinicId,
-        superClinicId: initialData!.superClinicId,
-        openaiApikey: initialData!.openai?.apiKey ?? '',
-        assistants: initialData!.openai?.assistants ?? {},
-      }
-    : {
-        botConfigType: undefined,
-        description: '',
-        kommoSubdomain: '',
-        kommoLongLivedToken: '',
-        kommoResponsibleUserId: '',
-        kommoSalesbotId: '',
-        defaultCountry: 'ES',
-        timezone: 'Europe/Madrid',
-        isEnabled: true,
-        fieldsProfile: 'default_kommo_profile',
-        clinicSource: 'legacy',
-        clinicId: undefined,
-        superClinicId: undefined,
-        openaiApikey: '',
-        assistants: {},
-      };
+    ? ({
+      botConfigType: initialData!.botConfigType,
+      description: initialData!.description,
+      kommoSubdomain: initialData!.kommo.subdomain,
+      kommoLongLivedToken: initialData!.kommo.longLivedToken,
+      kommoResponsibleUserId: initialData!.kommo.responsibleUserId,
+      kommoSalesbotId: initialData!.kommo.salesbotId,
+      defaultCountry: initialData!.defaultCountry,
+      timezone: initialData!.timezone,
+      isEnabled: initialData!.isEnabled,
+      clinicId: initialData!.clinicId,
+      superClinicId: initialData!.superClinicId,
+      openaiApikey: initialData!.openai?.apiKey ?? '',
+    } satisfies UpdateBotConfigPayload)
+    : ({
+      botConfigType: 'chatBot',
+      description: '',
+      kommoSubdomain: '',
+      kommoLongLivedToken: '',
+      kommoResponsibleUserId: 0,
+      kommoSalesbotId: '',
+      defaultCountry: 'ES',
+      timezone: 'Europe/Madrid',
+      isEnabled: true,
+      fieldsProfile: 'default_kommo_profile',
+      clinicSource: 'legacy',
+      clinicId: 0,
+      superClinicId: 0,
+      openaiApikey: '',
+    } satisfies CreateBotConfigPayload);
 
-  const methods = useForm<any>({
-    resolver: zodResolver(schema) as Resolver<any>,
+  type BotConfigFormValues = CreateBotConfigPayload | UpdateBotConfigPayload;
+
+  const methods = useForm<BotConfigFormValues>({
+    resolver: zodResolver(isEditMode ? updateBotConfigSchema : createBotConfigSchema),
     defaultValues: initialFormValues,
     mode: 'onChange',
   });
@@ -195,10 +195,9 @@ export function BotConfigFormModal({ open, onClose, initialData }: BotConfigForm
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {initialData!.kommoLeadsCustomFields.map((field: any, idx: any) => (
               <div key={`${field.field_name}${idx}`} className={
-                `rounded-lg px-3 py-2 border text-sm flex flex-col shadow-sm ${
-                  field.exists && field.field_type === 'textarea'
-                    ? 'bg-green-50 border-green-400 text-green-900'
-                    : 'bg-red-50 border-red-400 text-red-900'
+                `rounded-lg px-3 py-2 border text-sm flex flex-col shadow-sm ${field.exists && field.field_type === 'textarea'
+                  ? 'bg-green-50 border-green-400 text-green-900'
+                  : 'bg-red-50 border-red-400 text-red-900'
                 }`
               }>
                 <div className="font-semibold mb-1">{field.field_name}</div>

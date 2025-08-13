@@ -11,7 +11,7 @@ export interface CreateBotConfigPayload {
   description: string;
   kommoSubdomain: string;
   kommoLongLivedToken: string;
-  kommoResponsibleUserId: string;
+  kommoResponsibleUserId: number;
   kommoSalesbotId: string;
   openaiApikey?: string; // Obligatorio si es chatBot
   defaultCountry: string;
@@ -19,17 +19,18 @@ export interface CreateBotConfigPayload {
   isEnabled: boolean;
   fieldsProfile: "default_kommo_profile";
   clinicSource: "legacy";
-  clinicId: string | number;
-  superClinicId: string | number;
+  clinicId?: string | number;
+  superClinicId?: string | number;
   placeholders?: Record<string, string>; // Solo para chatBot
 }
 
 export interface UpdateBotConfigPayload {
+  botConfigType: BotConfigType;
   name?: string;
   description?: string;
   kommoSubdomain?: string;
   kommoLongLivedToken?: string;
-  kommoResponsibleUserId?: string;
+  kommoResponsibleUserId?: number;
   kommoSalesbotId?: string;
   openaiApikey?: string; // Solo si chatBot
   defaultCountry?: string;

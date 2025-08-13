@@ -14,7 +14,7 @@ export interface BotConfig {
   kommo: {
     subdomain: string;
     longLivedToken: string;
-    responsibleUserId: string;
+    responsibleUserId: number;
     salesbotId: string;
   };
   openai?: {

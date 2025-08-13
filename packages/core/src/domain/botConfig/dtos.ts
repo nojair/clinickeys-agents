@@ -65,7 +65,7 @@ type BaseBotConfigDTO = {
   kommo: {
     subdomain: string;
     longLivedToken: string;
-    responsibleUserId: string;
+    responsibleUserId: number;
     salesbotId: number;
   };
   defaultCountry: string;
