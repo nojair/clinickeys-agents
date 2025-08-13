@@ -13,7 +13,7 @@ interface WebhookCopyTooltipProps {
 export function WebhookCopyTooltip({ config }: WebhookCopyTooltipProps) {
   const [show, setShow] = useState(false);
   // Se debe usar la variable de entorno definida para la base de webhooks
-  const baseUrl = process.env.NEXT_PUBLIC_CHATBOT_WEBHOOK_BASE_URL || '';
+  const baseUrl = process.env.NEXT_PUBLIC_WEBHOOK_BASE_URL || '';
   const webhookUrl = formatWebhookUrl({
     baseUrl,
     botConfigType: config.botConfigType,

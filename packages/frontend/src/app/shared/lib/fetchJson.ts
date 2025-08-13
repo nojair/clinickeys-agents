@@ -26,7 +26,7 @@ export interface FetchJsonOptions
   skipJsonContentType?: boolean;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export async function fetchJson<T = unknown>(
   path: string,
@@ -47,7 +47,7 @@ export async function fetchJson<T = unknown>(
         .join("&")
     : "";
 
-  const url = `${API_BASE_URL}${path}${qs ? `?${qs}` : ""}`;
+  const url = `${NEXT_PUBLIC_API_URL}${path}${qs ? `?${qs}` : ""}`;
 
   const finalHeaders: HeadersInit = {
     Accept: "application/json",

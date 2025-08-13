@@ -61,7 +61,7 @@ export function BotConfigsTable() {
   return (
     <div className="w-full max-w-6xl mx-auto px-2">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Configuraciones de Bots</h1>
+        <h1 className="text-2xl font-bold">Configssuraciones de Bots</h1>
         <Button
           variant="primary"
           onClick={() => {

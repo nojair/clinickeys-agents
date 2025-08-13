@@ -38,11 +38,16 @@ export const createBotConfigSchema = baseBotConfigSchema.extend({
   }
 });
 
-export const updateBotConfigSchema = baseBotConfigSchema.partial().extend({
-  botConfigType: botConfigTypeSchema,
-  openaiApikey: z.string().optional(),
-  assistants: z.record(z.string(), z.string()).optional(),
-});
+export const updateBotConfigSchema = baseBotConfigSchema
+  .omit({ clinicSource: true, fieldsProfile: true }) // quitamos estos para que no se hagan opcionales
+  .partial()
+  .extend({
+    clinicSource: z.literal("legacy"),                 // siempre "legacy"
+    fieldsProfile: z.literal("default_kommo_profile"), // siempre "default_kommo_profile"
+    botConfigType: botConfigTypeSchema,
+    openaiApikey: z.string().optional(),
+    assistants: z.record(z.string(), z.string()).optional(),
+  });
 
 export const placeholderSchema = z.object({
   key: z.string().min(1),

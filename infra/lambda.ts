@@ -13,6 +13,8 @@ export const chatbotWebhookFn = new sst.aws.Function(`chatbotWebhookFn${SUFFIX}`
   },
 });
 
+chatbotWebhookFn.addEnvironment({ URL: chatbotWebhookFn.url });
+
 // Handler que procesa los mensajes de la cola
 chatbotQueue.subscribe({
   handler: "packages/interfaces/src/handlers/leadProcessorHandler.handler",

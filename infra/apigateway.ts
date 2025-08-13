@@ -5,7 +5,10 @@ import { botConfigDynamo } from "./database";
 
 export const botConfigApiGateway = new sst.aws.ApiGatewayV2(`BotConfigApiGateway${SUFFIX}`, {
   cors: {
-    allowOrigins: ["http://localhost:3000"],
+    allowOrigins: [
+      "http://localhost:3000",
+      "https://d1dgta1ao1z61u.cloudfront.net"
+    ],
     allowCredentials: true,
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],

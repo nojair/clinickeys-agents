@@ -25,12 +25,11 @@ export default $config({
     }
   },
   async run() {
-    const apiGateway = await import("./infra/apigateway");
     const databases = await import("./infra/database");
+    const apiGateway = await import("./infra/apigateway");
     const lambda = await import("./infra/lambda");
     const cron = await import("./infra/cron");
     await import("./infra/frontend");
-    await import("./infra/cron");
 
     return {
       BotConfigTable: databases.botConfigDynamo.name,

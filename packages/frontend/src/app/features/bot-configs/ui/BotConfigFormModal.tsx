@@ -79,10 +79,13 @@ export function BotConfigFormModal({ open, onClose, initialData }: BotConfigForm
       openaiApikey: '',
     } satisfies CreateBotConfigPayload);
 
-  type BotConfigFormValues = CreateBotConfigPayload | UpdateBotConfigPayload;
+  const resolver: Resolver<any> =
+    isEditMode
+      ? (zodResolver(updateBotConfigSchema) as unknown as Resolver<any>)
+      : (zodResolver(createBotConfigSchema) as unknown as Resolver<any>);
 
-  const methods = useForm<BotConfigFormValues>({
-    resolver: zodResolver(isEditMode ? updateBotConfigSchema : createBotConfigSchema),
+  const methods = useForm<any>({
+    resolver,
     defaultValues: initialFormValues,
     mode: 'onChange',
   });

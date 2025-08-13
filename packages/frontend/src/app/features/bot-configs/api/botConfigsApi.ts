@@ -13,7 +13,7 @@ import type {
 export interface BotIdParams {
   botConfigType: string;
   botConfigId: string;
-  clinicSource: string;
+  clinicSource?: string;
   clinicId: string | number;
 }
 

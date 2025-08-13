@@ -19,8 +19,8 @@ export interface CreateBotConfigPayload {
   isEnabled: boolean;
   fieldsProfile: "default_kommo_profile";
   clinicSource: "legacy";
-  clinicId?: string | number;
-  superClinicId?: string | number;
+  clinicId: string | number;
+  superClinicId: string | number;
   placeholders?: Record<string, string>; // Solo para chatBot
 }
 
@@ -36,8 +36,8 @@ export interface UpdateBotConfigPayload {
   defaultCountry?: string;
   timezone?: string;
   isEnabled?: boolean;
-  clinicId?: string | number;
-  superClinicId?: string | number;
+  clinicId: string | number;
+  superClinicId: string | number;
   // No permite editar placeholders ni assistantIds
 }
 
