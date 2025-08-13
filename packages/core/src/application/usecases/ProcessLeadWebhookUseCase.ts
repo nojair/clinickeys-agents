@@ -23,9 +23,9 @@ export class ProcessLeadWebhookUseCase {
    */
   async execute(
     kommoEvent: KommoLeadEventDTO,
-    pathParams: Record<string, string | undefined>
+    queryStringParameters: Record<string, string | undefined>
   ): Promise<LeadQueueMessageDTO> {
-    this.logger.info("Building LeadQueueMessageDTO", { kommoEvent, pathParams });
+    this.logger.info("Building LeadQueueMessageDTO", { kommoEvent, queryStringParameters });
 
     // Validación mínima: aseguramos que existe leadId
     const leadId = kommoEvent.leads.add?.[0]?.id;
@@ -35,11 +35,11 @@ export class ProcessLeadWebhookUseCase {
 
     // Extraer por orden exacto los valores de pathParams
     // (esperando que vengan en pathParams["0"], pathParams["1"], etc)
-    const botConfigType = pathParams["0"];
-    const botConfigId = pathParams["1"];
-    const clinicSource = pathParams["2"];
-    const clinicId = pathParams["3"];
-    const salesbotId = pathParams["4"];
+    const botConfigType = queryStringParameters.a;
+    const botConfigId = queryStringParameters.b;
+    const clinicSource = queryStringParameters.c;
+    const clinicId = queryStringParameters.d;
+    const salesbotId = queryStringParameters.e;
 
     // Validar todos los requeridos (los primeros 4)
     if (!botConfigType || !botConfigId || !clinicSource || !clinicId) {

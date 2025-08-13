@@ -106,6 +106,15 @@ export class AppError extends Error {
     });
   }
 
+  static MEDICOS_SOLICITADOS_NO_ENCONTRADOS(medicos: string[] = []) {
+    const medicosStr = medicos.join(", ");
+    return new AppError({
+      code: "ERR203",
+      humanMessage: `Los médicos solicitados no se encontraron: "${medicosStr}". Por favor, verifique si los nombres solicitados existen en la base de datos.`,
+      context: { medicos },
+    });
+  }
+
   static MEDICO_NO_ASOCIADO_A_TRATAMIENTO(medicos: string[] = [], tratamientos: string[] = []) {
     const medicosStr = medicos.join(", ");
     const tratamientosStr = tratamientos.join(", ");

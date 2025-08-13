@@ -1,3 +1,5 @@
+// /shared/ui/Switch.tsx
+
 import * as RadixSwitch from '@radix-ui/react-switch';
 import type { FC } from 'react';
 import clsx from 'clsx';

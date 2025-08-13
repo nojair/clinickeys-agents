@@ -1,12 +1,10 @@
-// /shared/ui/TextInput.tsx
-
 import type { InputHTMLAttributes } from 'react';
 import clsx from 'clsx';
 
 interface TextInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   value?: string;
   onChange?: (value: string) => void;
-  label: string;
+  label: string | React.ReactNode;
   error?: string;
 }
 
@@ -22,7 +20,9 @@ export function TextInput({
 }: TextInputProps) {
   return (
     <div className="w-full">
-      <label className="block mb-1 text-sm font-medium">{label}</label>
+      <label className="block mb-1 text-sm font-medium">
+        {label}
+      </label>
       <input
         value={value}
         onChange={e => onChange?.(e.target.value)}

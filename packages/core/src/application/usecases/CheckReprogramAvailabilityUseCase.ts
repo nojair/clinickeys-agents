@@ -1,19 +1,19 @@
+import { KommoCustomFieldValueBase } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import { AvailabilityService, KommoService } from '@clinickeys-agents/core/application/services';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 
 interface CheckReprogramAvailabilityInput {
   botConfig: any;
   leadId: number;
-  mergedCustomFields: { id: string | number; name: string; value?: string }[];
-  salesbotId: number;
+  normalizedLeadCF: (KommoCustomFieldValueBase & { value: any })[];
   params: {
     id_cita: number;
-    id_tratamiento: string;
+    id_tratamiento: number;
     tratamiento: string;
     medico?: string | null;
     id_medico?: number | null;
-    fechas: Array<{ fecha: string }> | string;
-    horas: Array<{ hora_inicio: string; hora_fin: string }>;
+    fechas: string;
+    horas: string;
     rango_dias_extra?: number;
     citas_paciente?: Array<{ id_cita: number; [key: string]: any }>;
   };
@@ -37,8 +37,7 @@ export class CheckReprogramAvailabilityUseCase {
     const {
       botConfig,
       leadId,
-      mergedCustomFields,
-      salesbotId,
+      normalizedLeadCF,
       params,
       tiempoActual,
       subdomain,
@@ -46,12 +45,14 @@ export class CheckReprogramAvailabilityUseCase {
 
     const { tratamiento, medico, id_medico, id_tratamiento, fechas, horas, citas_paciente } = params;
 
-    // 1. Mensaje inicial "please‑wait"
+    Logger.info('[CheckReprogramAvailability] Inicio', { leadId, tratamiento, medico, id_medico, fechas, horas });
+
+    // 1. Mensaje inicial "please-wait"
+    Logger.debug('[CheckReprogramAvailability] Enviando mensaje inicial al bot');
     await this.kommoService.sendBotInitialMessage({
-      botConfig,
       leadId,
-      mergedCustomFields,
-      salesbotId,
+      normalizedLeadCF,
+      salesbotId: botConfig.kommo.salesbotId,
       message: 'Muy bien, voy a revisar los horarios. Un momento por favor.',
     });
 
@@ -66,6 +67,7 @@ export class CheckReprogramAvailabilityUseCase {
     let finalPayload: any = null;
 
     for (const step of STEPS) {
+      Logger.debug('[CheckReprogramAvailability] Buscando disponibilidad', { step: step.tipo, filtros: step.filtros });
       const fechasStep = step.filtros.rango_dias_extra
         ? `${Array.isArray(fechas) ? JSON.stringify(fechas) : fechas}, los próximos 45 días`
         : fechas;
@@ -86,7 +88,7 @@ export class CheckReprogramAvailabilityUseCase {
         kommoToken: botConfig.longLivedToken,
         leadId,
       });
-      Logger.info(`[CheckReprogramAvailability] Paso '${step.tipo}' respuesta:`, availability);
+      Logger.info(`[CheckReprogramAvailability] Paso '${step.tipo}' respuesta recibida`, { success: availability.success, count: availability.analisis_agenda?.length });
 
       if (
         availability.success &&
@@ -102,11 +104,13 @@ export class CheckReprogramAvailabilityUseCase {
           },
           horarios: availability.analisis_agenda,
         };
+        Logger.debug('[CheckReprogramAvailability] Disponibilidad encontrada', { finalPayload });
         break;
       }
     }
 
     if (!finalPayload) {
+      Logger.warn('[CheckReprogramAvailability] No se encontró disponibilidad en ningún paso');
       finalPayload = {
         tipo_busqueda: 'sin_disponibilidad',
         filtros_aplicados: { con_medico: !!medico, rango_dias_extra: 0 },
@@ -118,6 +122,7 @@ export class CheckReprogramAvailabilityUseCase {
     // 3. Construir toolOutput para resolver run
     const citasPacienteStr = JSON.stringify(citas_paciente ?? []);
     const toolOutput = `#consultaReprogramar\nCITAS_PACIENTE: ${citasPacienteStr}\nHORARIOS_DISPONIBLES: ${JSON.stringify(finalPayload)}\nMENSAJE_USUARIO: ${JSON.stringify(params)}`;
+    Logger.info('[CheckReprogramAvailability] Ejecución completada', { success: true });
 
     return { success: true, toolOutput };
   }

@@ -1,8 +1,11 @@
 // packages/core/src/infrastructure/integrations/kommo/models/KommoContactCustomFieldValue.ts
 
-export interface KommoContactCustomFieldValue {
-  field_id: number;
-  field_name: string;
-  field_type: string;
-  values: Array<{ value: any; enum_id?: number; enum_code?: string }>;
+import { KommoCustomFieldValueBase } from './KommoCustomFieldBase';
+
+/**
+ * Valor de campo personalizado para contactos en Kommo.
+ * Extiende de la interfaz base unificada.
+ */
+export interface KommoContactCustomFieldValue extends KommoCustomFieldValueBase {
+  entity_type?: 'contacts';
 }

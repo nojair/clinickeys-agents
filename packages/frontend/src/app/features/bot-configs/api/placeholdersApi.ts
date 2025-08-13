@@ -1,13 +1,14 @@
 // /features/bot-configs/api/placeholdersApi.ts
 
+import fetchJson from "@/app/shared/lib/fetchJson";
 import type { Placeholder } from "@/app/features/bot-configs/model/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
-
 export const placeholdersApi = {
+  /**
+   * Devuelve la lista de placeholders por defecto que el backend expone
+   * para la creación de `chatBot`.
+   */
   async getDefaultPlaceholders(): Promise<Placeholder[]> {
-    const res = await fetch(`${API_BASE_URL}/bots/placeholders`);
-    if (!res.ok) throw new Error("Error al obtener placeholders");
-    return res.json();
+    return fetchJson<Placeholder[]>("/bot-configs/default-placeholders");
   },
 };

@@ -16,7 +16,7 @@ const logger = Logger;
 
 // DynamoDB client & repository for bot‑configs
 const docClient = createDynamoDocumentClient({ region: getEnvVar("AWS_REGION") });
-const botConfigTable = getEnvVar("CLINICS_CONFIG_DB_NAME");
+const botConfigTable = getEnvVar("BOT_CONFIGS_TABLE_NAME");
 const botConfigRepo = new BotConfigRepositoryDynamo({ tableName: botConfigTable, docClient });
 const botConfigService = new BotConfigService(botConfigRepo);
 const getBotConfigUC = new GetBotConfigUseCase({botConfigService});

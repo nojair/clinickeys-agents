@@ -6,6 +6,7 @@ import { IPackBonoRepository } from "@clinickeys-agents/core/domain/packBono";
 import { IPatientRepository } from "@clinickeys-agents/core/domain/patient";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { DateTime } from "luxon";
+import { Logger } from "@clinickeys-agents/core/infrastructure/external";
 
 export interface GetPatientByPhoneOrCreateParams {
   nombre: string;
@@ -40,30 +41,42 @@ export class PatientService {
   }
 
   async findById(patientId: number): Promise<any | undefined> {
-    return await this.patientRepo.findById(patientId);
+    Logger.debug('[PatientService] findById called', { patientId });
+    const res = await this.patientRepo.findById(patientId);
+    Logger.debug('[PatientService] findById result', { found: !!res });
+    return res;
   }
 
   async createPatient(params: GetPatientByPhoneOrCreateParams): Promise<any | undefined> {
-    return await this.patientRepo.createPatient(params);
+    Logger.info('[PatientService] createPatient called', { clinicId: params.id_clinica, superClinicId: params.id_super_clinica, kommo_lead_id: params.kommo_lead_id });
+    const created = await this.patientRepo.createPatient(params);
+    Logger.info('[PatientService] createPatient result', { created });
+    return created;
   }
 
   async getPatientByPhoneOrCreate(params: GetPatientByPhoneOrCreateParams) {
+    Logger.info('[PatientService] getPatientByPhoneOrCreate called', { telefono: params.telefono, id_clinica: params.id_clinica });
     let telefonoNacional = params.telefono;
     try {
       const phoneObj = parsePhoneNumberFromString(params.telefono);
       if (phoneObj) {
         telefonoNacional = phoneObj.nationalNumber;
+        Logger.debug('[PatientService] Parsed national phone', { telefonoNacional });
       }
-    } catch {
-      // Si falla el parseo, usar el original
+    } catch (err) {
+      Logger.warn('[PatientService] Phone parse failed, using original', { telefono: params.telefono, error: err });
     }
 
     const pacienteExistente = await this.patientRepo.findByNationalPhoneAndClinic(
       telefonoNacional,
       Number(params.id_clinica)
     );
-    if (pacienteExistente) return pacienteExistente;
+    if (pacienteExistente) {
+      Logger.info('[PatientService] Existing patient found', { id_paciente: pacienteExistente.id_paciente });
+      return pacienteExistente;
+    }
 
+    Logger.debug('[PatientService] Creating new patient');
     const id_paciente = await this.patientRepo.createPatient({
       nombre: params.nombre,
       apellido: params.apellido,
@@ -73,6 +86,7 @@ export class PatientService {
       kommo_lead_id: params.kommo_lead_id,
     });
 
+    Logger.info('[PatientService] New patient created', { id_paciente });
     return { id_paciente, nombre: params.nombre, apellido: params.apellido, telefono: params.telefono };
   }
 
@@ -80,8 +94,10 @@ export class PatientService {
    * Orquesta la consulta completa de info de paciente, citas, packs y presupuestos.
    */
   async getPatientInfo(tiempoActualDT: DateTime, id_clinica: number, lead_phones: any): Promise<any> {
+    Logger.info('[PatientService] getPatientInfo called', { id_clinica, lead_phones });
     // Validaciones mínimas
     if (!id_clinica) {
+      Logger.error('[PatientService] Missing id_clinica');
       return {
         success: false,
         message: "Falta id_clinica en la solicitud",
@@ -89,6 +105,7 @@ export class PatientService {
       };
     }
     if (!lead_phones || typeof lead_phones !== "object") {
+      Logger.warn('[PatientService] Invalid lead_phones, returning empty result');
       return {
         success: true,
         message: "No se pudo encontrar el paciente",
@@ -98,6 +115,7 @@ export class PatientService {
     // Seleccionar el teléfono en orden de prioridad
     let telefono = lead_phones.in_conversation?.trim() || lead_phones.in_field?.trim() || lead_phones.in_contact?.trim();
     if (!telefono) {
+      Logger.warn('[PatientService] No phone available from lead_phones');
       return {
         success: true,
         message: "No se pudo encontrar el paciente",
@@ -109,11 +127,15 @@ export class PatientService {
     try {
       const phoneNumber = parsePhoneNumberFromString(telefono);
       if (phoneNumber) telefonoSinPrefijo = phoneNumber.nationalNumber;
-    } catch (_) { }
+      Logger.debug('[PatientService] Extracted national phone', { telefonoSinPrefijo });
+    } catch (err) {
+      Logger.warn('[PatientService] Phone parse failed for lead phone', { telefono, error: err });
+    }
 
     // Buscar paciente (solo activos)
     const paciente = await this.patientRepo.findByNationalPhoneAndClinic(telefonoSinPrefijo, id_clinica);
     if (!paciente) {
+      Logger.warn('[PatientService] Patient not found', { telefonoSinPrefijo, id_clinica });
       return {
         success: true,
         message: "[ERROR_NO_PATIENT_FOUND] No se pudo encontrar el paciente",
@@ -121,8 +143,10 @@ export class PatientService {
       };
     }
     const idPaciente = paciente.id_paciente;
+    Logger.debug('[PatientService] Patient found', { idPaciente });
 
     // Obtener presupuestos
+    Logger.debug('[PatientService] Fetching budgets');
     const presupuestos = await this.presupuestoRepo.getPresupuestosByPacienteId(idPaciente, id_clinica);
     const presupuestosMapped = (presupuestos || []).map((p: any) => ({
       id_presupuesto: p.id_presupuesto,
@@ -137,6 +161,7 @@ export class PatientService {
     }));
 
     // Obtener citas futuras/activas
+    Logger.debug('[PatientService] Fetching appointments');
     const citasRaw = await this.appointmentRepo.getAppointmentsByPatient(idPaciente, id_clinica);
     const citasFiltradas = (citasRaw || []).filter((cita: any) => {
       const fecha = cita.fecha_cita instanceof Date
@@ -161,10 +186,10 @@ export class PatientService {
       nombre_espacio: cita.nombre_espacio,
       nombre_tratamiento: cita.nombre_tratamiento,
       nombre_medico: cita.nombre_medico,
-      apellido_medico: cita.apellido_medico
     }));
 
     // Packs/bonos: sesiones y detalles
+    Logger.debug('[PatientService] Fetching packs/bonos sessions and details');
     const packSesiones = await this.packBonoRepo.getPackBonosSesionesByPacienteId(idPaciente);
     const citasDetalle = await this.appointmentRepo.getCitasDetallePorPackTratamiento(idPaciente, id_clinica);
     const lookupCitas: Record<string, any[]> = {};
@@ -175,10 +200,8 @@ export class PatientService {
     });
     const packsBonos = await Promise.all(
       (packSesiones || []).map(async (sesion: any) => {
-        // Info pack bono
         const packBono = await this.packBonoRepo.getPackBonoById(sesion.id_pack_bono, id_clinica);
         if (!packBono) return null;
-        // Tratamientos asociados
         const tratamientos = await this.packBonoRepo.getPackBonoTratamientos(sesion.id_pack_bono);
         const tratamientosConUso = (tratamientos || []).map((tratamiento: any) => {
           const key = `${sesion.id_pack_bono}_${tratamiento.id_tratamiento}`;
@@ -210,7 +233,8 @@ export class PatientService {
         };
       })
     );
-    return {
+
+    const out = {
       success: true,
       message: null,
       paciente,
@@ -218,5 +242,7 @@ export class PatientService {
       packsBonos: packsBonos.filter(item => item !== null),
       presupuestos: presupuestosMapped
     };
+    Logger.info('[PatientService] getPatientInfo result', { hasPatient: !!paciente, citas: citas.length, packs: out.packsBonos.length, presupuestos: presupuestosMapped.length });
+    return out;
   }
 }

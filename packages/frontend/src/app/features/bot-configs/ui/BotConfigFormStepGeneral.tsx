@@ -1,21 +1,21 @@
-'use-client';
 // /features/bot-configs/ui/BotConfigFormStepGeneral.tsx
+'use client';
 
-import { useEffect } from 'react';
-import { Button } from '@/app/shared/ui/Button';
+import React from 'react';
+import { Controller, type UseFormReturn, type FieldError } from 'react-hook-form';
 import { TextInput } from '@/app/shared/ui/TextInput';
+import { TextArea } from '@/app/shared/ui/TextArea';
+import { ClinicSelector } from '@/app/features/bot-configs/ui/ClinicSelector';
+import { CountrySelect } from '@/app/shared/ui/CountrySelect';
 import { Select } from '@/app/shared/ui/Select';
-import { Switch } from '@/app/shared/ui/Switch';
-import { useClinics } from '@/app/features/bot-configs/model/useClinics';
-import { Controller } from 'react-hook-form';
-import type { UseFormReturn } from 'react-hook-form';
 import type { BotConfigType } from '@/app/entities/bot-config/types';
+import { timezoneOptions } from '@/app/shared/lib/timezoneOptions';
+import { KommoUserSelector } from '@/app/features/bot-configs/ui/KommoUserSelector';
+import { AssistantsList } from '@/app/shared/ui/AssistantsList';
 
 interface BotConfigFormStepGeneralProps {
   methods: UseFormReturn<any>;
   botType?: BotConfigType;
-  onNext: () => void;
-  onPrev?: () => void;
   isEditMode: boolean;
   setPlaceholders: (val: Record<string, string>) => void;
 }
@@ -23,190 +23,212 @@ interface BotConfigFormStepGeneralProps {
 export function BotConfigFormStepGeneral({
   methods,
   botType,
-  onNext,
-  onPrev,
   isEditMode,
-  setPlaceholders,
 }: BotConfigFormStepGeneralProps) {
   const {
     control,
-    formState: { errors, isValid },
-    watch,
+    formState: { errors },
     setValue,
+    watch,
   } = methods;
 
-  // Traer clínicas y mapear a opciones
-  const { data: clinics, isLoading: loadingClinics, error: clinicsError } = useClinics();
-  const clinicOptions = clinics.map((c) => ({
-    value: c.id_clinica,
-    label: `${c.name} (ID: ${c.id_clinica}, SuperID: ${c.id_super_clinica})`,
-    superClinicId: c.id_super_clinica,
-  }));
+  const assistants = watch('assistants') as Record<string, string>;
+  const isChatBot = botType === 'chatBot';
+  const kommoSubdomain = watch('kommoSubdomain');
+  const kommoLongLivedToken = watch('kommoLongLivedToken');
+  const isKommoReady = Boolean(kommoSubdomain) && Boolean(kommoLongLivedToken);
 
-  // Actualizar superClinicId al seleccionar clínica
-  useEffect(() => {
-    const subscription = watch((value, { name }) => {
-      if (name === 'clinicId') {
-        const clinic = clinics.find((c) => c.id_clinica === value.clinicId);
-        if (clinic) {
-          setValue('superClinicId', clinic.id_super_clinica);
-        }
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [clinics, setValue, watch]);
-
-  // Estados para campos openaiToken (solo chatBot)
-  const showOpenaiToken = botType === 'chatBot';
-
-  // Handler submit
-  const handleNext = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isValid) return;
-    onNext();
-  };
+  const getErrorMessage = React.useCallback((err: unknown): string | undefined => {
+    if (!err) return undefined;
+    if (typeof err === 'string') return err;
+    if (typeof err === 'object' && err !== null && 'message' in err) {
+      return (err as FieldError).message;
+    }
+    return undefined;
+  }, []);
 
   return (
-    <form onSubmit={handleNext} className="space-y-4">
+    <div className="space-y-4">
       <Controller
-        name="name"
+        name="clinicId"
         control={control}
         render={({ field }) => (
-          <TextInput
-            label="Nombre"
+          <ClinicSelector
+            name={field.name}
             value={field.value}
-            onChange={field.onChange}
-            error={errors.name?.message as string}
+            onChange={(val, clinic) => {
+              field.onChange(val);
+              setValue('superClinicId', clinic?.superClinicId, { shouldValidate: true });
+            }}
+            label="Clinickeys / Selecciona la clínica que administrará el bot"
             disabled={isEditMode}
+            error={getErrorMessage(errors.clinicId)}
           />
         )}
       />
+
       <Controller
-        name="description"
+        name="timezone"
         control={control}
         render={({ field }) => (
-          <TextInput
-            label="Descripción"
+          <Select
+            name={field.name}
+            searchable
+            label="Clinickeys / Selecciona una zona horaria para la clínica"
+            options={timezoneOptions}
             value={field.value}
             onChange={field.onChange}
-            error={errors.description?.message as string}
+            error={getErrorMessage(errors.timezone)}
           />
         )}
       />
+
       <Controller
-        name="kommoSubdomain"
+        name="defaultCountry"
         control={control}
         render={({ field }) => (
-          <TextInput
-            label="Kommo Subdominio"
-            value={field.value}
-            onChange={field.onChange}
-            error={errors.kommoSubdomain?.message as string}
-          />
+          <div>
+            <label htmlFor={field.name} className="block mb-1 text-sm font-medium text-gray-700">
+              Clinickeys / Código de país por defecto para los telefonos de los pacientes
+            </label>
+            <CountrySelect value={field.value} onChange={field.onChange} />
+            {getErrorMessage(errors.defaultCountry) && (
+              <span className="text-xs text-red-500">{getErrorMessage(errors.defaultCountry)}</span>
+            )}
+          </div>
         )}
       />
-      <Controller
-        name="kommoLongLivedToken"
-        control={control}
-        render={({ field }) => (
-          <TextInput
-            label="Kommo Long Lived Token"
-            value={field.value}
-            onChange={field.onChange}
-            error={errors.kommoLongLivedToken?.message as string}
-          />
-        )}
-      />
-      <Controller
-        name="kommoResponsibleUserId"
-        control={control}
-        render={({ field }) => (
-          <TextInput
-            label="Kommo Responsible User ID"
-            value={field.value}
-            onChange={field.onChange}
-            error={errors.kommoResponsibleUserId?.message as string}
-          />
-        )}
-      />
+
+      {isChatBot && (
+        <Controller
+          name="openaiApikey"
+          control={control}
+          render={({ field }) => (
+            <TextInput
+              name={field.name}
+              label={
+                <>
+                  OpenAI / Ingresar api key: {' '}
+                  (<a
+                    className="text-blue-600 underline"
+                    href="https://help.openai.com/en/articles/9186755-managing-projects-in-the-api-platform#h_79e86017fd"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    ¿Cómo obtenerla?
+                  </a>)
+                </>
+              }
+              value={field.value}
+              onChange={field.onChange}
+              error={getErrorMessage(errors.openaiApikey)}
+              disabled={isEditMode}
+            />
+          )}
+        />
+      )}
+
       <Controller
         name="kommoSalesbotId"
         control={control}
         render={({ field }) => (
           <TextInput
-            label="Kommo Salesbot ID"
+            name={field.name}
+            label={
+              <>
+                Kommo / Ingresar salesbot ID de {isChatBot ? <strong>[ BOT100_ChatBot :: Enviar_Respuesta ]</strong> : <strong>[ BOT100_NotificationBot :: Enviar_Recordatorio ]</strong>}{' '}
+                (<a
+                  className="text-blue-600 underline"
+                  href="https://es-developers.kommo.com/reference/lanzar-un-salesbot"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  ¿Cómo obtenerlo?
+                </a>)
+              </>
+            }
             value={field.value}
             onChange={field.onChange}
-            error={errors.kommoSalesbotId?.message as string}
+            error={getErrorMessage(errors.kommoSalesbotId)}
           />
         )}
       />
+
       <Controller
-        name="clinicId"
+        name="kommoLongLivedToken"
         control={control}
         render={({ field }) => (
-          <Select
-            label="Clínica"
-            options={clinicOptions}
+          <TextInput
+            name={field.name}
+            label={
+              <>
+                Kommo / Ingresar token de larga duración{' '}
+                (<a
+                  className="text-blue-600 underline"
+                  href="https://es-developers.kommo.com/docs/token-de-larga-duraci%C3%B3n"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  ¿Cómo obtenerlo?
+                </a>)
+              </>
+            }
             value={field.value}
-            onChange={(val) => field.onChange(val)}
-            error={errors.clinicId?.message as string}
-            disabled={loadingClinics}
+            onChange={field.onChange}
+            error={getErrorMessage(errors.kommoLongLivedToken)}
           />
         )}
       />
+
       <Controller
+        name="kommoSubdomain"
+        control={control}
+        render={({ field }) => (
+          <TextInput
+            name={field.name}
+            label="Kommo / Ingresar subdominio"
+            value={field.value}
+            onChange={field.onChange}
+            error={getErrorMessage(errors.kommoSubdomain)}
+          />
+        )}
+      />
+
+      <Controller
+        name="kommoResponsibleUserId"
+        control={control}
+        render={({ field }) => (
+          <KommoUserSelector
+            subdomain={kommoSubdomain}
+            token={kommoLongLivedToken}
+            value={field.value}
+            onChange={(val) => field.onChange(val)}
+            label="Kommo / Seleccionar responsable de las tareas"
+            disabled={!isKommoReady}
+            error={
+              !isKommoReady
+                ? 'Primero ingresa el subdominio y token de Kommo para seleccionar un usuario.'
+                : getErrorMessage(errors.kommoResponsibleUserId)
+            }
+          />
+        )}
+      />
+
+      {/* <Controller
         name="superClinicId"
         control={control}
         render={({ field }) => (
           <TextInput
+            name={field.name}
             label="Super Clínica ID"
             value={field.value}
             onChange={field.onChange}
             disabled
           />
         )}
-      />
-      <Controller
-        name="defaultCountry"
-        control={control}
-        render={({ field }) => (
-          <TextInput
-            label="País por defecto"
-            value={field.value}
-            onChange={field.onChange}
-            error={errors.defaultCountry?.message as string}
-          />
-        )}
-      />
-      <Controller
-        name="timezone"
-        control={control}
-        render={({ field }) => (
-          <TextInput
-            label="Zona horaria"
-            value={field.value}
-            onChange={field.onChange}
-            error={errors.timezone?.message as string}
-          />
-        )}
-      />
-      {showOpenaiToken && (
-        <Controller
-          name="openaiToken"
-          control={control}
-          render={({ field }) => (
-            <TextInput
-              label="OpenAI Token"
-              value={field.value}
-              onChange={field.onChange}
-              error={errors.openaiToken?.message as string}
-              disabled={isEditMode}
-            />
-          )}
-        />
-      )}
-      <Controller
+      /> */}
+
+      {/* <Controller
         name="isEnabled"
         control={control}
         render={({ field }) => (
@@ -220,19 +242,37 @@ export function BotConfigFormStepGeneral({
           </div>
         )}
       />
-      {/* Campos readonly "fieldsProfile" y "clinicSource" */}
-      <TextInput label="fieldsProfile" value="kommo_profile" disabled />
-      <TextInput label="clinicSource" value="legacy" disabled />
-      <div className="flex gap-2 pt-6">
-        {onPrev && (
-          <Button type="button" variant="secondary" onClick={onPrev}>
-            Atrás
-          </Button>
+      <TextInput
+        name="fieldsProfile"
+        label="fieldsProfile"
+        value="default_kommo_profile"
+        disabled
+      />
+      <TextInput
+        name="clinicSource"
+        label="clinicSource"
+        value="legacy"
+        disabled
+      /> */}
+
+      <Controller
+        name="description del bot"
+        control={control}
+        render={({ field }) => (
+          <TextArea
+            name={field.name}
+            label="Descripción del bot"
+            value={field.value}
+            onChange={field.onChange}
+            error={getErrorMessage(errors.description)}
+            rows={4}
+          />
         )}
-        <Button type="submit" variant="primary" disabled={!isValid}>
-          Siguiente
-        </Button>
-      </div>
-    </form>
+      />
+
+      {isEditMode && botType === 'chatBot' && assistants && (
+        <AssistantsList assistants={assistants} />
+      )}
+    </div>
   );
 }

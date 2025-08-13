@@ -1,16 +1,17 @@
 import { AvailabilityService, KommoService } from '@clinickeys-agents/core/application/services';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
+import { BotConfigDTO } from '@clinickeys-agents/core/domain/botConfig';
+import { KommoCustomFieldValueBase } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 
 interface CheckAvailabilityInput {
-  botConfig: any;
+  botConfig: BotConfigDTO;
   leadId: number;
-  mergedCustomFields: { id: string | number; name: string; value?: string }[];
-  salesbotId: number;
+  normalizedLeadCF: (KommoCustomFieldValueBase & { value: any })[];
   params: {
     tratamiento: string;
     medico?: string | null;
-    fechas: Array<{ fecha: string }> | string;
-    horas: Array<{ hora_inicio: string; hora_fin: string }>;
+    fechas: string;
+    horas: string;
     rango_dias_extra?: number;
   };
   tiempoActual: any;
@@ -30,15 +31,17 @@ export class CheckAvailabilityUseCase {
   ) {}
 
   public async execute(input: CheckAvailabilityInput): Promise<CheckAvailabilityOutput> {
-    const { botConfig, leadId, mergedCustomFields, salesbotId, params, tiempoActual, subdomain } = input;
+    const { botConfig, leadId, normalizedLeadCF, params, tiempoActual, subdomain } = input;
     const { tratamiento, medico, fechas, horas } = params;
 
+    Logger.info('[CheckAvailability] Inicio', { leadId, tratamiento, medico, fechas, horas });
+
     // 1. Mensaje inicial "please‑wait"
+    Logger.debug('[CheckAvailability] Enviando mensaje inicial al bot');
     await this.kommoService.sendBotInitialMessage({
-      botConfig,
       leadId,
-      mergedCustomFields,
-      salesbotId,
+      normalizedLeadCF,
+      salesbotId: botConfig.kommo.salesbotId,
       message: 'Muy bien, voy a mirar la agenda para ver las citas que tenemos disponibles. Un momento por favor.',
     });
 
@@ -53,6 +56,7 @@ export class CheckAvailabilityUseCase {
     let finalPayload: any = null;
 
     for (const step of STEPS) {
+      Logger.debug('[CheckAvailability] Buscando disponibilidad', { step: step.tipo, filtros: step.filtros });
       const fechasStep = step.filtros.rango_dias_extra
         ? `${Array.isArray(fechas) ? JSON.stringify(fechas) : fechas}, los próximos 45 días`
         : fechas;
@@ -68,10 +72,10 @@ export class CheckAvailabilityUseCase {
           medico: step.params.medico,
         }),
         subdomain,
-        kommoToken: botConfig.longLivedToken,
+        kommoToken: botConfig.kommo.longLivedToken,
         leadId,
       });
-      Logger.info(`[CheckAvailability] Paso '${step.tipo}' respuesta:`, availability);
+      Logger.info(`[CheckAvailability] Paso '${step.tipo}' respuesta recibida`, { success: availability.success, count: availability.analisis_agenda?.length });
 
       if (
         availability.success &&
@@ -84,11 +88,13 @@ export class CheckAvailabilityUseCase {
           tratamiento: { id: null, nombre: tratamiento },
           horarios: availability.analisis_agenda,
         };
+        Logger.debug('[CheckAvailability] Disponibilidad encontrada', { finalPayload });
         break;
       }
     }
 
     if (!finalPayload) {
+      Logger.warn('[CheckAvailability] No se encontró disponibilidad en ningún paso');
       finalPayload = {
         tipo_busqueda: 'sin_disponibilidad',
         filtros_aplicados: { con_medico: !!medico, rango_dias_extra: 0 },
@@ -99,6 +105,7 @@ export class CheckAvailabilityUseCase {
 
     // 3. Construir toolOutput
     const toolOutput = `#consultaAgendar\nHORARIOS_DISPONIBLES: ${JSON.stringify(finalPayload)}\nMENSAJE_USUARIO: ${JSON.stringify(params)}`;
+    Logger.info('[CheckAvailability] Ejecución completada', { success: true });
 
     return { success: true, toolOutput };
   }

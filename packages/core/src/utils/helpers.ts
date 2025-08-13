@@ -1,11 +1,8 @@
 // packages/core/src/utils/helpers.ts
 
-import type { LeadMap, ContactMap } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import {
-  profiles,
   // Custom field constants:
   PATIENT_MESSAGE,
-  PATIENT_PHONE,
 } from '@clinickeys-agents/core/utils';
 import { DateTime, IANAZone } from 'luxon';
 
@@ -16,7 +13,7 @@ import { DateTime, IANAZone } from 'luxon';
  */
 export const parseResponse = async (r: Response) => {
   const contentType = r.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) {
+  if (contentType.includes('json')) {
     return await r.json();
   } else if (contentType.startsWith('text/')) {
     return await r.text();
@@ -60,56 +57,6 @@ export const hdr = (
   ...extraHeaders,
 });
 
-
-// --------- MAPEO DE FIELDS KOMMO (TIPADO FUERTE) ---------
-
-export function getKommoMapFields<T extends { name?: string; code?: string }>(
-  fields: T[]
-): { byName: Record<string, T>; byCode: Record<string, T> } {
-  const byName: Record<string, T> = {};
-  const byCode: Record<string, T> = {};
-  for (const field of fields) {
-    if (field.name) byName[field.name] = field;
-    if (field.code) byCode[field.code.toUpperCase()] = field;
-  }
-  return { byName, byCode };
-}
-
-// Ejemplo de uso:
-// const leadMap = getKommoMapFields<KommoLeadCustomFieldDefinition>(leadFields);
-// const contactMap = getKommoMapFields<KommoContactCustomFieldDefinition>(contactFields);
-
-// --------- CAMPOS RELEVANTES POR PERFIL (TIPADO) ---------
-
-export interface ContactFieldConfig {
-  field_code: string;
-  enum_code?: string;
-}
-
-export interface LeadFieldConfig {
-  field_name: string;
-}
-
-export function getKommoRelevantFields(profileKey: keyof typeof profiles): {
-  addingKommoContactFields: ContactFieldConfig[];
-  kommoLeadCustomFields: LeadFieldConfig[];
-} {
-  const profile = profiles[profileKey];
-  if (!profile) {
-    throw new Error(`Perfil '${profileKey}' no encontrado`);
-  }
-  const addingKommoContactFields: ContactFieldConfig[] =
-    profile.adding_contact?.custom_fields_config?.map((f: any) => ({
-      field_code: f.field_code,
-      enum_code: f.enum_code,
-    })) ?? [];
-  const kommoLeadCustomFields: LeadFieldConfig[] =
-    profile.lead?.custom_field_config?.map((f: any) => ({
-      field_name: f.field_name,
-    })) ?? [];
-  return { addingKommoContactFields, kommoLeadCustomFields };
-}
-
 export function canSendReminder(now: DateTime, minHour: number): boolean {
   return now.hour >= minHour;
 }
@@ -136,82 +83,6 @@ export function localTime(timezone: string): DateTime {
 export const parseClinicDate = (d: string | Date, tz: string) =>
   (typeof d === 'string' ? DateTime.fromISO(d, { zone: tz }) : DateTime.fromJSDate(d, { zone: tz }));
 
-export function formatVisitDate(dateStr: string) {
-  // dateStr: 'YYYY-MM-DD' => 'DD/MM/YYYY'
-  if (!dateStr) return '';
-  const [y, m, d] = dateStr.split('-');
-  return [d, m, y].join('/');
-}
-
-export function formatVisitTime(timeStr: string) {
-  // timeStr: 'HH:MM:SS' => 'HH:MM'
-  if (!timeStr) return '';
-  const [h, m] = timeStr.split(':');
-  return `${h}:${m}`;
-}
-
-function isLeadFieldConfig(field: LeadFieldConfig | ContactFieldConfig): field is LeadFieldConfig {
-  return (field as LeadFieldConfig).field_name !== undefined;
-}
-
-function isContactFieldConfig(field: LeadFieldConfig | ContactFieldConfig): field is ContactFieldConfig {
-  return (field as ContactFieldConfig).field_code !== undefined;
-}
-
-/**
- * Construye un arreglo de valores de campos personalizados para patch en Kommo,
- * basándose únicamente en un objeto de customFields preformateado.
- * @param fields Configuraciones de campos (lead o contact)
- * @param fieldMap Mapa de nombre de campo → field_id y opcional enum_id de Kommo
- * @param customFields Objeto con valores de campos (clave es nombre o code del campo)
- * @returns Array de custom_fields_values listo para enviar a Kommo.
- */
-export function buildCustomFieldsValues({
-  fields,
-  fieldMap,
-  customFields,
-}: {
-  fields: Array<LeadFieldConfig | ContactFieldConfig>;
-  fieldMap: LeadMap | ContactMap;
-  customFields: Record<string, string>;
-}): Array<{ field_id: string | number; values: Array<{ value: string; enum_id?: string | number }> }> {
-  const result: Array<{ field_id: string | number; values: Array<{ value: string; enum_id?: string | number }> }> = [];
-
-  for (const config of fields) {
-    if (isLeadFieldConfig(config)) {
-      const fieldName = config.field_name;
-      const rawValue = customFields[fieldName];
-      if (!rawValue) continue;
-      // Index fieldMap safely via Record
-      const leadMap = fieldMap as unknown as Record<string, { field_id: string | number }>;
-      const mapEntry = leadMap[fieldName];
-      if (!mapEntry?.field_id) continue;
-      result.push({
-        field_id: mapEntry.field_id,
-        values: [{ value: rawValue }]
-      });
-
-    } else if (isContactFieldConfig(config)) {
-      const fieldCode = config.field_code;
-      if (fieldCode !== 'PHONE') continue;
-      const rawValue = customFields[fieldCode] || customFields[PATIENT_PHONE] || '';
-      if (!rawValue) continue;
-      // Index contactMap safely via Record
-      const contactMap = fieldMap as unknown as Record<string, { field_id: string | number; enum_id?: string | number }>;
-      const mapEntry = contactMap[fieldCode];
-      if (!mapEntry?.field_id) continue;
-      const valueObj: { value: string; enum_id?: string | number } = { value: rawValue };
-      if (mapEntry.enum_id) valueObj.enum_id = mapEntry.enum_id;
-      result.push({
-        field_id: mapEntry.field_id,
-        values: [valueObj]
-      });
-    }
-  }
-
-  return result;
-}
-
 // --- 1. Obtener el valor de un custom field desde custom_fields_values de Kommo --- //
 export function getCustomFieldValue(
   customFields: { field_id?: number | string; field_name?: string; values?: { value: string }[] }[],
@@ -220,35 +91,6 @@ export function getCustomFieldValue(
 ): string {
   const field = customFields.find((item) => item[key] === fieldName);
   return field?.values?.[0]?.value || "";
-}
-
-// --- 2. Fusiona los custom fields definidos con los valores actuales de un lead/contacto --- //
-export function mergeCustomFields(
-  leadCF: any[],
-  allCF: { id: string | number; name: string }[]
-) {
-  if (!leadCF) leadCF = [];
-  const leadMap: Record<string, any> = {};
-  leadCF.forEach((cf) => {
-    const key = cf.field_id || cf.field_name;
-    leadMap[key] = cf;
-  });
-  return allCF.map((cf) => {
-    const key = cf.id;
-    return {
-      ...cf,
-      value: leadMap[key] ? leadMap[key].values[0]?.value || "" : ""
-    };
-  });
-}
-
-// --- 3. Obtiene el valor de un campo a partir del array fusionado --- //
-export function getMergedFieldValue(
-  mergedCF: { name: string; value: string }[],
-  fieldName: string
-): string {
-  const field = mergedCF.find((item) => item.name === fieldName);
-  return field ? field.value : "";
 }
 
 // --- 4. Helper profesional y DDD para esperar y verificar si un campo cambió en Kommo --- //
@@ -280,4 +122,15 @@ export function formatFechaCita(fecha: string) {
     return `${fecha}T00:00:00.000Z`;
   }
   return fecha;
+}
+
+export function mapKommoCustomFields(requiredCustomFields: string[], allFields: { name: string; type: string }[]) {
+  return requiredCustomFields.map(name => {
+    const field = allFields.find(f => f.name === name && f.type === "textarea");
+    return {
+      field_name: name,
+      field_type: field ? field.type : "",
+      exists: !!field,
+    };
+  });
 }

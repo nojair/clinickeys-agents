@@ -1,7 +1,7 @@
 // @clinickeys-agents/core/src/infrastructure/patient/PatientRepositoryMySQL.ts
 
 import { PatientDTO, IPatientRepository } from "@clinickeys-agents/core/domain/patient";
-import { ejecutarConReintento, ejecutarUnicoResultado } from "@clinickeys-agents/core/infrastructure/helpers";
+import { ejecutarConReintento, ejecutarUnicoResultado, ejecutarExecConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
 /**
  * Implementación MySQL del repositorio de pacientes.
  */
@@ -10,7 +10,7 @@ export class PatientRepositoryMySQL implements IPatientRepository {
    * Actualiza el campo kommoLeadId de un paciente específico.
    */
   async updateKommoLeadId(patientId: number, kommoLeadId: number): Promise<void> {
-    await ejecutarConReintento(
+    await ejecutarExecConReintento(
       "UPDATE pacientes SET kommo_lead_id = ? WHERE id_paciente = ?",
       [kommoLeadId, patientId]
     );
@@ -52,7 +52,7 @@ export class PatientRepositoryMySQL implements IPatientRepository {
       params.kommo_lead_id || null,
       "CHATBOT"
     ];
-    const result: any = await ejecutarConReintento(query, paramsArr);
+    const result: any = await ejecutarExecConReintento(query, paramsArr);
     return result.insertId || result[0]?.insertId;
   }
 

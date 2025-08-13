@@ -8,17 +8,16 @@ import type { BotConfigType } from "@/app/entities/bot-config/types";
 
 export interface CreateBotConfigPayload {
   botConfigType: BotConfigType;
-  name: string;
   description: string;
   kommoSubdomain: string;
   kommoLongLivedToken: string;
   kommoResponsibleUserId: string;
   kommoSalesbotId: string;
-  openaiToken?: string; // Obligatorio si es chatBot
+  openaiApikey?: string; // Obligatorio si es chatBot
   defaultCountry: string;
   timezone: string;
   isEnabled: boolean;
-  fieldsProfile: "kommo_profile";
+  fieldsProfile: "default_kommo_profile";
   clinicSource: "legacy";
   clinicId: string | number;
   superClinicId: string | number;
@@ -32,7 +31,7 @@ export interface UpdateBotConfigPayload {
   kommoLongLivedToken?: string;
   kommoResponsibleUserId?: string;
   kommoSalesbotId?: string;
-  openaiToken?: string; // Solo si chatBot
+  openaiApikey?: string; // Solo si chatBot
   defaultCountry?: string;
   timezone?: string;
   isEnabled?: boolean;

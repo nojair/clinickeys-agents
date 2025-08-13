@@ -1,7 +1,7 @@
 // @clinickeys-agents/core/src/infrastructure/presupuesto/PresupuestoRepositoryMySQL.ts
 
 import { IPresupuestoRepository } from "@clinickeys-agents/core/domain/presupuesto";
-import { ejecutarConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
+import { ejecutarConReintento, ejecutarUnicoResultado, ejecutarExecConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
 
 export class PresupuestoRepositoryMySQL implements IPresupuestoRepository {
   /**
@@ -50,8 +50,8 @@ export class PresupuestoRepositoryMySQL implements IPresupuestoRepository {
         AND p.id_clinica = ?
       LIMIT 1
     `;
-    const rows = await ejecutarConReintento(query, [id_presupuesto, id_clinica]);
-    return rows[0] || undefined;
+    const row = await ejecutarUnicoResultado(query, [id_presupuesto, id_clinica]);
+    return row || undefined;
   }
 
   /**
@@ -72,7 +72,7 @@ export class PresupuestoRepositoryMySQL implements IPresupuestoRepository {
         id_paciente, id_clinica, fecha, monto_total, monto_pagado, saldo_pendiente, id_tipo_pago, id_estado
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    const result: any = await ejecutarConReintento(query, [
+    const result: any = await ejecutarExecConReintento(query, [
       params.id_paciente,
       params.id_clinica,
       params.fecha,

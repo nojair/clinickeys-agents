@@ -1,36 +1,102 @@
-import {
-  KommoService,
-  OpenAIService,
-} from '@clinickeys-agents/core/application/services';
+// packages/core/src/application/usecases/CommunicateWithAssistantUseCase.ts
 
+import { KommoService, OpenAIService } from '@clinickeys-agents/core/application/services';
 import {
-  RecognizeUserIntentUseCase,
-  ScheduleAppointmentUseCase,
-  CheckAvailabilityUseCase,
   CheckReprogramAvailabilityUseCase,
   RescheduleAppointmentUseCase,
+  RegularConversationUseCase,
+  ScheduleAppointmentUseCase,
+  RecognizeUserIntentUseCase,
+  CheckAvailabilityUseCase,
   CancelAppointmentUseCase,
   HandleUrgencyUseCase,
-  RegularConversationUseCase,
 } from '@clinickeys-agents/core/application/usecases';
-
 import {
-  PATIENT_MESSAGE,
-  REMINDER_MESSAGE,
   PLEASE_WAIT_MESSAGE,
+  REMINDER_MESSAGE,
+  PATIENT_MESSAGE,
   BOT_MESSAGE,
   THREAD_ID,
 } from '@clinickeys-agents/core/utils';
-
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 import type { BotConfigDTO } from '@clinickeys-agents/core/domain/botConfig';
 import { DateTime } from 'luxon';
+import { z } from 'zod';
+
+const CitaSchema = z.object({
+  id_cita: z.number(),
+  id_medico: z.number().nullable().optional(),
+  id_tratamiento: z.union([z.string(), z.number()]),
+  fecha_cita: z.string(),
+  hora_inicio: z.string(),
+  hora_fin: z.string(),
+  id_espacio: z.number().nullable().optional(),
+  id_presupuesto: z.number().nullable().optional(),
+  id_pack_bono: z.number().nullable().optional(),
+  nombre_espacio: z.string().nullable().optional(),
+  nombre_tratamiento: z.string().nullable().optional(),
+  nombre_medico: z.string().nullable().optional()
+});
+
+const CheckAvailabilitySchema = z.object({
+  tratamiento: z.string(),
+  medico: z.string().nullable().optional(),
+  fechas: z.string(),
+  horas: z.string(),
+  rango_dias_extra: z.number().optional(),
+});
+
+const ScheduleAppointmentSchema = CheckAvailabilitySchema.extend({
+  nombre: z.string(),
+  apellido: z.string(),
+  telefono: z.string(),
+  tratamiento: z.string(),
+  medico: z.string().nullable().optional(),
+  fechas: z.string(),
+  horas: z.string(),
+});
+
+const CheckReprogramAvailabilitySchema = z.object({
+  id_cita: z.number(),
+  id_tratamiento: z.number(),
+  tratamiento: z.string(),
+  medico: z.string().nullable().optional(),
+  id_medico: z.number().nullable().optional(),
+  fechas: z.string(),
+  horas: z.string(),
+  rango_dias_extra: z.number().optional(),
+  citas_paciente: z.array(CitaSchema).optional(),
+});
+
+const RescheduleAppointmentSchema = CheckReprogramAvailabilitySchema;
+
+const CancelAppointmentSchema = z.object({
+  id_cita: z.number(),
+  id_medico: z.number().nullable().optional(),
+  id_espacio: z.number().nullable().optional(),
+  fecha_cita: z.string().optional(),
+  hora_inicio: z.string().optional(),
+  hora_fin: z.string().optional(),
+});
+
+const HandleUrgencySchema = z.object({
+  nombre: z.string().optional(),
+  apellido: z.string().optional(),
+  telefono: z.string().optional(),
+  motivo: z.string().optional(),
+  canal_preferido: z.string().optional(),
+});
+
+const RegularConversationSchema = z.object({
+  assistantMessage: z.string(),
+});
+
+import { KommoCustomFieldValueBase } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 
 export interface CommunicateInput {
   botConfig: BotConfigDTO;
   leadId: number;
-  mergedCustomFields: { id: string | number; name: string; value?: string }[];
-  salesbotId: number;
+  normalizedLeadCF: (KommoCustomFieldValueBase & { value: any })[];
   userMessage: string;
   threadId?: string | null;
 }
@@ -60,47 +126,16 @@ export interface CommunicateWithAssistantUseCaseDeps {
 }
 
 export class CommunicateWithAssistantUseCase {
-  private readonly kommoService: KommoService;
-  private readonly openAIService: OpenAIService;
-  private readonly recognizeIntentUC: RecognizeUserIntentUseCase;
-  private readonly scheduleAppointmentUC: ScheduleAppointmentUseCase;
-  private readonly checkAvailabilityUC: CheckAvailabilityUseCase;
-  private readonly checkReprogramAvailabilityUC: CheckReprogramAvailabilityUseCase;
-  private readonly rescheduleAppointmentUC: RescheduleAppointmentUseCase;
-  private readonly cancelAppointmentUC: CancelAppointmentUseCase;
-  private readonly handleUrgencyUC: HandleUrgencyUseCase;
-  private readonly regularConversationUC: RegularConversationUseCase;
-
-  constructor({
-    kommoService,
-    openAIService,
-    recognizeIntentUC,
-    scheduleAppointmentUC,
-    checkAvailabilityUC,
-    checkReprogramAvailabilityUC,
-    rescheduleAppointmentUC,
-    cancelAppointmentUC,
-    handleUrgencyUC,
-    regularConversationUC,
-  }: CommunicateWithAssistantUseCaseDeps) {
-    this.kommoService = kommoService;
-    this.openAIService = openAIService;
-    this.recognizeIntentUC = recognizeIntentUC;
-    this.scheduleAppointmentUC = scheduleAppointmentUC;
-    this.checkAvailabilityUC = checkAvailabilityUC;
-    this.checkReprogramAvailabilityUC = checkReprogramAvailabilityUC;
-    this.rescheduleAppointmentUC = rescheduleAppointmentUC;
-    this.cancelAppointmentUC = cancelAppointmentUC;
-    this.handleUrgencyUC = handleUrgencyUC;
-    this.regularConversationUC = regularConversationUC;
-  }
+  constructor(private deps: CommunicateWithAssistantUseCaseDeps) { }
 
   public async execute(input: CommunicateInput): Promise<CommunicateOutput> {
-    const { botConfig, leadId, mergedCustomFields, salesbotId, userMessage } = input;
+    const { botConfig, leadId, normalizedLeadCF, userMessage, threadId } = input;
 
     try {
-      /** 1) Detectar intención usando nueva firma */
-      const intentResult = await this.recognizeIntentUC.execute({
+      Logger.info('[CommunicateWithAssistant] Inicio', { leadId, threadId, userMessage });
+      Logger.debug('[CommunicateWithAssistant] NormalizedLeadCF recibido', { count: normalizedLeadCF.length });
+
+      const intentResult = await this.deps.recognizeIntentUC.execute({
         botConfigType: botConfig.botConfigType,
         botConfigId: botConfig.botConfigId,
         clinicSource: botConfig.clinicSource,
@@ -108,178 +143,141 @@ export class CommunicateWithAssistantUseCase {
         leadId,
         tiempoActualDT: DateTime.utc().setZone(botConfig.timezone),
         userMessage,
-        assistantService: this.openAIService,
-      });
+        openAIService: this.deps.openAIService,
+        speakingBotId: botConfig.openai?.assistants?.speakingBot || '',
+        threadId: threadId || undefined,
+      } as any);
 
       const { intent: intentName, params, assistantResult } = intentResult;
-      const { threadId: thId, runId, functionCalls } = assistantResult || {};
-      Logger.info('[Communicate] Intento detectado:', intentName);
+      const { threadId: thId, runId, functionCalls, message: assistantPlainMessage } = assistantResult || {};
+      Logger.info('[CommunicateWithAssistant] Intent detectada', { intentName, thId, runId });
+      Logger.debug('[CommunicateWithAssistant] Parámetros de intent', { params });
 
-      /** 2) Ejecutar UC específico */
       let ucResponse: UseCaseResponse;
-
       switch (intentName) {
         case 'consulta_agendar':
-          interface CheckAvailabilityInput {
-            botConfig: any;
-            leadId: number;
-            mergedCustomFields: { id: string | number; name: string; value?: string }[];
-            salesbotId: number;
-            params: {
-              tratamiento: string;
-              medico?: string | null;
-              fechas: Array<{ fecha: string }> | string;
-              horas: Array<{ hora_inicio: string; hora_fin: string }>;
-              rango_dias_extra?: number;
-            };
-            tiempoActual: any;
-            subdomain: string;
-          }
-          ucResponse = await this.checkAvailabilityUC.execute(params as CheckAvailabilityInput);
+          Logger.debug('[CommunicateWithAssistant] Ejecutando consulta_agendar', { params });
+          ucResponse = await this.deps.checkAvailabilityUC.execute({
+            botConfig,
+            leadId,
+            normalizedLeadCF,
+            params: CheckAvailabilitySchema.parse(params),
+            tiempoActual: DateTime.utc().setZone(botConfig.timezone),
+            subdomain: botConfig.kommo.subdomain,
+          });
           break;
         case 'agendar_cita':
-          interface ScheduleAppointmentInput {
-            botConfig: any;
-            leadId: number;
-            mergedCustomFields: { id: string | number; name: string; value?: string }[];
-            salesbotId: number;
-            params: {
-              nombre: string;
-              apellido: string;
-              telefono: string;
-              tratamiento: string;
-              medico?: string | null;
-              fechas: Array<{ fecha: string }> | string;
-              horas: Array<{ hora_inicio: string; hora_fin: string }>;
-              rango_dias_extra?: number;
-            };
-            tiempoActual: any;
-            subdomain: string;
-          }
-          ucResponse = await this.scheduleAppointmentUC.execute(params as ScheduleAppointmentInput);
+          Logger.debug('[CommunicateWithAssistant] Ejecutando agendar_cita', { params });
+          ucResponse = await this.deps.scheduleAppointmentUC.execute({
+            botConfig,
+            leadId,
+            normalizedLeadCF,
+            params: ScheduleAppointmentSchema.parse(params),
+            tiempoActual: DateTime.utc().setZone(botConfig.timezone),
+            subdomain: botConfig.kommo.subdomain,
+          });
           break;
         case 'consulta_reprogramar':
-          interface CheckReprogramAvailabilityInput {
-            botConfig: any;
-            leadId: number;
-            mergedCustomFields: { id: string | number; name: string; value?: string }[];
-            salesbotId: number;
-            params: {
-              id_cita: number;
-              id_tratamiento: string;
-              tratamiento: string;
-              medico?: string | null;
-              id_medico?: number | null;
-              fechas: Array<{ fecha: string }> | string;
-              horas: Array<{ hora_inicio: string; hora_fin: string }>;
-              rango_dias_extra?: number;
-              citas_paciente?: Array<{ id_cita: number;[key: string]: any }>;
-            };
-            tiempoActual: any;
-            subdomain: string;
-          }
-          ucResponse = await this.checkReprogramAvailabilityUC.execute(params as CheckReprogramAvailabilityInput);
+          Logger.debug('[CommunicateWithAssistant] Ejecutando consulta_reprogramar', { params });
+          ucResponse = await this.deps.checkReprogramAvailabilityUC.execute({
+            botConfig,
+            leadId,
+            normalizedLeadCF,
+            params: CheckReprogramAvailabilitySchema.parse(params),
+            tiempoActual: DateTime.utc().setZone(botConfig.timezone),
+            subdomain: botConfig.kommo.subdomain,
+          });
           break;
         case 'reprogramar_cita':
-          interface RescheduleAppointmentInput {
-            botConfig: any;
-            leadId: number;
-            mergedCustomFields: { id: string | number; name: string; value?: string }[];
-            salesbotId: number;
-            params: {
-              id_cita: number;
-              id_tratamiento: string;
-              tratamiento: string;
-              medico?: string | null;
-              id_medico?: number | null;
-              fechas: Array<{ fecha: string }> | string;
-              horas: Array<{ hora_inicio: string; hora_fin: string }>;
-              rango_dias_extra?: number;
-              citas_paciente?: Array<{ id_cita: number;[k: string]: any }>;
-            };
-            tiempoActual: any;
-            subdomain: string;
-          }
-          ucResponse = await this.rescheduleAppointmentUC.execute(params as RescheduleAppointmentInput);
+          Logger.debug('[CommunicateWithAssistant] Ejecutando reprogramar_cita', { params });
+          ucResponse = await this.deps.rescheduleAppointmentUC.execute({
+            botConfig,
+            leadId,
+            normalizedLeadCF,
+            params: RescheduleAppointmentSchema.parse(params),
+            tiempoActual: DateTime.utc().setZone(botConfig.timezone),
+            subdomain: botConfig.kommo.subdomain,
+          });
           break;
         case 'cancelar_cita':
-          interface CancelAppointmentInput {
-            botConfig: any;
-            leadId: number;
-            mergedCustomFields: { id: string | number; name: string; value?: string }[];
-            salesbotId: number;
-            params: {
-              id_cita: number;
-              id_medico?: number | null;
-              id_espacio?: number | null;
-              fecha_cita?: string;
-              hora_inicio?: string;
-              hora_fin?: string;
-            };
-          }
-          ucResponse = await this.cancelAppointmentUC.execute(params as CancelAppointmentInput);
+          Logger.debug('[CommunicateWithAssistant] Ejecutando cancelar_cita', { params });
+          ucResponse = await this.deps.cancelAppointmentUC.execute({
+            botConfig,
+            leadId,
+            normalizedLeadCF,
+            params: CancelAppointmentSchema.parse(params),
+          });
           break;
         case 'urgencia':
         case 'escalamiento':
         case 'tarea':
-          interface HandleUrgencyInput {
-            botConfig: any;
-            leadId: number;
-            mergedCustomFields: { id: string | number; name: string; value?: string }[];
-            salesbotId: number;
-            params: {
-              tipo: 'urgencia' | 'escalamiento' | 'tarea';
-              mensaje_usuario: string;
-            };
-          }
-          ucResponse = await this.handleUrgencyUC.execute(params as HandleUrgencyInput);
+          Logger.debug('[CommunicateWithAssistant] Ejecutando caso de urgencia/escalamiento/tarea', { params });
+          ucResponse = await this.deps.handleUrgencyUC.execute({
+            botConfig,
+            leadId,
+            normalizedLeadCF,
+            params: HandleUrgencySchema.parse(params),
+          });
           break;
         default:
-          interface RegularConversationInput {
-            botConfig: any;
-            leadId: number;
-            mergedCustomFields: { id: string | number; name: string; value?: string }[];
-            salesbotId: number;
-            params: {
-              assistantMessage: string; // texto del assistant ya listo
-            };
-          }
-          ucResponse = await this.regularConversationUC.execute(params as RegularConversationInput);
+          Logger.debug('[CommunicateWithAssistant] Ejecutando conversación regular', { assistantPlainMessage });
+          ucResponse = await this.deps.regularConversationUC.execute({
+            params: RegularConversationSchema.parse({ assistantMessage: assistantPlainMessage || '' }),
+          });
       }
 
-      if (!ucResponse.success) throw new Error('El caso de uso devolvió error.');
+      if (!ucResponse.success) {
+        Logger.error('[CommunicateWithAssistant] UC devolvió error', { intentName, ucResponse });
+        throw new Error('El caso de uso devolvió error.');
+      }
 
-      /** 3) Resolver Run pendiente */
-      const { message: finalMsg } = await this.openAIService.getResponseFromWaitingAssistant({
-        threadId: thId,
-        runId,
-        functionCalls,
-        rawOutput: ucResponse.toolOutput,
-      });
+      let finalMsg: string = assistantPlainMessage || '';
 
-      /** 4) Construir customFields y responder */
+      if (runId && Array.isArray(functionCalls) && functionCalls.length > 0) {
+        Logger.info('[CommunicateWithAssistant] Resolviendo functionCalls', { count: functionCalls.length });
+        const resolved = await this.deps.openAIService.getResponseFromWaitingAssistant({
+          threadId: thId!,
+          runId: runId!,
+          functionCalls,
+          rawOutput: ucResponse.toolOutput,
+        });
+        Logger.debug('[CommunicateWithAssistant] Respuesta tras functionCalls', { resolvedMessage: resolved.message });
+        finalMsg = resolved.message || '';
+      }
+
       const baseFields: Record<string, string> = {
         [PATIENT_MESSAGE]: '',
         [REMINDER_MESSAGE]: '',
-        [PLEASE_WAIT_MESSAGE]: 'false',
-        [BOT_MESSAGE]: finalMsg as string,
         [THREAD_ID]: thId ?? '',
+        [BOT_MESSAGE]: finalMsg || '',
+        [PLEASE_WAIT_MESSAGE]: 'false',
       };
 
       const customFields = { ...baseFields, ...(ucResponse.customFields ?? {}) };
-
-      await this.kommoService.replyToLead({
-        botConfig,
-        leadId,
-        customFields,
-        mergedCustomFields,
-        salesbotId,
+      Logger.info('[CommunicateWithAssistant] Campos a enviar a Kommo', {
+        baseFields,
+        ucCustomFields: ucResponse.customFields,
+        mergedCustomFieldsCount: normalizedLeadCF.length,
+        mergedCustomFieldsSample: normalizedLeadCF.slice(0, 5).map(cf => ({ name: cf.field_name, id: cf.field_id })),
       });
 
-      return { success: true, message: finalMsg as string };
+      Logger.debug('[CommunicateWithAssistant] Llamando a replyToLead', { customFields });
+      const replyResult = await this.deps.kommoService.replyToLead({
+        salesbotId: botConfig.kommo.salesbotId,
+        leadId,
+        customFields,
+        normalizedLeadCF,
+      });
+      Logger.debug('[CommunicateWithAssistant] Resultado de replyToLead', { replyResult });
+
+      Logger.info('[CommunicateWithAssistant] Ejecución completada con éxito', { leadId });
+      return { success: true, message: finalMsg || '' };
     } catch (error) {
-      Logger.error('[CommunicateWithAssistantUseCase] Error:', error);
-      return { success: false, message: 'No fue posible procesar el mensaje en este momento.' };
+      Logger.error('[CommunicateWithAssistant] Error general', { error });
+      return {
+        success: false,
+        message: 'No fue posible procesar el mensaje en este momento.',
+      };
     }
   }
 }

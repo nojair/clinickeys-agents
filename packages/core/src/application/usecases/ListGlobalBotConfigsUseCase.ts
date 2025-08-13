@@ -1,13 +1,13 @@
 // packages/core/src/application/usecases/ListGlobalBotConfigsUseCase.ts
 
 import { BotConfigService } from "@clinickeys-agents/core/application/services";
-import { BotConfigDTO } from "@clinickeys-agents/core/domain/botConfig";
+import { BotConfigEnrichedDTO } from "@clinickeys-agents/core/domain/botConfig";
 
 export interface ListGlobalBotConfigsInput {
   /** Máximo de ítems a devolver. Default 100 */
   limit?: number;
-  /** Cursor por bucket devuelto en la llamada previa */
-  cursor?: Record<string, Record<string, any>>;
+  /** Cursor opaco devuelto en la llamada previa */
+  cursor?: string;
 }
 
 export interface ListGlobalBotConfigsUseCaseProps {
@@ -23,13 +23,12 @@ export class ListGlobalBotConfigsUseCase {
 
   /**
    * Lista los BotConfig globalmente usando sharding por bucket.
-   * Devuelve lote + cursor para paginación.
+   * Devuelve lote + cursor para paginación cursor‑based.
    */
-  async execute(input: ListGlobalBotConfigsInput = {}): Promise<{
-    items: BotConfigDTO[];
-    nextCursor: Record<string, Record<string, any>>;
-  }> {
-    const { limit = 100, cursor = {} } = input;
+  async execute(
+    input: ListGlobalBotConfigsInput = {},
+  ): Promise<{ items: BotConfigEnrichedDTO[]; nextCursor?: string }> {
+    const { limit = 100, cursor } = input;
     return this.botConfigService.listGlobal(limit, cursor);
   }
 }

@@ -1,7 +1,6 @@
 // /features/bot-configs/ui/BotConfigFormStepType.tsx
 
 import { Button } from '@/app/shared/ui/Button';
-import { useState } from 'react';
 import type { BotConfigType } from '@/app/entities/bot-config/types';
 
 interface BotConfigFormStepTypeProps {
@@ -10,10 +9,7 @@ interface BotConfigFormStepTypeProps {
 }
 
 export function BotConfigFormStepType({ value, onChange }: BotConfigFormStepTypeProps) {
-  const [selected, setSelected] = useState<BotConfigType | undefined>(value);
-
   const handleSelect = (type: BotConfigType) => {
-    setSelected(type);
     onChange(type);
   };
 
@@ -23,17 +19,19 @@ export function BotConfigFormStepType({ value, onChange }: BotConfigFormStepType
       <div className="flex flex-col sm:flex-row gap-6 w-full max-w-md">
         <Button
           type="button"
-          variant={selected === 'notificationBot' ? 'primary' : 'secondary'}
+          variant={value === 'notificationBot' ? 'primary' : 'secondary'}
           className="w-full"
           onClick={() => handleSelect('notificationBot')}
+          aria-pressed={value === 'notificationBot'}
         >
           Notification Bot
         </Button>
         <Button
           type="button"
-          variant={selected === 'chatBot' ? 'primary' : 'secondary'}
+          variant={value === 'chatBot' ? 'primary' : 'secondary'}
           className="w-full"
           onClick={() => handleSelect('chatBot')}
+          aria-pressed={value === 'chatBot'}
         >
           Chat Bot
         </Button>

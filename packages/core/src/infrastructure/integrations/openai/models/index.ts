@@ -1,40 +1,28 @@
-// Assistant model
+// packages/core/src/infrastructure/integrations/openai/models/index.ts
+
+// Interfaces propias para desacoplar del SDK de OpenAI v4
+
 export interface Assistant {
   id: string;
-  name: string | null;
-  instructions: string | null;
-  model: string;
-  tools: any[]; // Puede especializarse si tienes estructura fija
-  [key: string]: any;
-}
-
-// Payload para crear assistant
-export interface CreateAssistantPayload {
   name: string;
-  instructions: string;
-  model?: string;
-  tools?: any[];
-  top_p?: number;
-  temperature?: number;
-}
-
-// Payload para actualizar assistant
-export interface UpdateAssistantPayload {
   instructions?: string;
-  tools?: any[];
+  model: string;
+  created_at?: number;
+  metadata?: Record<string, any>;
 }
 
-// Thread model
 export interface Thread {
   id: string;
-  [key: string]: any;
+  created_at?: number;
+  metadata?: Record<string, any>;
 }
 
-// Run model
 export interface Run {
   id: string;
-  thread_id: string;
   status: string;
+  assistant_id: string;
+  thread_id: string;
+  created_at?: number;
   required_action?: {
     submit_tool_outputs?: {
       tool_calls: Array<{
@@ -45,11 +33,25 @@ export interface Run {
         };
       }>;
     };
-  } | null;
-  [key: string]: any;
+  };
 }
 
-// Payload para enviar salidas de funciones/herramientas
+export interface OpenAIMessageResponse {
+  id: string;
+  role: string;
+  content: Array<{
+    type: string;
+    text?: { value: string };
+  }> | { text?: { value: string } };
+  created_at?: number;
+}
+
+export interface FunctionCallPayload {
+  tool_call_id: string;
+  name: string;
+  arguments: Record<string, any>;
+}
+
 export interface SubmitToolOutputsPayload {
   threadId: string;
   runId: string;
@@ -57,25 +59,16 @@ export interface SubmitToolOutputsPayload {
     tool_call_id: string;
     output: any;
   }>;
-  timeoutMs?: number;
 }
 
-// Para function calls en required_action
-export interface FunctionCallPayload {
-  tool_call_id: string;
+export interface CreateAssistantPayload {
   name: string;
-  arguments: any;
+  instructions: string;
+  model?: string;
+  temperature?: number;
+  top_p?: number;
 }
 
-// Respuesta de mensaje OpenAI
-export interface OpenAIMessageResponse {
-  id: string;
-  role: string;
-  content: Array<{
-    text?: {
-      value: string;
-    };
-    [key: string]: any;
-  }>;
-  [key: string]: any;
+export interface UpdateAssistantPayload {
+  instructions?: string;
 }

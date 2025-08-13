@@ -1,23 +1,16 @@
-// /features/bot-configs/ui/BotConfigFormStepPlaceholders.tsx
-
 import { useEffect } from 'react';
-import { Button } from '@/app/shared/ui/Button';
-import { TextInput } from '@/app/shared/ui/TextInput';
+import { TextArea } from '@/app/shared/ui/TextArea';
 import { usePlaceholders } from '@/app/features/bot-configs/model/usePlaceholders';
 
 interface BotConfigFormStepPlaceholdersProps {
   placeholders: Record<string, string>;
   setPlaceholders: (val: Record<string, string>) => void;
-  onNext: () => void;
-  onPrev: () => void;
   isEditMode: boolean;
 }
 
 export function BotConfigFormStepPlaceholders({
   placeholders,
   setPlaceholders,
-  onNext,
-  onPrev,
   isEditMode,
 }: BotConfigFormStepPlaceholdersProps) {
   const { data: defaultPlaceholders, isLoading, error, refetch } = usePlaceholders();
@@ -46,40 +39,28 @@ export function BotConfigFormStepPlaceholders({
     return (
       <div className="py-8 text-center text-danger">
         Error al cargar placeholders.
-        <Button variant="secondary" onClick={() => refetch()}>Reintentar</Button>
+        <button className="ml-2 underline text-blue-600 hover:text-blue-900" type="button" onClick={() => refetch()}>Reintentar</button>
       </div>
     );
   }
 
   return (
-    <form
-      className="space-y-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        onNext();
-      }}
-    >
+    <div className="space-y-4">
       <h2 className="text-lg font-semibold mb-2">Personaliza los Placeholders</h2>
       <p className="text-muted-foreground text-sm mb-4">
         Puedes dejar campos vacíos o personalizarlos según tus necesidades. Estos valores serán usados por el bot para completar mensajes dinámicos.
       </p>
-      {defaultPlaceholders.map((ph) => (
-        <TextInput
-          key={ph.key}
-          label={ph.label}
-          value={placeholders[ph.key] || ''}
-          onChange={(val) => handleChange(ph.key, val)}
+      {Object.keys(defaultPlaceholders).map((key, index) => (
+        <TextArea
+          key={index}
+          label={key}
+          value={placeholders[key] || ''}
+          onChange={(val) => handleChange(key, val)}
           disabled={isEditMode}
+          error={error ? 'Error al cargar placeholders' : undefined}
+          rows={4}
         />
       ))}
-      <div className="flex gap-2 pt-6">
-        <Button type="button" variant="secondary" onClick={onPrev}>
-          Atrás
-        </Button>
-        <Button type="submit" variant="primary">
-          Siguiente
-        </Button>
-      </div>
-    </form>
+    </div>
   );
 }

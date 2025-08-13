@@ -16,12 +16,7 @@ export function generateInstructions(
   placeholders: Record<string, string> = {}
 ): string {
   const templateDir = path.resolve(
-    __dirname,
-    "..",
-    "..",
-    ".ia",
-    "instructions",
-    "templates"
+    __dirname, "packages/core/src/.ia/instructions/templates"
   );
   const fileName = `${assistantName}.md`;
   const templatePath = path.join(templateDir, fileName);

@@ -1,3 +1,4 @@
+"use client";
 // /shared/ui/Button.tsx
 
 import { LoadingSpinner } from './LoadingSpinner';
@@ -21,17 +22,17 @@ export function Button({
   ...props
 }: ButtonProps) {
   const baseStyles =
-    'inline-flex items-center justify-center font-medium rounded-2xl transition px-4 py-2 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:pointer-events-none';
+    'inline-flex items-center justify-center font-medium rounded-md transition focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed';
 
   const variantStyles: Record<string, string> = {
     primary:
-      'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-300',
+      'bg-blue-600 text-white hover:bg-blue-800 focus:ring-blue-300',
     secondary:
-      'bg-white text-gray-800 border border-gray-300 hover:bg-gray-100 focus:ring-gray-300',
+      'bg-white text-gray-800 border border-gray-300 hover:bg-gray-200 focus:ring-gray-300',
     danger:
-      'bg-red-600 text-white hover:bg-red-700 focus:ring-red-300',
+      'bg-red-600 text-white hover:bg-red-800 focus:ring-red-300',
     ghost:
-      'bg-transparent text-gray-700 hover:bg-gray-50 border border-transparent',
+      'bg-transparent text-gray-700 hover:bg-gray-100 border border-transparent focus:ring-gray-300',
   };
 
   const sizeStyles: Record<string, string> = {
@@ -42,11 +43,16 @@ export function Button({
 
   return (
     <button
-      className={clsx(baseStyles, variantStyles[variant], sizeStyles[size], className)}
+      className={clsx(
+        baseStyles,
+        variantStyles[variant],
+        sizeStyles[size],
+        className
+      )}
       disabled={disabled || loading}
       {...props}
     >
-      {loading && <LoadingSpinner size={18} className="mr-2" />}
+      {loading && <LoadingSpinner size={18} className="mr-2" />}      
       {children}
     </button>
   );

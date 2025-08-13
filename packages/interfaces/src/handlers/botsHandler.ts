@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// packages/core/src/interface/handlers/botsHandler.ts
+// packages/core/src/interface/handlers/botsHandler.ts (RESTful refactor)
 // -----------------------------------------------------------------------------
 
 import { createDynamoDocumentClient, getEnvVar } from "@clinickeys-agents/core/infrastructure/helpers";
@@ -9,8 +9,8 @@ import { OpenAIAssistantRepository } from "@clinickeys-agents/core/infrastructur
 import { BotConfigService } from "@clinickeys-agents/core/application/services";
 import { BotConfigType } from "@clinickeys-agents/core/domain/botConfig";
 import { BotController } from "../controllers/BotController";
-import { defaultPlaceholders } from "@clinickeys-agents/core/utils";
-import { Resource } from "sst";
+import { jsonResponse, defaultPlaceholders } from "@clinickeys-agents/core/utils";
+import { Logger } from "@clinickeys-agents/core/infrastructure/external";
 import {
   AddBotUseCase,
   UpdateBotConfigUseCase,
@@ -28,13 +28,13 @@ const docClient = createDynamoDocumentClient({
   region: getEnvVar("AWS_REGION"),
 });
 
-const tableName = getEnvVar("CLINICS_CONFIG_DB_NAME");
-const botConfigRepo = new BotConfigRepositoryDynamo({ tableName, docClient });
+const botConfigTableName = getEnvVar("BOT_CONFIGS_TABLE_NAME");
+const botConfigRepo = new BotConfigRepositoryDynamo({ tableName: botConfigTableName, docClient });
 const botConfigService = new BotConfigService(botConfigRepo);
 
 // Factory que crea un repositorio de assistants para el apiKey recibido
 const openaiRepoFactory = (apiKey: string) =>
-  new OpenAIAssistantRepository(new OpenAIGateway({ apiKey: apiKey }));
+  new OpenAIAssistantRepository(new OpenAIGateway({ apiKey }));
 
 const controller = new BotController({
   addUseCase: new AddBotUseCase(botConfigRepo, openaiRepoFactory),
@@ -44,83 +44,162 @@ const controller = new BotController({
   listGlobalUseCase: new ListGlobalBotConfigsUseCase({ botConfigService }),
 });
 
+// -------------------- helpers --------------------
+function parseBody(event: E): any | undefined {
+  if (event.body == null) return undefined;
+
+  // Soporte para base64
+  const raw = event.isBase64Encoded
+    ? Buffer.from(event.body, "base64").toString("utf8")
+    : event.body;
+
+  if (typeof raw === "string") {
+    const s = raw.trim();
+    if (s === "") return undefined;
+    try {
+      return JSON.parse(s);
+    } catch (e: any) {
+      throw new Error("Invalid JSON body");
+    }
+  }
+  // En algunos runtimes/locals ya llega como objeto
+  if (typeof raw === "object") return raw as any;
+  return undefined;
+}
+
+function isValidBotConfigType(t: string): t is BotConfigType {
+  return t === BotConfigType.ChatBot || t === BotConfigType.NotificationBot;
+}
+
 // -------------------- Handler --------------------
 export const handler: Handler<E, R> = async (event) => {
   try {
     const { method, path } = event.requestContext.http;
     const qs = event.queryStringParameters ?? {};
-    const body = event.body ? JSON.parse(event.body) : undefined;
+
+    let body: any;
+    try {
+      body = parseBody(event);
+    } catch (err: any) {
+      return jsonResponse(400, { error: err.message || "Invalid JSON body" });
+    }
 
     // ─── GET default placeholders ───────────────────────────────
-    if (method === "GET" && path === "/bot-config/default-placeholders") {
-      return { statusCode: 200, body: JSON.stringify(defaultPlaceholders) };
+    if (method === "GET" && path === "/bot-configs/default-placeholders") {
+      return jsonResponse(200, defaultPlaceholders);
     }
 
     // --- CREATE BOT ---------------------------------------------------------
-    if (method === "POST" && path === "/bot") {
+    if (method === "POST" && path === "/bots") {
       if (!body || !body.botConfigType) {
-        return { statusCode: 400, body: JSON.stringify({ error: "Missing botConfigType" }) };
+        return jsonResponse(400, { error: "Missing botConfigType" });
       }
+      if (!isValidBotConfigType(body.botConfigType)) {
+        return jsonResponse(400, { error: "Unknown botConfigType" });
+      }
+
       if (body.botConfigType === BotConfigType.ChatBot) {
         await controller.addChatBot(body);
-        return { statusCode: 201, body: JSON.stringify({ ok: true, botConfigType: BotConfigType.ChatBot }) };
-      } else if (body.botConfigType === BotConfigType.NotificationBot) {
-        await controller.addNotificationBot(body);
-        return { statusCode: 201, body: JSON.stringify({ ok: true, botConfigType: BotConfigType.NotificationBot }) };
+        return jsonResponse(201, { ok: true, botConfigType: BotConfigType.ChatBot });
       } else {
-        return { statusCode: 400, body: JSON.stringify({ error: "Unknown botConfigType" }) };
+        await controller.addNotificationBot(body);
+        return jsonResponse(201, { ok: true, botConfigType: BotConfigType.NotificationBot });
       }
     }
 
     // --- DELETE BOT ---------------------------------------------------------
-    const deleteMatch = path.match(/^\/bot\/([^\/]+)\/([^\/]+)\/([^\/]+)\/([^\/]+)$/);
+    const deleteMatch = path.match(/^\/bots\/([^\/]+)\/([^\/]+)\/([^\/]+)\/([^\/]+)$/);
     if (method === "DELETE" && deleteMatch) {
       const [, botConfigType, botConfigId, clinicSource, clinicIdStr] = deleteMatch;
+      if (!isValidBotConfigType(botConfigType)) {
+        return jsonResponse(400, { error: "Unknown botConfigType" });
+      }
       if (botConfigType === BotConfigType.ChatBot) {
         await controller.deleteChatBot(botConfigId, clinicSource, Number(clinicIdStr));
-      } else if (botConfigType === BotConfigType.NotificationBot) {
-        await controller.deleteNotificationBot(botConfigId, clinicSource, Number(clinicIdStr));
       } else {
-        return { statusCode: 400, body: JSON.stringify({ error: "Unknown botConfigType" }) };
+        await controller.deleteNotificationBot(botConfigId, clinicSource, Number(clinicIdStr));
       }
-      return { statusCode: 204, body: "" };
+      return jsonResponse(204);
     }
 
-    // --- UPDATE BOT-CONFIG --------------------------------------------------
-    if (method === "PATCH" && path === "/bot-config") {
-      await controller.updateBotConfig(body as UpdateBotConfigInput);
-      return { statusCode: 200, body: JSON.stringify({ ok: true }) };
+    // --- UPDATE BOT-CONFIG (ahora solo por path, no por body id) ------------
+    const patchMatch = path.match(/^\/bot-configs\/([^\/]+)\/([^\/]+)\/([^\/]+)\/([^\/]+)$/);
+    if (method === "PATCH" && patchMatch) {
+      const [, botConfigType, botConfigId, clinicSource, clinicIdStr] = patchMatch;
+      if (!isValidBotConfigType(botConfigType)) {
+        return jsonResponse(400, { error: "Unknown botConfigType" });
+      }
+      if (!body) {
+        return jsonResponse(400, { error: "Missing body" });
+      }
+
+      await controller.updateBotConfig({
+        botConfigType: botConfigType as BotConfigType,
+        botConfigId,
+        clinicSource,
+        clinicId: Number(clinicIdStr),
+        updates: { ...body },
+      } as UpdateBotConfigInput);
+      return jsonResponse(200, { ok: true });
     }
 
-    // --- GET ONE BOT-CONFIG -------------------------------------------------
-    if (method === "GET" && /\/bot-config\/?$/.test(path)) {
-      const { botConfigType, botConfigId, clinicSource, clinicId } = qs;
+    // --- GET ONE BOT-CONFIG por path ----------------------------------------
+    const singleConfigMatch = path.match(/^\/bot-configs\/([^\/]+)\/([^\/]+)\/([^\/]+)\/([^\/]+)$/);
+    if (method === "GET" && singleConfigMatch) {
+      const [, botConfigType, botConfigId, clinicSource, clinicIdStr] = singleConfigMatch;
+      if (!isValidBotConfigType(botConfigType)) {
+        return jsonResponse(400, { error: "Unknown botConfigType" });
+      }
       const config = await controller.getBotConfig(
         botConfigType as BotConfigType,
-        botConfigId!,
-        clinicSource!,
-        Number(clinicId!)
+        botConfigId,
+        clinicSource,
+        Number(clinicIdStr)
       );
-      return { statusCode: 200, body: JSON.stringify(config) };
+      return jsonResponse(200, config);
     }
 
     // --- LIST GLOBAL BOT-CONFIGS -------------------------------------------
-    if (method === "GET" && path === "/bot-config/all") {
-      const limit = qs?.limit ? Number(qs.limit) : undefined;
-      const cursor = qs?.cursor ? (JSON.parse(qs.cursor) as Record<string, Record<string, any>>) : undefined;
-      const result = await controller.listGlobalBotConfigs({
-        limit,
-        cursor,
-      } as ListGlobalBotConfigsInput);
-      return { statusCode: 200, body: JSON.stringify(result) };
+    if (method === "GET" && path === "/bot-configs") {
+      const limit = qs.limit ? Number(qs.limit) : undefined;
+
+      let cursor: Record<string, Record<string, any>> | undefined = undefined;
+      if (qs.cursor) {
+        try {
+          cursor = JSON.parse(qs.cursor) as Record<string, Record<string, any>>;
+        } catch {
+          return jsonResponse(400, { error: "Invalid cursor format" });
+        }
+      }
+
+      const result = await controller.listGlobalBotConfigs({ limit, cursor } as ListGlobalBotConfigsInput);
+      return jsonResponse(200, result);
+    }
+
+    // --- ENABLE/DISABLE BOT ---------------------------------------------------
+    const enableMatch = path.match(/^\/bots\/([^\/]+)\/([^\/]+)\/([^\/]+)\/([^\/]+)\/enabled$/);
+    if (method === "PATCH" && enableMatch) {
+      const [, botConfigType, botConfigId, clinicSource, clinicIdStr] = enableMatch;
+      if (!isValidBotConfigType(botConfigType)) {
+        return jsonResponse(400, { error: "Unknown botConfigType" });
+      }
+      if (!body || typeof body.isEnabled !== "boolean") {
+        return jsonResponse(400, { error: "Missing or invalid isEnabled in body" });
+      }
+      await controller.updateBotConfig({
+        botConfigType: botConfigType as BotConfigType,
+        botConfigId,
+        clinicSource,
+        clinicId: Number(clinicIdStr),
+        updates: { isEnabled: body.isEnabled },
+      } as UpdateBotConfigInput);
+      return jsonResponse(200, { ok: true, isEnabled: body.isEnabled });
     }
 
     // -------------------- Not found ----------------------------------------
-    return { statusCode: 404, body: JSON.stringify({ error: "Not found" }) };
+    return jsonResponse(404, { error: "Not found" });
   } catch (error: any) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: error.message ?? "Internal server error" }),
-    };
+    Logger.error("Error in botsHandler:", error);
+    return jsonResponse(500, { error: error.message ?? "Internal server error" });
   }
 };

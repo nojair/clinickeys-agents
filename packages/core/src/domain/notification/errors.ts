@@ -5,8 +5,8 @@
  */
 
 export class NotificationNotFoundError extends Error {
-  constructor(id_notificacion: number) {
-    super(`No se encontró la notificación con id: ${id_notificacion}`);
+  constructor(id_clinica: number) {
+    super(`No se encontró notificaciones para la id clinica: ${id_clinica}`);
     this.name = 'NotificationNotFoundError';
   }
 }

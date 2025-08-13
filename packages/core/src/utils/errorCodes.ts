@@ -60,6 +60,11 @@ export const ErrorCodes = {
     message: "No se encontraron espacios disponibles.",
     humanMessage: "No hay espacios configurados para el tratamiento y médico seleccionado.",
   },
+  MEDICOS_SOLICITADOS_NO_ENCONTRADOS: {
+    code: "ERR108",
+    message: "No se encontraron médicos para los tratamientos.",
+    humanMessage: "No hay médicos asignados para el/los tratamientos seleccionados.",
+  },
   ERROR_CONSULTA_SQL: {
     code: "ERR200",
     message: "Error interno al consultar la base de datos.",

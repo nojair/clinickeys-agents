@@ -1,9 +1,10 @@
-'use client';
 // /features/bot-configs/ui/BotConfigFormModal.tsx
 
-import { useState } from 'react';
+"use client";
+
+import { useState, useEffect } from 'react';
 import { Modal } from '@/app/shared/ui/Modal';
-import { useBotConfigs } from '@/app/features/bot-configs/model/useBotConfigs';
+import { useBotConfigs, BotConfigIdParams } from '@/app/features/bot-configs/model/useBotConfigs';
 import { BotConfigFormStepType } from '@/app/features/bot-configs/ui/BotConfigFormStepType';
 import { BotConfigFormStepGeneral } from '@/app/features/bot-configs/ui/BotConfigFormStepGeneral';
 import { BotConfigFormStepPlaceholders } from '@/app/features/bot-configs/ui/BotConfigFormStepPlaceholders';
@@ -11,9 +12,11 @@ import { BotConfigFormStepReview } from '@/app/features/bot-configs/ui/BotConfig
 import type { CreateBotConfigPayload, UpdateBotConfigPayload } from '@/app/features/bot-configs/model/types';
 import type { BotConfig, BotConfigType } from '@/app/entities/bot-config/types';
 import { useForm, FormProvider } from 'react-hook-form';
+import type { Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createBotConfigSchema, updateBotConfigSchema } from '@/app/features/bot-configs/model/formSchemas';
 import { toast } from 'sonner';
+import { Button } from '@/app/shared/ui/Button';
 
 const STEP_TYPE = 0;
 const STEP_GENERAL = 1;
@@ -26,158 +29,189 @@ export interface BotConfigFormModalProps {
   initialData?: BotConfig | null;
 }
 
+function getBotConfigIdParams(bot: BotConfig): BotConfigIdParams {
+  return {
+    botConfigType: bot.botConfigType,
+    botConfigId: bot.botConfigId,
+    clinicSource: bot.clinicSource,
+    clinicId: bot.clinicId,
+  };
+}
+
 export function BotConfigFormModal({ open, onClose, initialData }: BotConfigFormModalProps) {
-  const [step, setStep] = useState(initialData ? STEP_GENERAL : STEP_TYPE);
+  const isEditMode = Boolean(initialData);
+  const schema = isEditMode ? updateBotConfigSchema : createBotConfigSchema;
+  const [step, setStep] = useState(isEditMode ? STEP_GENERAL : STEP_TYPE);
   const [botType, setBotType] = useState<BotConfigType | undefined>(initialData?.botConfigType);
   const [placeholders, setPlaceholders] = useState<Record<string, string>>(initialData?.placeholders ?? {});
 
-  // Hooks de react-query (usando mutations "crudas")
-  const {
-    createBotConfigMutation,
-    updateBotConfigMutation,
-    isCreating,
-    isUpdating,
-  } = useBotConfigs();
+  const { createBotConfigMutation, updateBotConfigMutation, isCreating, isUpdating } = useBotConfigs();
 
-  // Form RHF
-  const isEditMode = Boolean(initialData);
-  const schema = isEditMode ? updateBotConfigSchema : createBotConfigSchema;
-  // Solo los campos válidos para defaultValues
-  const initialFormValues = initialData
-    ? Object.fromEntries(
-        Object.entries(initialData).filter(
-          ([key]) =>
-            [
-              'name',
-              'description',
-              'kommoSubdomain',
-              'kommoLongLivedToken',
-              'kommoResponsibleUserId',
-              'kommoSalesbotId',
-              'defaultCountry',
-              'timezone',
-              'isEnabled',
-              'fieldsProfile',
-              'clinicSource',
-              'clinicId',
-              'superClinicId',
-              'openaiToken',
-            ].includes(key)
-        )
-      )
-    : undefined;
+  const initialFormValues = isEditMode
+    ? {
+        botConfigType: initialData!.botConfigType,
+        description: initialData!.description,
+        kommoSubdomain: initialData!.kommo.subdomain,
+        kommoLongLivedToken: initialData!.kommo.longLivedToken,
+        kommoResponsibleUserId: initialData!.kommo.responsibleUserId,
+        kommoSalesbotId: initialData!.kommo.salesbotId,
+        defaultCountry: initialData!.defaultCountry,
+        timezone: initialData!.timezone,
+        isEnabled: initialData!.isEnabled,
+        clinicId: initialData!.clinicId,
+        superClinicId: initialData!.superClinicId,
+        openaiApikey: initialData!.openai?.apiKey ?? '',
+        assistants: initialData!.openai?.assistants ?? {},
+      }
+    : {
+        botConfigType: undefined,
+        description: '',
+        kommoSubdomain: '',
+        kommoLongLivedToken: '',
+        kommoResponsibleUserId: '',
+        kommoSalesbotId: '',
+        defaultCountry: 'ES',
+        timezone: 'Europe/Madrid',
+        isEnabled: true,
+        fieldsProfile: 'default_kommo_profile',
+        clinicSource: 'legacy',
+        clinicId: undefined,
+        superClinicId: undefined,
+        openaiApikey: '',
+        assistants: {},
+      };
 
-  const methods = useForm({
-    resolver: zodResolver(schema),
+  const methods = useForm<any>({
+    resolver: zodResolver(schema) as Resolver<any>,
     defaultValues: initialFormValues,
     mode: 'onChange',
   });
 
-  // Steps control
-  const nextStep = () => setStep((s) => s + 1);
-  const prevStep = () => setStep((s) => s - 1);
+  useEffect(() => {
+    methods.reset(initialFormValues);
+    setBotType(initialFormValues.botConfigType);
+    if (initialFormValues.botConfigType) {
+      methods.setValue('botConfigType', initialFormValues.botConfigType, { shouldValidate: false });
+    }
+  }, [initialData]);
 
-  // Cerrar modal y limpiar estado
+  useEffect(() => {
+    if (botType) {
+      methods.setValue('botConfigType', botType, { shouldValidate: true });
+    }
+  }, [botType]);
+
+  const goNext = () => {
+    if (step === STEP_GENERAL && (isEditMode || botType !== 'chatBot')) {
+      setStep(STEP_REVIEW);
+    } else {
+      setStep(s => s + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (isEditMode && step === STEP_REVIEW) {
+      setStep(STEP_GENERAL);
+    } else {
+      setStep(s => s - 1);
+    }
+  };
+
   const handleClose = () => {
     setStep(isEditMode ? STEP_GENERAL : STEP_TYPE);
     setBotType(initialData?.botConfigType);
     setPlaceholders(initialData?.placeholders ?? {});
-    methods.reset(initialFormValues ?? {});
+    methods.reset(initialFormValues);
+    if (initialFormValues.botConfigType) {
+      methods.setValue('botConfigType', initialFormValues.botConfigType, { shouldValidate: false });
+    }
     onClose();
   };
 
-  // Guardar o crear (ahora sí: callbacks en mutate)
   const handleSubmit = (data: any) => {
+    if (!data.botConfigType && !isEditMode) {
+      toast.error('Debes seleccionar el tipo de bot');
+      setStep(STEP_TYPE);
+      return;
+    }
     const payload: CreateBotConfigPayload | UpdateBotConfigPayload = {
       ...data,
-      ...(botType ? { botConfigType: botType } : {}),
-      placeholders: botType === 'chatBot' ? placeholders : undefined,
+      placeholders: data.botConfigType === 'chatBot' ? placeholders : undefined,
     };
-
     if (isEditMode && initialData) {
       updateBotConfigMutation.mutate(
-        { id: initialData.id, payload: payload as UpdateBotConfigPayload },
+        { params: getBotConfigIdParams(initialData), payload: payload as UpdateBotConfigPayload },
         {
-          onSuccess: () => {
-            toast.success('Bot actualizado correctamente');
-            handleClose();
-          },
-          onError: (err: any) => {
-            toast.error(err?.message || 'Error al actualizar bot');
-          },
+          onSuccess: () => { toast.success('Bot actualizado correctamente'); handleClose(); },
+          onError: (err: any) => toast.error(err?.message || 'Error al actualizar bot'),
         }
       );
     } else {
-      createBotConfigMutation.mutate(
-        payload as CreateBotConfigPayload,
-        {
-          onSuccess: () => {
-            toast.success('Bot creado correctamente');
-            handleClose();
-          },
-          onError: (err: any) => {
-            toast.error(err?.message || 'Error al crear bot');
-          },
-        }
-      );
+      createBotConfigMutation.mutate(payload as CreateBotConfigPayload, {
+        onSuccess: () => { toast.success('Bot creado correctamente'); handleClose(); },
+        onError: (err: any) => toast.error(err?.message || 'Error al crear bot'),
+      });
     }
   };
 
-  // Render de steps
-  let content = null;
+  let content: React.ReactNode;
   if (step === STEP_TYPE) {
-    content = (
-      <BotConfigFormStepType
-        value={botType}
-        onChange={(type) => {
-          setBotType(type);
-          nextStep();
-        }}
-      />
-    );
+    content = <BotConfigFormStepType value={botType} onChange={type => { setBotType(type); methods.setValue('botConfigType', type, { shouldValidate: true, shouldDirty: true }); goNext(); }} />;
   } else if (step === STEP_GENERAL) {
-    content = (
-      <BotConfigFormStepGeneral
-        methods={methods}
-        botType={botType}
-        onNext={nextStep}
-        onPrev={isEditMode ? undefined : prevStep}
-        isEditMode={isEditMode}
-        setPlaceholders={setPlaceholders}
-      />
-    );
-  } else if (step === STEP_PLACEHOLDERS && botType === 'chatBot') {
-    content = (
-      <BotConfigFormStepPlaceholders
-        placeholders={placeholders}
-        setPlaceholders={setPlaceholders}
-        onNext={nextStep}
-        onPrev={prevStep}
-        isEditMode={isEditMode}
-      />
-    );
-  } else if (step === STEP_REVIEW) {
-    content = (
-      <BotConfigFormStepReview
-        methods={methods}
-        botType={botType}
-        placeholders={placeholders}
-        isEditMode={isEditMode}
-        onPrev={botType === 'chatBot' ? prevStep : isEditMode ? undefined : prevStep}
-        onSubmit={methods.handleSubmit(handleSubmit)}
-        isSubmitting={isEditMode ? isUpdating : isCreating}
-      />
+    content = <BotConfigFormStepGeneral methods={methods} botType={botType} isEditMode={isEditMode} setPlaceholders={setPlaceholders} />;
+  } else if (step === STEP_PLACEHOLDERS && botType === 'chatBot' && !isEditMode) {
+    content = <BotConfigFormStepPlaceholders placeholders={placeholders} setPlaceholders={setPlaceholders} isEditMode={isEditMode} />;
+  } else {
+    content = <BotConfigFormStepReview methods={methods} botType={botType} placeholders={placeholders} isEditMode={isEditMode} />;
+  }
+
+  const title = isEditMode
+    ? `Editar Configuración: ${botType} - ${initialFormValues.kommoSubdomain}`
+    : `Crear Bot`;
+
+  let footer: React.ReactNode = null;
+  if (step !== STEP_TYPE) {
+    const isLast = step === STEP_REVIEW;
+    const rightBtn = isLast
+      ? <Button type="button" variant="primary" disabled={isCreating || isUpdating} onClick={() => methods.handleSubmit(handleSubmit)()}>{isEditMode ? 'Guardar' : 'Crear'}</Button>
+      : <Button type="button" variant="primary" disabled={isCreating || isUpdating} onClick={() => { methods.trigger().then(valid => valid && goNext()); }}>Siguiente</Button>;
+
+    footer = (
+      <div className="flex justify-end gap-2">
+        {((step > STEP_TYPE && !isEditMode) || (step === STEP_REVIEW && isEditMode)) && (
+          <Button type="button" variant="secondary" onClick={prevStep} disabled={isCreating || isUpdating}>Atrás</Button>
+        )}
+        {rightBtn}
+      </div>
     );
   }
 
-  // Título modal
-  const title = isEditMode
-    ? 'Editar Bot Configuración'
-    : 'Crear Bot Configuración';
-
   return (
-    <Modal open={open} onClose={handleClose} title={title} width="42rem">
+    <Modal open={open} onClose={handleClose} title={title} width="42rem" footer={footer}>
       <FormProvider {...methods}>{content}</FormProvider>
+      {isEditMode && step === STEP_GENERAL && initialData?.kommoLeadsCustomFields?.length > 0 && (
+        <div className="mt-8">
+          <h3 className="mb-3 text-base font-bold text-gray-700">Campos requeridos en Kommo:</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {initialData!.kommoLeadsCustomFields.map((field: any, idx: any) => (
+              <div key={`${field.field_name}${idx}`} className={
+                `rounded-lg px-3 py-2 border text-sm flex flex-col shadow-sm ${
+                  field.exists && field.field_type === 'textarea'
+                    ? 'bg-green-50 border-green-400 text-green-900'
+                    : 'bg-red-50 border-red-400 text-red-900'
+                }`
+              }>
+                <div className="font-semibold mb-1">{field.field_name}</div>
+                <div>
+                  {field.exists && field.field_type === 'textarea' && <span>✔️ Campo creado y de tipo texto largo</span>}
+                  {!field.exists && <span>❌ Debe crearse el custom field tipo <strong>texto largo</strong></span>}
+                  {field.exists && field.field_type !== 'textarea' && <span>❌ El tipo debe ser texto largo (actual: {field.field_type || '—'})</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </Modal>
   );
 }

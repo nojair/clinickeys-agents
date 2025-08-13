@@ -1,6 +1,6 @@
 // @clinickeys-agents/core/src/infrastructure/appointment/AppointmentRepositoryMySQL.ts
 
-import { ejecutarConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
+import { ejecutarConReintento, ejecutarExecConReintento, ejecutarUnicoResultado } from "@clinickeys-agents/core/infrastructure/helpers";
 
 export interface AppointmentCreateParams {
   id_paciente: number;
@@ -53,7 +53,7 @@ export class AppointmentRepositoryMySQL {
       params.id_presupuesto ?? null,
       params.id_pack_bono ?? null
     ];
-    const result: any = await ejecutarConReintento(query, args);
+    const result: any = await ejecutarExecConReintento(query, args);
     return result.insertId || result[0]?.insertId;
   }
 
@@ -96,7 +96,7 @@ export class AppointmentRepositoryMySQL {
       WHERE id_cita = ?
     `;
     values.push(params.id_cita);
-    await ejecutarConReintento(query, values);
+    await ejecutarExecConReintento(query, values);
   }
 
   /**
@@ -108,8 +108,7 @@ export class AppointmentRepositoryMySQL {
         citas.*, 
         espacios.nombre AS nombre_espacio,
         tratamientos.nombre_tratamiento,
-        medicos.nombre_medico,
-        medicos.apellido_medico
+        CONCAT(TRIM(medicos.nombre_medico), ' ', TRIM(medicos.apellido_medico)) AS nombre_medico
       FROM citas
       LEFT JOIN espacios ON citas.id_espacio = espacios.id_espacio
       LEFT JOIN tratamientos ON citas.id_tratamiento = tratamientos.id_tratamiento
@@ -127,8 +126,8 @@ export class AppointmentRepositoryMySQL {
     const query = `
       SELECT * FROM citas WHERE id_cita = ?
     `;
-    const rows = await ejecutarConReintento(query, [id_cita]);
-    return rows[0] || undefined;
+    const row = await ejecutarUnicoResultado(query, [id_cita]);
+    return row || undefined;
   }
 
   async getCitasDetallePorPackTratamiento(id_paciente: number, id_clinica: number): Promise<any | undefined> {
@@ -147,7 +146,7 @@ export class AppointmentRepositoryMySQL {
    */
   async deleteAppointment(id_cita: number): Promise<void> {
     const query = `DELETE FROM citas WHERE id_cita = ?`;
-    await ejecutarConReintento(query, [id_cita]);
+    await ejecutarExecConReintento(query, [id_cita]);
   }
 
   /**
@@ -180,6 +179,6 @@ export class AppointmentRepositoryMySQL {
       params.p_hora_inicio,
       params.p_hora_fin
     ];
-    return await ejecutarConReintento(query, values);
+    return await ejecutarExecConReintento(query, values);
   }
 }

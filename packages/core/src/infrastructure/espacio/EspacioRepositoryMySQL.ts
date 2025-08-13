@@ -1,6 +1,6 @@
 // @clinickeys-agents/core/src/infrastructure/espacio/EspacioRepositoryMySQL.ts
 
-import { ejecutarConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
+import { ejecutarConReintento, ejecutarUnicoResultado } from "@clinickeys-agents/core/infrastructure/helpers";
 
 export interface EspacioDTO {
   id_espacio: number;
@@ -15,13 +15,13 @@ export class EspacioRepositoryMySQL {
    */
   async findById(id_espacio: number): Promise<EspacioDTO | undefined> {
     const query = `
-      SELECT id_espacio, id_clinica, nombre
+      SELECT id_espacio, id_clinica, nombre AS nombre_espacio
       FROM espacios
       WHERE id_espacio = ?
       LIMIT 1
     `;
-    const rows = await ejecutarConReintento(query, [id_espacio]);
-    return rows[0] || undefined;
+    const row = await ejecutarUnicoResultado(query, [id_espacio]);
+    return row || undefined;
   }
 
   /**
@@ -29,7 +29,7 @@ export class EspacioRepositoryMySQL {
    */
   async findByClinica(id_clinica: number): Promise<EspacioDTO[]> {
     const query = `
-      SELECT id_espacio, id_clinica, nombre
+      SELECT id_espacio, id_clinica, nombre AS nombre_espacio
       FROM espacios
       WHERE id_clinica = ?
     `;
@@ -46,7 +46,7 @@ export class EspacioRepositoryMySQL {
     id_clinica: number
   ): Promise<EspacioDTO[]> {
     const query = `
-      SELECT e.id_espacio, e.id_clinica, e.nombre
+      SELECT e.id_espacio, e.id_clinica, e.nombre AS nombre_espacio
       FROM espacios e
       INNER JOIN medico_espacio me ON me.id_espacio = e.id_espacio
       INNER JOIN espacios_tratamientos et ON et.id_espacio = e.id_espacio

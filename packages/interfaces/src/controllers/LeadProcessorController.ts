@@ -1,4 +1,4 @@
-// packages/core/src/interface/controllers/LeadProcessorController.ts
+// packages/interfaces/src/controllers/LeadProcessorController.ts
 
 import { SQSEvent, SQSRecord } from "aws-lambda";
 
@@ -40,62 +40,66 @@ import { PatientRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/p
 import { AppointmentRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/appointment";
 import { PresupuestoRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/presupuesto";
 import { Logger } from "@clinickeys-agents/core/infrastructure/external";
+import { PATIENT_MESSAGE, THREAD_ID } from "@clinickeys-agents/core/utils";
 
 import { LeadQueueMessageDTO } from "@clinickeys-agents/core/domain/kommo";
 import { BotConfigType } from "@clinickeys-agents/core/domain/botConfig";
 
-/**
- * Controlador que procesa los mensajes provenientes de la cola FIFO.
- */
 export class LeadProcessorController {
   constructor(
     private readonly getBotConfigUC: GetBotConfigUseCase,
     private readonly logger: typeof Logger = Logger,
   ) {}
 
-  // Entry
   async handle(event: SQSEvent): Promise<void> {
     this.logger.info("SQS batch", { total: event.Records.length });
-    for (const rec of event.Records) await this.processRecord(rec);
+    for (const rec of event.Records) {
+      this.logger.debug("Processing record from SQS", { messageId: rec.messageId });
+      await this.processRecord(rec);
+    }
   }
 
-  // Single record
   private async processRecord(record: SQSRecord): Promise<void> {
     let msg: LeadQueueMessageDTO;
     try {
+      this.logger.debug("Parsing SQS record body");
       msg = JSON.parse(record.body);
+      this.logger.debug("Parsed message successfully", { msg });
     } catch (err) {
       this.logger.error("Invalid JSON", err as Error);
       throw err;
     }
 
-    const { botConfigType, botConfigId, clinicSource, clinicId, salesbotId } = msg.pathParameters;
-    if (!botConfigType || !botConfigId || !clinicSource || !clinicId) throw new Error("Missing path params");
+    const { botConfigType, botConfigId, clinicSource, clinicId } = msg.pathParameters;
+    this.logger.debug("Extracted path parameters", { botConfigType, botConfigId, clinicSource, clinicId });
+    if (!botConfigType || !botConfigId || !clinicSource || !clinicId) {
+      this.logger.error("Missing path params", { pathParameters: msg.pathParameters });
+      throw new Error("Missing path params");
+    }
 
-    // 1. BotConfig
+    this.logger.debug("Fetching bot configuration", { botConfigId, botConfigType });
     const botConfig = await this.getBotConfigUC.execute(botConfigType as BotConfigType, botConfigId, clinicSource, Number(clinicId));
+    this.logger.debug("Bot configuration fetch result", { found: !!botConfig });
     if (!botConfig) throw new Error("BotConfig not found");
 
-    const appointmentRepo = new AppointmentRepositoryMySQL()
+    this.logger.debug("Initializing repositories and services");
+    const appointmentRepo = new AppointmentRepositoryMySQL();
     const tratamientoRepo = new TratamientoRepositoryMySQL();
     const packBonoRepo = new PackBonoRepositoryMySQL();
     const patientRepo = new PatientRepositoryMySQL();
     const medicoRepo = new MedicoRepositoryMySQL();
     const espacioRepo = new EspacioRepositoryMySQL();
 
-    // 2. Gateways & base services
     const kommoGateway = new KommoApiGateway({
       longLivedToken: (botConfig as any).kommo.longLivedToken,
       subdomain: (botConfig as any).kommo.subdomain,
     });
     const kommoRepository = new KommoRepository(kommoGateway);
     const kommoService = new KommoService(kommoRepository, patientRepo);
-    
+
     const openAIGateway = new OpenAIGateway({ apiKey: (botConfig as any).openai.apiKey });
     const openAIService = new OpenAIService(openAIGateway, this.logger);
-    
 
-    // 3. PatientService (requiere varios repos)
     const patientService = new PatientService({
       patientRepo,
       appointmentRepo,
@@ -103,7 +107,6 @@ export class LeadProcessorController {
       packBonoRepo,
     });
 
-    // 4. Servicios adicionales (Disponibilidad, Citas, Packs)
     const availabilityService = new AvailabilityService(
       tratamientoRepo,
       medicoRepo,
@@ -113,11 +116,8 @@ export class LeadProcessorController {
     const appointmentService = new AppointmentService(appointmentRepo);
     const packBonoService = new PackBonoService(packBonoRepo);
 
-    // 5. Use Cases dependientes
-    const fetchKommoDataUC = new FetchKommoDataUseCase(
-      this.getBotConfigUC as any, // usa el mismo UC internamente
-      kommoService,
-    );
+    this.logger.debug("Setting up use cases");
+    const fetchKommoDataUC = new FetchKommoDataUseCase(this.getBotConfigUC, kommoService);
     const fetchPatientInfoUC = new FetchPatientInfoUseCase(fetchKommoDataUC, patientService);
     const recognizeIntentUC = new RecognizeUserIntentUseCase(fetchPatientInfoUC);
 
@@ -143,9 +143,8 @@ export class LeadProcessorController {
       packBonoService,
     );
     const handleUrgencyUC = new HandleUrgencyUseCase(kommoService);
-    const regularConversationUC = new RegularConversationUseCase(kommoService);
+    const regularConversationUC = new RegularConversationUseCase();
 
-    // 6. Communicate UC
     const communicateUC = new CommunicateWithAssistantUseCase({
       kommoService,
       openAIService,
@@ -159,15 +158,30 @@ export class LeadProcessorController {
       regularConversationUC,
     });
 
-    // 7. Ejecutar
+    this.logger.debug("Fetching Kommo data for lead");
+    const kommoData = await fetchKommoDataUC.execute({
+      botConfigType: botConfigType as BotConfigType,
+      botConfigId,
+      clinicSource,
+      clinicId: Number(clinicId),
+      leadId: Number(msg.kommo.leads.add?.[0]?.id ?? 0)
+    });
+    this.logger.debug("Fetched Kommo data", { kommoData });
+
+    const normalizedLeadCF = kommoData.normalizedLeadCF || [];
+    const userMessage = normalizedLeadCF.find((cf) => cf.field_name === PATIENT_MESSAGE)?.value || '';
+    const threadId = normalizedLeadCF.find((cf) => cf.field_name === THREAD_ID)?.value || undefined;
+    this.logger.debug("Extracted conversation context", { userMessage, threadId });
+
     const communicateInput: CommunicateInput = {
       leadId: Number(msg.kommo.leads.add?.[0]?.id ?? 0),
       botConfig: botConfig as any,
-      mergedCustomFields: [],
-      salesbotId: Number(salesbotId ?? 0),
-      userMessage: "",
+      normalizedLeadCF,
+      userMessage,
+      threadId
     };
 
+    this.logger.info("Starting communication with assistant", { leadId: communicateInput.leadId });
     await communicateUC.execute(communicateInput);
     this.logger.info("Processed", { leadId: communicateInput.leadId });
   }

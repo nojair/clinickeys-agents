@@ -1,63 +1,107 @@
 // /features/bot-configs/api/botConfigsApi.ts
 
+import fetchJson from "@/app/shared/lib/fetchJson";
+import type { Paginated } from "@/app/shared/types/api";
 import type { BotConfig } from "@/app/entities/bot-config/types";
 import type {
   CreateBotConfigPayload,
-  UpdateBotConfigPayload
+  UpdateBotConfigPayload,
+  Placeholder,
 } from "@/app/features/bot-configs/model/types";
 
+/** Identificadores compuestos que describen un BotConfig único */
+export interface BotIdParams {
+  botConfigType: string;
+  botConfigId: string;
+  clinicSource: string;
+  clinicId: string | number;
+}
+
+/** Opciones de paginación para `listBotConfigs` */
+export interface ListBotConfigsOptions {
+  limit?: number;
+  cursor?: string | null;
+}
+
 /**
- * API para gestión de BotConfigs
+ * Helper interno para construir la ruta de un recurso BotConfig.
+ * Ej: /bot-configs/chatBot/123/legacy/456
  */
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+function getBotConfigPath(
+  { botConfigType, botConfigId, clinicSource, clinicId }: BotIdParams,
+  opts?: { section?: string },
+) {
+  let path = `/bot-configs/${botConfigType}/${botConfigId}/${clinicSource}/${clinicId}`;
+  if (opts?.section) path += `/${opts.section}`;
+  return path;
+}
+
+/**
+ * Helper interno para construir la ruta de un recurso Bot (alias de acción).
+ * Ej: /bots/chatBot/123/legacy/456
+ */
+function getBotPath(
+  { botConfigType, botConfigId, clinicSource, clinicId }: BotIdParams,
+  opts?: { section?: string },
+) {
+  let path = `/bots/${botConfigType}/${botConfigId}/${clinicSource}/${clinicId}`;
+  if (opts?.section) path += `/${opts.section}`;
+  return path;
+}
 
 export const botConfigsApi = {
-  async getBotConfigs(): Promise<BotConfig[]> {
-    const res = await fetch(`${API_BASE_URL}/bot-config/all`);
-    if (!res.ok) throw new Error("Error al obtener bot configs");
-    return res.json();
+  /**
+   * Lista paginada de BotConfigs (cursor‑based).
+   * @example
+   * const { items, nextCursor } = await botConfigsApi.listBotConfigs({ limit: 50 });
+   */
+  async listBotConfigs({ limit, cursor }: ListBotConfigsOptions = {}): Promise<Paginated<BotConfig>> {
+    return fetchJson<Paginated<BotConfig>>("/bot-configs", {
+      query: {
+        ...(limit ? { limit } : {}),
+        ...(cursor ? { cursor } : {}),
+      },
+    });
   },
 
-  async getBotConfigById(id: string): Promise<BotConfig> {
-    const res = await fetch(`${API_BASE_URL}/bots/${id}`);
-    if (!res.ok) throw new Error("Error al obtener bot config");
-    return res.json();
+  /** Obtiene un BotConfig individual */
+  async getBotConfig(params: BotIdParams): Promise<BotConfig> {
+    return fetchJson<BotConfig>(getBotConfigPath(params));
   },
 
+  /** Crea un nuevo BotConfig */
   async createBotConfig(payload: CreateBotConfigPayload): Promise<BotConfig> {
-    const res = await fetch(`${API_BASE_URL}/bots`, {
+    return fetchJson<BotConfig>("/bots", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: payload,
     });
-    if (!res.ok) throw new Error("Error al crear bot config");
-    return res.json();
   },
 
-  async updateBotConfig(id: string, payload: UpdateBotConfigPayload): Promise<BotConfig> {
-    const res = await fetch(`${API_BASE_URL}/bots/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+  /** Actualiza un BotConfig existente */
+  async updateBotConfig(params: BotIdParams, payload: UpdateBotConfigPayload): Promise<BotConfig> {
+    return fetchJson<BotConfig>(getBotConfigPath(params), {
+      method: "PATCH",
+      body: payload,
     });
-    if (!res.ok) throw new Error("Error al actualizar bot config");
-    return res.json();
   },
 
-  async deleteBotConfig(id: string): Promise<void> {
-    const res = await fetch(`${API_BASE_URL}/bots/${id}`, {
+  /** Elimina un BotConfig */
+  async deleteBotConfig(params: BotIdParams): Promise<void> {
+    await fetchJson<void>(getBotPath(params), {
       method: "DELETE",
     });
-    if (!res.ok) throw new Error("Error al eliminar bot config");
   },
 
-  async toggleIsEnabled(id: string, isEnabled: boolean): Promise<BotConfig> {
-    const res = await fetch(`${API_BASE_URL}/bots/${id}/enabled`, {
+  /** Activa / desactiva un Bot */
+  async toggleIsEnabled(params: BotIdParams, isEnabled: boolean): Promise<BotConfig> {
+    return fetchJson<BotConfig>(getBotPath(params, { section: "enabled" }), {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isEnabled }),
+      body: { isEnabled },
     });
-    if (!res.ok) throw new Error("Error al actualizar estado de habilitación");
-    return res.json();
+  },
+
+  /** Obtiene placeholders por defecto (para paso de creación de chatBot) */
+  async getDefaultPlaceholders(): Promise<Placeholder[]> {
+    return fetchJson<Placeholder[]>("/bot-configs/default-placeholders");
   },
 };

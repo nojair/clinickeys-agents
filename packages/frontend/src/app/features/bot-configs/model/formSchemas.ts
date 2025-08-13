@@ -5,20 +5,18 @@ import { z } from "zod";
 /**
  * Esquemas de validación para los formularios de BotConfig
  */
-
 export const botConfigTypeSchema = z.enum(["notificationBot", "chatBot"]);
 
 export const baseBotConfigSchema = z.object({
-  name: z.string().min(1, "Nombre requerido"),
-  description: z.string().min(1, "Descripción requerida"),
+  description: z.string().trim().optional(),
   kommoSubdomain: z.string().min(1, "Subdominio Kommo requerido"),
   kommoLongLivedToken: z.string().min(1, "Token Kommo requerido"),
-  kommoResponsibleUserId: z.string().min(1, "ID Responsable Kommo requerido"),
+  kommoResponsibleUserId: z.number().min(1, "ID Responsable Kommo requerido"),
   kommoSalesbotId: z.string().min(1, "ID Salesbot Kommo requerido"),
   defaultCountry: z.string().min(1, "País requerido"),
   timezone: z.string().min(1, "Zona horaria requerida"),
   isEnabled: z.boolean(),
-  fieldsProfile: z.literal("kommo_profile"),
+  fieldsProfile: z.literal("default_kommo_profile"),
   clinicSource: z.literal("legacy"),
   clinicId: z.union([z.string(), z.number()]),
   superClinicId: z.union([z.string(), z.number()]),
@@ -26,14 +24,14 @@ export const baseBotConfigSchema = z.object({
 
 export const createBotConfigSchema = baseBotConfigSchema.extend({
   botConfigType: botConfigTypeSchema,
-  openaiToken: z.string().min(1, "Token OpenAI requerido").optional(), // solo chatBot
-  placeholders: z.record(z.string()).optional(), // solo chatBot
+  openaiApikey: z.string().optional().or(z.literal("")),
+  placeholders: z.record(z.string()).optional(),
 }).superRefine((data, ctx) => {
   if (data.botConfigType === "chatBot") {
-    if (!data.openaiToken || data.openaiToken.trim() === "") {
+    if (!data.openaiApikey || data.openaiApikey.trim() === "") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ["openaiToken"],
+        path: ["openaiApikey"],
         message: "Token OpenAI es obligatorio para chatBot",
       });
     }
@@ -41,7 +39,9 @@ export const createBotConfigSchema = baseBotConfigSchema.extend({
 });
 
 export const updateBotConfigSchema = baseBotConfigSchema.partial().extend({
-  openaiToken: z.string().optional(), // solo chatBot
+  botConfigType: botConfigTypeSchema,
+  openaiApikey: z.string().optional(),
+  assistants: z.record(z.string(), z.string()).optional(),
 });
 
 export const placeholderSchema = z.object({

@@ -13,7 +13,7 @@ export const sendNotificationsCron = new sst.aws.Cron(`SendNotificationsCron${SU
     url: true,
     environment: {
       ...ENVIRONMENT,
-      CLINICS_CONFIG_DB_NAME: botConfigDynamo.name,
+      BOT_CONFIGS_TABLE_NAME: botConfigDynamo.name,
     },
     permissions: [
       {

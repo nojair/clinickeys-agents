@@ -1,7 +1,7 @@
 // packages/core/src/interface/handlers/sendRemindersHandler.ts
 
 import { createMySQLPool, createDynamoDocumentClient, getEnvVar } from "@clinickeys-agents/core/infrastructure/helpers";
-import { PatientRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/patient/PatientRepositoryMySQL";
+import { PatientRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/patient";
 import { NotificationRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/notification";
 import { BotConfigRepositoryDynamo } from "@clinickeys-agents/core/infrastructure/botConfig";
 import { SendRemindersJob } from "@clinickeys-agents/core/infrastructure/job";
@@ -26,8 +26,6 @@ createMySQLPool({
 });
 
 export const handler: Handler<any, reminderHandlerResponse> = async () => {
-  console.log('Lambda execution start');
-
   const docClient = createDynamoDocumentClient({
     region: getEnvVar("AWS_REGION"),
   });
@@ -35,7 +33,7 @@ export const handler: Handler<any, reminderHandlerResponse> = async () => {
   // Crear repositorios concretos (infrastructure)
   const notificationsRepo = new NotificationRepositoryMySQL();
   const botConfigRepo = new BotConfigRepositoryDynamo({
-    tableName: getEnvVar("BOT_CONFIG_TABLE"),
+    tableName: getEnvVar("BOT_CONFIGS_TABLE_NAME"),
     docClient,
   });
   const patientRepo = new PatientRepositoryMySQL();

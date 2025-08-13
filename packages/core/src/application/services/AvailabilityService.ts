@@ -1,13 +1,13 @@
 // packages/core/src/application/services/AvailabilityService.ts
 
 import { generarConsultasSQL, calcularDisponibilidad, ajustarDisponibilidad } from "@clinickeys-agents/core/utils";
+import { ejecutarConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
 import { ITratamientoRepository } from "@clinickeys-agents/core/domain/tratamiento";
 import { IEspacioRepository } from "@clinickeys-agents/core/domain/espacio";
 import { IMedicoRepository } from "@clinickeys-agents/core/domain/medico";
 import { Logger } from "@clinickeys-agents/core/infrastructure/external";
 import { IOpenAIService } from '@clinickeys-agents/core/domain/openai';
 import { ConsultaCitaSchema } from '@clinickeys-agents/core/utils';
-import { ejecutarConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
 import { AppError } from "@clinickeys-agents/core/utils";
 import { readFile } from 'fs/promises';
 import path from 'path';
@@ -26,7 +26,7 @@ interface GetAvailabilityInfoInput {
 
 export interface GetTreatmentsDataInput {
   clinicId: number;
-  treatmentNames: string[];
+  tratamientosConsultados: string[];
 }
 
 export class AvailabilityService {
@@ -48,53 +48,53 @@ export class AvailabilityService {
   }
 
   /**
-   * Gets treatments with associated doctors and spaces, using advanced search by names.
+   * Gets treatments with associated medicos and espacios, using advanced search by names.
    */
-  async fetchTreatmentsWithDoctorsAndSpaces({ clinicId, treatmentNames }: GetTreatmentsDataInput): Promise<any[]> {
-    Logger.info("Starting advanced treatment search...");
-    const treatmentsFound = await this.treatmentRepo.findTreatmentsByNamesWithRelevance(treatmentNames, clinicId);
+  async fetchTreatmentsWithDoctorsAndSpaces({ clinicId, tratamientosConsultados }: GetTreatmentsDataInput): Promise<any[]> {
+    Logger.info("Starting advanced tratamiento search...");
+    const treatmentsFound = await this.treatmentRepo.findTreatmentsByNamesWithRelevance(tratamientosConsultados, clinicId);
     if (!treatmentsFound.length) {
       Logger.warn("No treatments found in the database.");
-      throw AppError.TRATAMIENTOS_NO_ENCONTRADOS(treatmentNames);
+      throw AppError.TRATAMIENTOS_NO_ENCONTRADOS(tratamientosConsultados);
     }
-    const exactTreatments = treatmentsFound.filter((t: any) => t.is_exact == 1);
-    if (!exactTreatments.length) {
+    const tratamientosExactos = treatmentsFound.filter((t: any) => t.is_exact == 1);
+    if (!tratamientosExactos.length) {
       Logger.warn("None of the treatments is an exact match.");
-      throw AppError.TRATAMIENTOS_NO_EXACTOS(treatmentNames);
+      throw AppError.TRATAMIENTOS_NO_EXACTOS(tratamientosConsultados);
     }
-    // For each exact treatment, get doctors and spaces
+    // For each exact tratamiento, get medicos and espacios
     const result = await Promise.all(
-      exactTreatments.map(async (treatment: any) => {
-        let doctors: any[] = [];
+      tratamientosExactos.map(async (tratamiento: any) => {
+        let medicos: any[] = [];
         try {
-          doctors = await this.doctorRepo.getMedicosByTratamiento(treatment.id_tratamiento, clinicId);
+          medicos = await this.doctorRepo.getMedicosByTratamiento(tratamiento.id_tratamiento, clinicId);
         } catch (error) {
-          Logger.error(`Error getting doctors for ${treatment.nombre_tratamiento}:`, error);
+          Logger.error(`Error getting medicos for ${tratamiento.nombre_tratamiento}:`, error);
           throw AppError.ERROR_CONSULTA_SQL(error instanceof Error ? error : new Error(String(error)));
         }
-        const doctorsWithSpaces = await Promise.all(
-          doctors.map(async (doctor) => {
-            let spaces: any[] = [];
+        const medicosConEspacios = await Promise.all(
+          medicos.map(async (medico) => {
+            let espacios: any[] = [];
             try {
-              spaces = await this.spaceRepo.getEspaciosByMedicoAndTratamiento(doctor.id_medico, treatment.id_tratamiento, clinicId);
+              espacios = await this.spaceRepo.getEspaciosByMedicoAndTratamiento(medico.id_medico, tratamiento.id_tratamiento, clinicId);
             } catch (error) {
-              Logger.error(`Error getting spaces for doctor ${doctor.nombre_medico}:`, error);
+              Logger.error(`Error getting espacios for medico ${medico.nombre_medico}:`, error);
               throw AppError.ERROR_CONSULTA_SQL(error instanceof Error ? error : new Error(String(error)));
             }
             return {
-              id_medico: doctor.id_medico,
-              nombre_medico: `${doctor.nombre_medico} ${doctor.apellido_medico}`,
-              spaces,
+              id_medico: medico.id_medico,
+              nombre_medico: `${medico.nombre_medico}`,
+              espacios,
             };
           })
         );
         return {
-          treatment: {
-            id_tratamiento: treatment.id_tratamiento,
-            nombre_tratamiento: treatment.nombre_tratamiento,
-            duracion_tratamiento: treatment.duracion,
+          tratamiento: {
+            id_tratamiento: tratamiento.id_tratamiento,
+            nombre_tratamiento: tratamiento.nombre_tratamiento,
+            duracion_tratamiento: tratamiento.duracion,
           },
-          doctors: doctorsWithSpaces,
+          medicos: medicosConEspacios,
         };
       })
     );
@@ -107,95 +107,95 @@ export class AvailabilityService {
   async getAppointmentAvailability(input: any): Promise<any> {
     try {
       const {
-        tratamientos: treatmentNames,
-        medicos: doctorNames = [],
-        fechas: selectedDates,
+        tratamientos: tratamientosConsultados,
+        medicos: medicosConsultados = [],
+        fechas: fechasSeleccionadas,
         id_clinica: clinicId,
-        tiempo_actual: currentTime,
+        tiempo_actual: tiempo_actual,
       } = input;
       // Basic validations
       if (!clinicId) throw AppError.FALTA_ID_CLINICA();
-      if (!Array.isArray(treatmentNames) || treatmentNames.length === 0) throw AppError.NINGUN_TRATAMIENTO_SELECCIONADO();
-      if (!Array.isArray(selectedDates) || selectedDates.length === 0) throw AppError.NINGUNA_FECHA_SELECCIONADA();
+      if (!Array.isArray(tratamientosConsultados) || tratamientosConsultados.length === 0) throw AppError.NINGUN_TRATAMIENTO_SELECCIONADO();
+      if (!Array.isArray(fechasSeleccionadas) || fechasSeleccionadas.length === 0) throw AppError.NINGUNA_FECHA_SELECCIONADA();
       Logger.info("Input data processed correctly.");
       // 1. Get base treatments
-      let treatmentsData = await this.fetchTreatmentsWithDoctorsAndSpaces({ clinicId, treatmentNames });
-      Logger.info("Treatments obtained:", JSON.stringify(treatmentsData));
-      // 2. Optional: filter by doctors
-      let requestedDoctorIds: number[] = [];
-      let filteredTreatments = treatmentsData;
-      if (doctorNames.length > 0) {
-        const rows = await this.doctorRepo.getIdsMedicosPorNombre(doctorNames, clinicId);
-        requestedDoctorIds = rows.map((f: any) => f.id_medico);
-        if (requestedDoctorIds.length === 0) throw AppError.NINGUN_MEDICO_ENCONTRADO(doctorNames);
-        const setIds = new Set(requestedDoctorIds);
-        filteredTreatments = treatmentsData
+      let datosTratamientos = await this.fetchTreatmentsWithDoctorsAndSpaces({ clinicId, tratamientosConsultados });
+      Logger.info("Treatments obtained:", JSON.stringify(datosTratamientos));
+      // 2. Optional: filter by medicos
+      let idsMedicosSolicitados: number[] = [];
+      let tratamientosFiltrados = datosTratamientos;
+      if (medicosConsultados.length > 0) {
+        const rows = await this.doctorRepo.getIdsMedicosPorNombre(medicosConsultados, clinicId);
+        idsMedicosSolicitados = rows.map((f: any) => f.id_medico);
+        if (idsMedicosSolicitados.length === 0) throw AppError.MEDICOS_SOLICITADOS_NO_ENCONTRADOS(medicosConsultados);
+        const setIds = new Set(idsMedicosSolicitados);
+        tratamientosFiltrados = datosTratamientos
           .map((t: any) => ({
             ...t,
-            doctors: t.doctors.filter((m: any) => setIds.has(m.id_medico)),
+            medicos: t.medicos.filter((m: any) => setIds.has(m.id_medico)),
           }))
-          .filter((t: any) => t.doctors.length > 0);
-        if (filteredTreatments.length === 0) {
-          throw AppError.MEDICO_NO_ASOCIADO_A_TRATAMIENTO(doctorNames, treatmentNames);
+          .filter((t: any) => t.medicos.length > 0);
+        if (tratamientosFiltrados.length === 0) {
+          throw AppError.MEDICO_NO_ASOCIADO_A_TRATAMIENTO(medicosConsultados, tratamientosConsultados);
         }
       }
-      // 3. Collect doctor and space IDs
-      const doctorIds = requestedDoctorIds.length
-        ? requestedDoctorIds
+      // 3. Collect medico and space IDs
+      const idsMedicos = idsMedicosSolicitados.length
+        ? idsMedicosSolicitados
         : [
-            ...new Set(filteredTreatments.flatMap((t: any) => t.doctors.map((m: any) => m.id_medico)))
+            ...new Set(tratamientosFiltrados.flatMap((t: any) => t.medicos.map((m: any) => m.id_medico)))
           ];
-      const spaceIds = [
+      const idsEspacios = [
         ...new Set(
-          filteredTreatments.flatMap((t: any) =>
-            t.doctors.flatMap((m: any) => m.spaces.map((e: any) => e.id_espacio))
+          tratamientosFiltrados.flatMap((t: any) =>
+            t.medicos.flatMap((m: any) => m.espacios.map((e: any) => e.id_espacio))
           )
         ),
       ];
-      if (doctorIds.length === 0) {
-        const treatmentNamesOut = filteredTreatments.map((t: any) => t.treatment.nombre_tratamiento);
-        if (doctorNames.length > 0) throw AppError.MEDICO_NO_ASOCIADO_A_TRATAMIENTO(doctorNames, treatmentNames);
+      if (idsMedicos.length === 0) {
+        const treatmentNamesOut = tratamientosFiltrados.map((t: any) => t.tratamiento.nombre_tratamiento);
+        if (medicosConsultados.length > 0) throw AppError.MEDICO_NO_ASOCIADO_A_TRATAMIENTO(medicosConsultados, tratamientosConsultados);
         else throw AppError.NINGUN_MEDICO_ENCONTRADO(treatmentNamesOut);
       }
-      if (spaceIds.length === 0) {
-        throw AppError.NINGUN_ESPACIO_ENCONTRADO(filteredTreatments.map((t: any) => t.treatment.nombre_tratamiento), doctorIds);
+      if (idsEspacios.length === 0) {
+        throw AppError.NINGUN_ESPACIO_ENCONTRADO(tratamientosFiltrados.map((t: any) => t.tratamiento.nombre_tratamiento), idsMedicos);
       }
       // 4. Generate SQL queries
       const consultasSQL = generarConsultasSQL({
-        fechas: selectedDates,
-        id_medicos: doctorIds,
-        id_espacios: spaceIds,
+        fechas: fechasSeleccionadas,
+        id_medicos: idsMedicos,
+        id_espacios: idsEspacios,
         id_clinica: clinicId,
       });
       // 5. Execute queries
-      let appointments, doctorSchedules, spaceSchedules, doctorSpaceSchedules;
+      let citas, progMedicos, progEspacios, progMedicoEspacio;
       try {
-        appointments = await ejecutarConReintento(consultasSQL.sql_citas, []);
-        doctorSchedules = await ejecutarConReintento(consultasSQL.sql_prog_medicos, []);
-        spaceSchedules = await ejecutarConReintento(consultasSQL.sql_prog_espacios, []);
-        doctorSpaceSchedules = await ejecutarConReintento(consultasSQL.sql_prog_medico_espacio, []);
+        citas = await ejecutarConReintento(consultasSQL.sql_citas, []);
+        progMedicos = await ejecutarConReintento(consultasSQL.sql_prog_medicos, []);
+        progEspacios = await ejecutarConReintento(consultasSQL.sql_prog_espacios, []);
+        progMedicoEspacio = await ejecutarConReintento(consultasSQL.sql_prog_medico_espacio, []);
       } catch (error) {
         Logger.error("Error executing SQL queries:", error);
         throw AppError.ERROR_CONSULTA_SQL(error instanceof Error ? error : new Error(String(error)));
       }
-      if (!doctorSchedules?.length) {
-        throw AppError.NO_PROG_MEDICOS(doctorIds, selectedDates.map((f: any) => f.fecha));
+      if (!progMedicos?.length) {
+        throw AppError.NO_PROG_MEDICOS(idsMedicos, fechasSeleccionadas.map((f: any) => f.fecha));
       }
-      if (!spaceSchedules?.length) {
-        throw AppError.NO_PROG_ESPACIOS(spaceIds, selectedDates.map((f: any) => f.fecha));
+      if (!progEspacios?.length) {
+        throw AppError.NO_PROG_ESPACIOS(idsEspacios, fechasSeleccionadas.map((f: any) => f.fecha));
       }
       // 6. Calculate availability
       let availability = calcularDisponibilidad({
-        tratamientos: filteredTreatments,
-        citas_programadas: appointments,
-        prog_medicos: doctorSchedules,
-        prog_espacios: spaceSchedules,
-        prog_medico_espacio: doctorSpaceSchedules,
+        tratamientos: tratamientosFiltrados,
+        citas_programadas: citas,
+        prog_medicos: progMedicos,
+        prog_espacios: progEspacios,
+        prog_medico_espacio: progMedicoEspacio,
       });
-      // 7. Final adjustment (currentTime)
-      const adjustedAvailability = ajustarDisponibilidad(availability, currentTime);
+      // 7. Final adjustment (tiempo_actual)
+      const adjustedAvailability = ajustarDisponibilidad(availability, tiempo_actual);
       if (!adjustedAvailability.length) {
-        throw AppError.SIN_HORARIOS_DISPONIBLES(treatmentNames, selectedDates);
+        throw AppError.SIN_HORARIOS_DISPONIBLES(tratamientosConsultados, fechasSeleccionadas);
       }
       Logger.info("Final adjusted availability:", adjustedAvailability);
       return {
@@ -256,7 +256,7 @@ Contexto:
     Logger.info('[AvailabilityService] Prompt de consulta de agenda:', consultAgendaMessage);
 
     // 3. Cargar instrucciones del sistema
-    const promptsPath = path.resolve(__dirname, '../../.ia/instructions/prompts/bot_extractor_consulta_cita.md');
+    const promptsPath = path.resolve(__dirname, 'packages/core/src/.ia/instructions/prompts/bot_extractor_consulta_cita.md');
     const systemPrompt = await readFile(promptsPath, 'utf8');
 
     // 4. Obtener filtros estructurados desde OpenAI

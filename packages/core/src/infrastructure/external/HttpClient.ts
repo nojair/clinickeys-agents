@@ -37,7 +37,9 @@ export class HttpClient {
       signal: options.signal,
     };
 
+
     const res = await fetch(url, fetchOptions);
+
     const data = await ok(res, url) as T;
     return {
       status: res.status,

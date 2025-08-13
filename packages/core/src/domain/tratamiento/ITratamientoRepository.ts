@@ -5,7 +5,7 @@ export interface ITratamientoRepository {
   getActiveTreatmentsForClinic(clinicId: number, superClinicId: number): Promise<any[]>;
 
   /**
-   * Returns treatment details by treatment ID.
+   * Returns tratamiento details by tratamiento ID.
    */
   getTreatmentDetailsById(treatmentId: number): Promise<any | undefined>;
 

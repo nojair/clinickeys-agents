@@ -1,7 +1,15 @@
-import { ConsultaCitaSchema } from '@clinickeys-agents/core/utils';
+import { KommoCustomFieldValueBase } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 import { readFile } from 'fs/promises';
 import path from 'path';
+
+import {
+  ConsultaCitaSchema,
+  formatFechaCita,
+  PATIENT_FIRST_NAME,
+  PATIENT_LAST_NAME,
+  PATIENT_PHONE,
+} from '@clinickeys-agents/core/utils';
 
 import {
   KommoService,
@@ -12,21 +20,18 @@ import {
   PackBonoService,
 } from '@clinickeys-agents/core/application/services';
 
-import { formatFechaCita } from '@clinickeys-agents/core/utils';
-
 interface ScheduleAppointmentInput {
   botConfig: any;
   leadId: number;
-  mergedCustomFields: { id: string | number; name: string; value?: string }[];
-  salesbotId: number;
+  normalizedLeadCF: (KommoCustomFieldValueBase & { value: any })[];
   params: {
     nombre: string;
     apellido: string;
     telefono: string;
     tratamiento: string;
     medico?: string | null;
-    fechas: Array<{ fecha: string }> | string;
-    horas: Array<{ hora_inicio: string; hora_fin: string }>;
+    fechas: string;
+    horas: string;
     rango_dias_extra?: number;
   };
   tiempoActual: any;
@@ -50,19 +55,22 @@ export class ScheduleAppointmentUseCase {
   ) {}
 
   public async execute(input: ScheduleAppointmentInput): Promise<ScheduleAppointmentOutput> {
-    const { botConfig, leadId, mergedCustomFields, salesbotId, params, tiempoActual, subdomain } = input;
+    const { botConfig, leadId, normalizedLeadCF, params, tiempoActual, subdomain } = input;
     const { nombre, apellido, telefono, tratamiento, medico, fechas, horas } = params;
 
+    Logger.info('[ScheduleAppointment] Inicio', { leadId, nombre, apellido, telefono, tratamiento, medico });
+
     // 1. Mensaje inicial "please‑wait"
+    Logger.debug('[ScheduleAppointment] Enviando mensaje inicial al bot');
     await this.kommoService.sendBotInitialMessage({
-      botConfig,
       leadId,
-      mergedCustomFields,
-      salesbotId,
+      normalizedLeadCF,
+      salesbotId: botConfig.kommo.salesbotId,
       message: 'Muy bien, voy a agendar tu cita. Un momento por favor.',
     });
 
     // 2. Obtener o crear paciente
+    Logger.debug('[ScheduleAppointment] Obteniendo información del paciente');
     let patientInfo = await this.patientService.getPatientInfo(tiempoActual, botConfig.clinicId, {
       in_conversation: telefono,
       in_field: '',
@@ -70,6 +78,7 @@ export class ScheduleAppointmentUseCase {
     });
 
     if (patientInfo.message?.includes('[ERROR_NO_PATIENT_FOUND]')) {
+      Logger.warn('[ScheduleAppointment] Paciente no encontrado, creando nuevo paciente');
       const createdId = await this.patientService.createPatient({
         nombre,
         apellido,
@@ -94,6 +103,7 @@ export class ScheduleAppointmentUseCase {
     let appointmentCreated: any = null;
 
     for (const step of STEPS) {
+      Logger.debug('[ScheduleAppointment] Buscando disponibilidad', { step: step.tipo, filtros: step.filtros });
       const fechasStep = step.filtros.rango_dias_extra
         ? `${Array.isArray(fechas) ? JSON.stringify(fechas) : fechas}, los próximos 45 días`
         : fechas;
@@ -112,7 +122,7 @@ export class ScheduleAppointmentUseCase {
         kommoToken: botConfig.longLivedToken,
         leadId,
       });
-      Logger.info('[ScheduleAppointment] Disponibilidad:', availability);
+      Logger.info('[ScheduleAppointment] Disponibilidad recibida', { success: availability.success, count: availability.analisis_agenda?.length });
 
       if (
         availability.success &&
@@ -126,20 +136,22 @@ export class ScheduleAppointmentUseCase {
           horarios: availability.analisis_agenda,
         };
 
+        Logger.debug('[ScheduleAppointment] FinalPayload con horarios disponibles', { finalPayload });
+
         // Prompt extractor
         const extractorPrompt = `#agendarCita\n\nLos HORARIOS_DISPONIBLES para citas son: ${JSON.stringify(finalPayload)}\n\nMENSAJE_USUARIO: ${JSON.stringify(params)}`;
         const systemPrompt = await readFile(
-          path.resolve(__dirname, '../../.ia/instructions/prompts/bot_extractor_de_datos.md'),
+          path.resolve(__dirname, 'packages/core/src/.ia/instructions/prompts/bot_extractor_de_datos.md'),
           'utf8',
         );
-        const extractorData = await this.openAIService.getSchemaStructuredResponse(
+        Logger.debug('[ScheduleAppointment] Ejecutando extractor de datos');
+        const extractorData = await this.openAIService.getJsonStructuredResponse(
           systemPrompt,
           extractorPrompt,
-          ConsultaCitaSchema,
-          'consultaCitaSchema',
         );
 
         if (extractorData.success) {
+          Logger.debug('[ScheduleAppointment] Datos extraídos con éxito', { extractorData });
           const spResponse = await this.appointmentService.insertarCitaPackBonos({
             p_id_clinica: botConfig.clinicId,
             p_id_super_clinica: botConfig.superClinicId,
@@ -156,15 +168,19 @@ export class ScheduleAppointmentUseCase {
           const id_cita = spResponse?.[0]?.[0]?.id_cita;
 
           if (id_cita) {
+            Logger.info('[ScheduleAppointment] Cita creada', { id_cita });
             await this.packBonoService.procesarPackbonoPresupuestoDeCita('on_crear_cita', id_cita);
             appointmentCreated = { ...extractorData, id_cita };
           }
+        } else {
+          Logger.error('[ScheduleAppointment] Error al extraer datos con IA', { extractorData });
         }
         break;
       }
     }
 
     if (!finalPayload) {
+      Logger.warn('[ScheduleAppointment] No se encontró disponibilidad en ningún paso');
       finalPayload = {
         tipo_busqueda: 'sin_disponibilidad',
         filtros_aplicados: { con_medico: !!medico, rango_dias_extra: 0 },
@@ -190,10 +206,12 @@ export class ScheduleAppointmentUseCase {
     }
 
     const customFields = {
-      PATIENT_FIRST_NAME: nombre,
-      PATIENT_LAST_NAME: apellido,
-      PATIENT_PHONE: telefono,
+      [PATIENT_FIRST_NAME]: nombre,
+      [PATIENT_LAST_NAME]: apellido,
+      [PATIENT_PHONE]: telefono,
     };
+
+    Logger.info('[ScheduleAppointment] Ejecución completada', { success: true });
 
     return { success: true, toolOutput, customFields };
   }

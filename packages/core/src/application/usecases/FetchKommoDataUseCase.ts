@@ -1,8 +1,11 @@
-import { KommoContactResponse } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
+import { KommoContactResponse, KommoCustomFieldValueBase } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
+import { GetBotConfigUseCase } from '@clinickeys-agents/core/application/usecases';
 import { KommoService } from '@clinickeys-agents/core/application/services';
 import { BotConfigType } from '@clinickeys-agents/core/domain/botConfig';
-import { FetchBotConfigUseCase } from './FetchBotConfigUseCase';
 import { AppError } from '@clinickeys-agents/core/utils';
+import { normalizeEntityCustomFields } from '@clinickeys-agents/core/utils';
+import { KommoCustomFieldDefinitionBase } from '@clinickeys-agents/core/infrastructure/integrations/kommo/models';
+import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 
 export interface FetchKommoDataInput {
   botConfigType: BotConfigType;
@@ -17,66 +20,102 @@ export interface FetchKommoDataOutput {
   leadData: any;
   contactId: number;
   contactData: KommoContactResponse;
-  customFields: any;
+  normalizedLeadCF: (KommoCustomFieldValueBase & { value: any })[];
+  normalizedContactCF: (KommoCustomFieldValueBase & { value: any })[];
 }
 
 export class FetchKommoDataUseCase {
-  private fetchBotConfigUseCase: FetchBotConfigUseCase;
-  private kommoService: KommoService;
-
   constructor(
-    fetchBotConfigUseCase: FetchBotConfigUseCase,
-    kommoService: KommoService
-  ) {
-    this.fetchBotConfigUseCase = fetchBotConfigUseCase;
-    this.kommoService = kommoService;
-  }
+    private readonly getBotConfigUseCase: GetBotConfigUseCase,
+    private readonly kommoService: KommoService
+  ) {}
 
   async execute(input: FetchKommoDataInput): Promise<FetchKommoDataOutput> {
     const { botConfigType, botConfigId, clinicSource, clinicId, leadId } = input;
-    // 1. Obtener la configuración del bot
-    const { botConfig } = await this.fetchBotConfigUseCase.execute({
+
+    Logger.info('[FetchKommoData] Inicio', { botConfigType, botConfigId, clinicSource, clinicId, leadId });
+
+    // 1) Obtener configuración del bot
+    Logger.debug('[FetchKommoData] Obteniendo configuración del bot');
+    const botConfig = await this.getBotConfigUseCase.execute(
       botConfigType,
       botConfigId,
       clinicSource,
       clinicId
-    });
+    );
 
     if (!botConfig) {
+      Logger.error('[FetchKommoData] BotConfig no encontrado', { botConfigId, clinicSource, clinicId });
       throw new AppError({
         code: 'ERR_BOTCONFIG_NOT_FOUND',
         humanMessage: `Bot config not found for botConfigId: ${botConfigId}, clinicSource: ${clinicSource}, clinicId: ${clinicId}`,
-        context: { botConfigId, clinicSource, clinicId }
+        context: { botConfigId, clinicSource, clinicId },
       });
     }
+    Logger.debug('[FetchKommoData] BotConfig obtenido correctamente');
 
-    // 2. Traer datos del lead desde Kommo
+    // 2) Traer datos del lead desde Kommo
+    Logger.debug('[FetchKommoData] Obteniendo lead por ID', { leadId });
     const leadData = await this.kommoService.getLeadById(leadId);
+    if (!leadData) {
+      Logger.error('[FetchKommoData] Lead no encontrado', { leadId });
+      throw new AppError({
+        code: 'ERR_LEAD_NOT_FOUND',
+        humanMessage: `Lead not found for ID: ${leadId}`,
+        context: { leadId },
+      });
+    }
+    Logger.debug('[FetchKommoData] Lead obtenido correctamente');
+
     const contacts = leadData?._embedded?.contacts || [];
-    if (!contacts?.length) {
+    Logger.debug('[FetchKommoData] Contactos asociados al lead', { totalContacts: contacts.length });
+    if (!contacts.length) {
+      Logger.error('[FetchKommoData] Lead no tiene contactos', { leadId });
       throw new AppError({
         code: 'ERR_LEAD_NO_CONTACTS',
         humanMessage: 'Lead has no contacts',
-        context: { leadId, leadData }
+        context: { leadId, leadData },
       });
     }
+
     const contactId = Number(contacts[0].id);
+    Logger.debug('[FetchKommoData] Obteniendo contacto por ID', { contactId });
     const contactData = await this.kommoService.getContactById(contactId);
     if (!contactData) {
+      Logger.error('[FetchKommoData] Contacto sin datos', { contactId });
       throw new AppError({
         code: 'ERR_NO_CONTACT_DATA',
         humanMessage: 'Contact has no data',
-        context: { contactId, contactData }
+        context: { contactId },
       });
     }
-    const customFields = leadData?.custom_fields_values || [];
+    Logger.debug('[FetchKommoData] Contacto obtenido correctamente');
+
+    // 3) Obtener SOLO los campos personalizados de LEAD
+    Logger.debug('[FetchKommoData] Obteniendo definiciones de campos personalizados');
+    const { leadMap, contactMap } = await this.kommoService.getCustomFieldMappings();
+
+    const leadDefs = Object.values(leadMap.byName) as KommoCustomFieldDefinitionBase[];
+    const contactDefs = Object.values(contactMap.byName) as KommoCustomFieldDefinitionBase[];
+
+    Logger.debug('[FetchKommoData] Normalizando campos personalizados del lead');
+    const normalizedLeadCF = normalizeEntityCustomFields(leadDefs, leadData?.custom_fields_values || []);
+
+    Logger.debug('[FetchKommoData] Normalizando campos personalizados del contacto');
+    const normalizedContactCF = normalizeEntityCustomFields(contactDefs, contactData?.custom_fields_values || []);
+
+    Logger.info('[FetchKommoData] Proceso completado correctamente', {
+      normalizedLeadCount: normalizedLeadCF.length,
+      normalizedContactCount: normalizedContactCF.length
+    });
 
     return {
       botConfig,
       leadData,
       contactId,
       contactData,
-      customFields
+      normalizedLeadCF,
+      normalizedContactCF,
     };
   }
 }

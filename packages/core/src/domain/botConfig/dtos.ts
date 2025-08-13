@@ -1,15 +1,16 @@
-import { KommoCustomFieldExistence } from "@clinickeys-agents/core/application/services";
+import { KommoCustomFieldExistence, KommoAccountUser } from "@clinickeys-agents/core/application/services";
 
 export enum BotConfigType {
   NotificationBot = "notificationBot",
   ChatBot = "chatBot",
 }
 
+type AssistantsMap = { speakingBot: string } & Record<string, string>;
+
 // ========== DTOs para CREACIÓN de Bots ==========
 
 export interface CreateChatBotConfigDTO {
   botConfigType: BotConfigType.ChatBot;
-  name: string;
   kommo: {
     subdomain: string;
     longLivedToken: string;
@@ -33,7 +34,6 @@ export interface CreateChatBotConfigDTO {
 
 export interface CreateNotificationBotConfigDTO {
   botConfigType: BotConfigType.NotificationBot;
-  name: string;
   kommo: {
     subdomain: string;
     longLivedToken: string;
@@ -49,17 +49,15 @@ export interface CreateNotificationBotConfigDTO {
   description?: string;
   isEnabled?: boolean;
   fieldsProfile: string;
-  // NOTA: No requiere openai ni placeholders
 }
 
 // ========== DTOs para LECTURA (persistidos en Dynamo) ==========
 
-export interface BotConfigDTO {
+type BaseBotConfigDTO = {
   pk: string;
   sk: string;
   bucket: number;
   botConfigId: string;
-  botConfigType: BotConfigType;
   clinicSource: string;
   clinicId: number;
   superClinicId: number;
@@ -70,24 +68,32 @@ export interface BotConfigDTO {
     responsibleUserId: string;
     salesbotId: number;
   };
-  openai?: {
-    apiKey: string;
-    assistants?: {
-      [key: string]: string;
-    };
-  };
   defaultCountry: string;
   timezone: string;
-  name: string;
   description?: string;
   isEnabled?: boolean;
   fieldsProfile: string;
   createdAt: number;
   updatedAt: number;
   placeholders?: Record<string, any>;
-}
+};
 
-export interface BotConfigEnrichedDTO extends BotConfigDTO {
-  kommo_leads_custom_fields: KommoCustomFieldExistence[];
-  is_ready: boolean;
-}
+export type ChatBotConfigDTO = BaseBotConfigDTO & {
+  botConfigType: BotConfigType.ChatBot;
+  openai: {
+    apiKey: string;
+    assistants: AssistantsMap;
+  };
+};
+
+export type NotificationBotConfigDTO = BaseBotConfigDTO & {
+  botConfigType: BotConfigType.NotificationBot;
+  openai?: undefined;
+};
+
+export type BotConfigDTO = ChatBotConfigDTO | NotificationBotConfigDTO;
+
+export type BotConfigEnrichedDTO = BotConfigDTO & {
+  kommoLeadsCustomFields: KommoCustomFieldExistence[];
+  isReady: boolean;
+};

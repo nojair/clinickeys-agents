@@ -1,6 +1,6 @@
-// /src/app/layout.tsx
 import './globals.css';
 import { ReactQueryProvider } from './providers/ReactQueryProvider';
+import { UiProvider } from './providers/UiProvider';
 
 export const metadata = {
   title: 'Panel de Bot Configs',
@@ -11,9 +11,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <body>
-        <ReactQueryProvider>
-          {children}
-        </ReactQueryProvider>
+        <UiProvider>
+          <ReactQueryProvider>
+            {children}
+          </ReactQueryProvider>
+        </UiProvider>
       </body>
     </html>
   );

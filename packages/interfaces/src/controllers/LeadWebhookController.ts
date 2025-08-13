@@ -86,7 +86,7 @@ export class LeadWebhookController {
     // ──────────────────────────────────────────────────────────────
     let queueMessage: LeadQueueMessageDTO;
     try {
-      queueMessage = await this.processUseCase.execute(dto, event.pathParameters ?? {});
+      queueMessage = await this.processUseCase.execute(dto, event.queryStringParameters ?? {});
     } catch (err) {
       this.logger.error("ProcessLeadWebhookUseCase failed", err as Error);
       return this.serverError("Internal processing error");

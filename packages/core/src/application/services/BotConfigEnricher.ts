@@ -1,8 +1,22 @@
 // packages/core/src/domain/botConfig/BotConfigEnricher.ts
 
 import { BotConfigDTO, BotConfigEnrichedDTO, BotConfigType } from '@clinickeys-agents/core/domain/botConfig';
+import { KommoCustomFieldExistence, KommoAccountUser } from "@clinickeys-agents/core/application/services";
 import { profiles } from '@clinickeys-agents/core/utils';
-import { KommoCustomFieldExistence } from "@clinickeys-agents/core/application/services";
+
+// Custom fields requeridos por tipo de bot (subset dentro del universo de profile)
+const CHAT_BOT_CUSTOM_FIELDS = [
+  "threadId",
+  "botMessage",
+  "salesbotLog",
+  "patientPhone",
+  "patientMessage",
+  "reminderMessage",
+  "patientLastName",
+  "patientFirstName",
+  "pleaseWaitMessage",
+  "triggeredByMachine",
+] as const;
 
 const NOTIFICATION_BOT_CUSTOM_FIELDS = [
   "spaceName",
@@ -22,22 +36,8 @@ const NOTIFICATION_BOT_CUSTOM_FIELDS = [
   "appointmentWeekdayName",
 ] as const;
 
-const CHAT_BOT_CUSTOM_FIELDS = [
-  "threadId",
-  "botMessage",
-  "salesbotLog",
-  "patientPhone",
-  "patientMessage",
-  "reminderMessage",
-  "patientLastName",
-  "patientFirstName",
-  "pleaseWaitMessage",
-  "triggeredByMachine",
-] as const;
-
 // Props requeridos solo para ChatBot
 const CHAT_BOT_REQUIRED_PROPS = [
-  "name",
   "kommo",
   "openai",
   "timezone",
@@ -47,13 +47,12 @@ const CHAT_BOT_REQUIRED_PROPS = [
   "superClinicId",
   "botConfigType",
   "fieldsProfile",
-  "kommoSubdomain",
   "defaultCountry",
+  "kommoSubdomain",
 ] as const;
 
 // Props requeridos solo para NotificationBot
 const NOTIFICATION_BOT_REQUIRED_PROPS = [
-  "name",
   "kommo",
   "timezone",
   "clinicId",
@@ -61,8 +60,8 @@ const NOTIFICATION_BOT_REQUIRED_PROPS = [
   "superClinicId",
   "botConfigType",
   "fieldsProfile",
-  "kommoSubdomain",
   "defaultCountry",
+  "kommoSubdomain",
 ] as const;
 
 const REQUIRED_KOMMO_PROPS = [
@@ -75,28 +74,35 @@ const REQUIRED_KOMMO_PROPS = [
 const REQUIRED_OPENAI_PROPS = ["apiKey"] as const;
 
 export class BotConfigEnricher {
-  public static async enrich(botConfig: BotConfigDTO): Promise<BotConfigEnrichedDTO> {
+  /**
+   * Enriquecedor de config, compara solo contra los campos requeridos por tipo de bot
+   * dentro del universo del profile, usando campos reales de Kommo si los recibe.
+   */
+  public static enrich(
+    botConfig: BotConfigDTO,
+    kommoCustomFields?: KommoCustomFieldExistence[]
+  ): BotConfigEnrichedDTO {
     const missingProps: string[] = [];
     let requiredProps: readonly string[] = [];
-    let requiredCustomFields: readonly string[] = [];
+    let requiredCustomFields: string[] = [];
 
-    // Definir props y custom fields según tipo de bot
+    // 1. Props requeridos según tipo de bot
     if (botConfig.botConfigType === BotConfigType.ChatBot) {
       requiredProps = CHAT_BOT_REQUIRED_PROPS;
-      requiredCustomFields = CHAT_BOT_CUSTOM_FIELDS;
+      requiredCustomFields = [...CHAT_BOT_CUSTOM_FIELDS];
     } else if (botConfig.botConfigType === BotConfigType.NotificationBot) {
       requiredProps = NOTIFICATION_BOT_REQUIRED_PROPS;
-      requiredCustomFields = NOTIFICATION_BOT_CUSTOM_FIELDS;
+      requiredCustomFields = [...NOTIFICATION_BOT_CUSTOM_FIELDS];
     }
 
-    // 1. Validar propiedades raíz obligatorias
+    // 2. Validar propiedades raíz obligatorias
     for (const prop of requiredProps) {
       if ((botConfig as any)[prop] === undefined || (botConfig as any)[prop] === null) {
         missingProps.push(prop);
       }
     }
 
-    // 2. Validar kommo (objeto y sus props)
+    // 3. Validar kommo (objeto y sus props)
     if (typeof botConfig.kommo !== 'object' || botConfig.kommo === null) {
       missingProps.push('kommo (object)');
     } else {
@@ -106,12 +112,13 @@ export class BotConfigEnricher {
           (botConfig.kommo as any)[kprop] === null ||
           (botConfig.kommo as any)[kprop] === ""
         ) {
+          // Solo agregar si no es un campo opcional
           missingProps.push(`kommo.${kprop}`);
         }
       }
     }
 
-    // 3. Validar openai (objeto y sus props) SOLO para chatBot
+    // 4. Validar openai (objeto y sus props) SOLO para chatBot
     if (botConfig.botConfigType === BotConfigType.ChatBot) {
       if (typeof botConfig.openai !== 'object' || botConfig.openai === null) {
         missingProps.push('openai (object)');
@@ -128,26 +135,44 @@ export class BotConfigEnricher {
       }
     }
 
-    // 4. Validar custom fields según tipo de bot
+    // 5. Determinar el universo del profile (para debug o fallback legacy)
     let profile = (profiles as any)[botConfig.fieldsProfile];
-    let customFieldsActual: KommoCustomFieldExistence[] = [];
+    let profileFieldNames: string[] = [];
     if (profile && profile.lead && Array.isArray(profile.lead.custom_field_config)) {
-      customFieldsActual = profile.lead.custom_field_config as KommoCustomFieldExistence[];
+      profileFieldNames = profile.lead.custom_field_config.map((f: any) => f.field_name);
     }
-    const fieldNames = customFieldsActual.map((f: any) => f.field_name);
+
+    // 6. Usar los campos reales de Kommo si los recibimos, si no usar el profile como legacy
+    let customFieldsActual: KommoCustomFieldExistence[] = [];
+    if (kommoCustomFields) {
+      customFieldsActual = kommoCustomFields;
+    }
+
+    // 7. Solo chequear los requeridos por tipo de bot (subset del universo profile)
+    const fieldNames = customFieldsActual.filter(f => f.exists).map(f => f.field_name);
     const missingCustomFields = requiredCustomFields.filter(field => !fieldNames.includes(field));
-    const is_ready = missingProps.length === 0 && missingCustomFields.length === 0;
+    const isReady = missingProps.length === 0 && missingCustomFields.length === 0;
 
     return {
       ...botConfig,
-      kommo_leads_custom_fields: customFieldsActual,
-      is_ready,
+      kommoLeadsCustomFields: customFieldsActual,
+      isReady,
       // missingProps, // descomenta si quieres debuggear
       // missingCustomFields,
     };
   }
 
-  public static async enrichMany(configs: BotConfigDTO[]): Promise<BotConfigEnrichedDTO[]> {
-    return Promise.all(configs.map(cfg => this.enrich(cfg)));
+  /**
+   * EnrichMany con el mismo patrón, acepta arreglo de arrays de campos Kommo
+   */
+  public static enrichMany(
+    configs: BotConfigDTO[],
+    kommoCustomFieldsArray?: KommoCustomFieldExistence[][]
+  ): BotConfigEnrichedDTO[] {
+    if (kommoCustomFieldsArray && kommoCustomFieldsArray.length === configs.length) {
+      return configs.map((cfg, i) => this.enrich(cfg, kommoCustomFieldsArray[i]));
+    }
+    // Modo legacy
+    return configs.map(cfg => this.enrich(cfg));
   }
 }

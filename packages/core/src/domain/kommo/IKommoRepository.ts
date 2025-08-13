@@ -1,3 +1,5 @@
+// packages/core/src/domain/kommo/IKommoRepository.ts
+
 import type {
   KommoLeadCustomFieldDefinition,
   KommoContactCustomFieldDefinition,
@@ -5,7 +7,8 @@ import type {
   KommoCreateContactResponse,
   KommoGetLeadByIdResponse,
   KommoCreateLeadResponse,
-  KommoContactResponse
+  KommoContactResponse,
+  KommoUsersResponse,
 } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 
 /**
@@ -44,4 +47,7 @@ export interface IKommoRepository {
 
   /** Retrieve a contact by its ID */
   getContactById(params: { contactId: number }): Promise<KommoContactResponse | null>;
+
+  /** Get users from the account */
+  getUsers(): Promise<KommoUsersResponse | null>;
 }

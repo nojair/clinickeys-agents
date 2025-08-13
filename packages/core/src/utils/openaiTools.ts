@@ -1,6 +1,45 @@
-// /config/openaiTools.js
+// /config/openaiTools.ts
 
-export const openaiTools = [
+/**
+ * Definiciones de herramientas (function calling) para OpenAI en TypeScript.
+ * Sin dependencias externas; tipado mínimo para JSON Schema y herramientas.
+ */
+
+// Tipos mínimos para un esquema JSON (suficiente para este archivo)
+export type JSONSchema = {
+  type: string | string[];
+  description?: string;
+  enum?: string[];
+  properties?: Record<string, JSONSchema>;
+  required?: string[];
+  additionalProperties?: boolean;
+};
+
+export type OpenAIFunctionTool = {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: JSONSchema;
+    strict?: boolean;
+  };
+};
+
+export type OpenAITool = OpenAIFunctionTool; // extender a futuro si se agregan otros tipos
+
+// Unión útil de nombres de herramientas
+export type ToolName =
+  | "consulta_agendar"
+  | "agendar_cita"
+  | "consulta_reprogramar"
+  | "reprogramar_cita"
+  | "cancelar_cita"
+  | "urgencia"
+  | "escalamiento"
+  | "tarea";
+
+// Colección tipada de herramientas
+export const openaiTools: ReadonlyArray<OpenAITool> = [
   {
     type: "function",
     function: {
@@ -11,26 +50,28 @@ export const openaiTools = [
         properties: {
           tratamiento: {
             type: "string",
-            description: "Tratamiento solicitado por el paciente (NO PUEDE ESTAR VACÍO)"
+            description:
+              "Tratamiento solicitado por el paciente (NO PUEDE ESTAR VACÍO)",
           },
           medico: {
             type: ["string", "null"],
-            description: "Nombre opcional del médico que indica el paciente (ES OPCIONAL)"
+            description:
+              "Nombre opcional del médico que indica el paciente (ES OPCIONAL)",
           },
           fechas: {
             type: "string",
-            description: "Fechas solicitadas por el paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Fechas solicitadas por el paciente (NO PUEDE ESTAR VACÍO)",
           },
           horas: {
             type: "string",
-            description: "Horas solicitadas por el paciente (NO PUEDE ESTAR VACÍO)"
-          }
+            description: "Horas solicitadas por el paciente (NO PUEDE ESTAR VACÍO)",
+          },
         },
         required: ["tratamiento", "medico", "fechas", "horas"],
-        additionalProperties: false
+        additionalProperties: false,
       },
-      strict: true
-    }
+      strict: true,
+    },
   },
   {
     type: "function",
@@ -42,144 +83,186 @@ export const openaiTools = [
         properties: {
           nombre: {
             type: "string",
-            description: "Nombre del paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Nombre del paciente (NO PUEDE ESTAR VACÍO)",
           },
           apellido: {
             type: "string",
-            description: "Apellido del paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Apellido del paciente (NO PUEDE ESTAR VACÍO)",
           },
           telefono: {
             type: "string",
-            description: "Teléfono del paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Teléfono del paciente (NO PUEDE ESTAR VACÍO)",
           },
           tratamiento: {
             type: "string",
-            description: "Tratamiento solicitado por el paciente (NO PUEDE ESTAR VACÍO)"
+            description:
+              "Tratamiento solicitado por el paciente (NO PUEDE ESTAR VACÍO)",
           },
           medico: {
             type: ["string", "null"],
-            description: "Nombre opcional del médico que indica el paciente (ES OPCIONAL)"
+            description:
+              "Nombre opcional del médico que indica el paciente (ES OPCIONAL)",
           },
           fechas: {
             type: "string",
-            description: "Fechas solicitadas por el paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Fechas solicitadas por el paciente (NO PUEDE ESTAR VACÍO)",
           },
           horas: {
             type: "string",
-            description: "Horas solicitadas por el paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Horas solicitadas por el paciente (NO PUEDE ESTAR VACÍO)",
           },
           id_pack_bono: {
             type: ["integer", "null"],
-            description: "Id del pack/bono si el paciente quiere usarlo (ES OPCIONAL)"
+            description:
+              "Id del pack/bono si el paciente quiere usarlo (ES OPCIONAL)",
           },
           id_presupuesto: {
             type: ["integer", "null"],
-            description: "Id del presupuesto si el paciente quiere usarlo (ES OPCIONAL)"
-          }
+            description:
+              "Id del presupuesto si el paciente quiere usarlo (ES OPCIONAL)",
+          },
         },
-        required: ["nombre", "apellido", "telefono", "tratamiento", "medico", "fechas", "horas", "id_pack_bono", "id_presupuesto"],
-        additionalProperties: false
+        required: [
+          "nombre",
+          "apellido",
+          "telefono",
+          "tratamiento",
+          "medico",
+          "fechas",
+          "horas",
+          "id_pack_bono",
+          "id_presupuesto",
+        ],
+        additionalProperties: false,
       },
-      strict: true
-    }
+      strict: true,
+    },
   },
   {
     type: "function",
     function: {
       name: "consulta_reprogramar",
-      description: "Busca huecos disponibles para reprogramar una cita existente.",
+      description:
+        "Busca huecos disponibles para reprogramar una cita existente.",
       parameters: {
         type: "object",
         properties: {
           id_cita: {
             type: "integer",
-            description: "ID de la cita que se quiere reprogramar (NO PUEDE ESTAR VACÍO)"
+            description:
+              "ID de la cita que se quiere reprogramar (NO PUEDE ESTAR VACÍO)",
           },
           id_tratamiento: {
             type: "integer",
-            description: "id_tratamiento referente a la id_cita (NO PUEDE ESTAR VACÍO)"
+            description:
+              "id_tratamiento referente a la id_cita (NO PUEDE ESTAR VACÍO)",
           },
           tratamiento: {
             type: "string",
-            description: "Tratamiento de la id_cita (NO PUEDE ESTAR VACÍO)"
+            description: "Tratamiento de la id_cita (NO PUEDE ESTAR VACÍO)",
           },
           id_medico: {
             type: "integer",
-            description: "id_medico del médico de la id_cita o de un profesional que indique el paciente (NO PUEDE ESTAR VACÍO)"
+            description:
+              "id_medico del médico de la id_cita o de un profesional que indique el paciente (NO PUEDE ESTAR VACÍO)",
           },
           medico: {
             type: "string",
-            description: "Nombre del médico de la id_cita o de un profesional que indique el paciente (NO PUEDE ESTAR VACÍO)"
+            description:
+              "Nombre del médico de la id_cita o de un profesional que indique el paciente (NO PUEDE ESTAR VACÍO)",
           },
           fechas: {
             type: "string",
-            description: "Fechas solicitadas por el paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Fechas solicitadas por el paciente (NO PUEDE ESTAR VACÍO)",
           },
           horas: {
             type: "string",
-            description: "Horas solicitadas por el paciente (NO PUEDE ESTAR VACÍO)"
-          }
+            description: "Horas solicitadas por el paciente (NO PUEDE ESTAR VACÍO)",
+          },
         },
-        required: ["id_cita", "id_tratamiento", "tratamiento", "id_medico", "medico", "fechas", "horas"],
-        additionalProperties: false
+        required: [
+          "id_cita",
+          "id_tratamiento",
+          "tratamiento",
+          "id_medico",
+          "medico",
+          "fechas",
+          "horas",
+        ],
+        additionalProperties: false,
       },
-      strict: true
-    }
+      strict: true,
+    },
   },
   {
     type: "function",
     function: {
       name: "reprogramar_cita",
-      description: "Reagenda una cita existente al nuevo horario proporcionado.",
+      description:
+        "Reagenda una cita existente al nuevo horario proporcionado.",
       parameters: {
         type: "object",
         properties: {
           nombre: {
             type: "string",
-            description: "Nombre del paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Nombre del paciente (NO PUEDE ESTAR VACÍO)",
           },
           apellido: {
             type: "string",
-            description: "Apellido del paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Apellido del paciente (NO PUEDE ESTAR VACÍO)",
           },
           telefono: {
             type: "string",
-            description: "Teléfono del paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Teléfono del paciente (NO PUEDE ESTAR VACÍO)",
           },
           id_cita: {
             type: "integer",
-            description: "ID de la cita a reprogramar (NO PUEDE ESTAR VACÍO)"
+            description: "ID de la cita a reprogramar (NO PUEDE ESTAR VACÍO)",
           },
           id_tratamiento: {
             type: "integer",
-            description: "id_tratamiento referente a la id_cita (NO PUEDE ESTAR VACÍO)"
+            description:
+              "id_tratamiento referente a la id_cita (NO PUEDE ESTAR VACÍO)",
           },
           tratamiento: {
             type: "string",
-            description: "Tratamiento de la id_cita (NO PUEDE ESTAR VACÍO)"
+            description: "Tratamiento de la id_cita (NO PUEDE ESTAR VACÍO)",
           },
           id_medico: {
             type: "integer",
-            description: "id_medico del médico de la id_cita o de un profesional que indique el paciente (NO PUEDE ESTAR VACÍO)"
+            description:
+              "id_medico del médico de la id_cita o de un profesional que indique el paciente (NO PUEDE ESTAR VACÍO)",
           },
           medico: {
             type: "string",
-            description: "Nombre del médico de la id_cita o de un profesional que indique el paciente (NO PUEDE ESTAR VACÍO)"
+            description:
+              "Nombre del médico de la id_cita o de un profesional que indique el paciente (NO PUEDE ESTAR VACÍO)",
           },
           fechas: {
             type: "string",
-            description: "Fechas solicitadas por el paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Fechas solicitadas por el paciente (NO PUEDE ESTAR VACÍO)",
           },
           horas: {
             type: "string",
-            description: "Horas solicitadas por el paciente (NO PUEDE ESTAR VACÍO)"
-          }
+            description: "Horas solicitadas por el paciente (NO PUEDE ESTAR VACÍO)",
+          },
         },
-        required: ["nombre", "apellido", "telefono", "id_cita", "id_tratamiento", "tratamiento", "id_medico", "medico", "fechas", "horas"],
-        additionalProperties: false
+        required: [
+          "nombre",
+          "apellido",
+          "telefono",
+          "id_cita",
+          "id_tratamiento",
+          "tratamiento",
+          "id_medico",
+          "medico",
+          "fechas",
+          "horas",
+        ],
+        additionalProperties: false,
       },
-      strict: true
-    }
+      strict: true,
+    },
   },
   {
     type: "function",
@@ -191,128 +274,145 @@ export const openaiTools = [
         properties: {
           nombre: {
             type: "string",
-            description: "Nombre del paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Nombre del paciente (NO PUEDE ESTAR VACÍO)",
           },
           apellido: {
             type: "string",
-            description: "Apellido del paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Apellido del paciente (NO PUEDE ESTAR VACÍO)",
           },
           telefono: {
             type: "string",
-            description: "Teléfono del paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Teléfono del paciente (NO PUEDE ESTAR VACÍO)",
           },
           id_cita: {
             type: "integer",
-            description: "ID de la cita a cancelar (NO PUEDE ESTAR VACÍO)."
+            description: "ID de la cita a cancelar (NO PUEDE ESTAR VACÍO).",
           },
         },
         required: ["nombre", "apellido", "telefono", "id_cita"],
-        additionalProperties: false
+        additionalProperties: false,
       },
-      strict: true
-    }
+      strict: true,
+    },
   },
   {
     type: "function",
     function: {
       name: "urgencia",
-      description: "Gestiona una urgencia médica registrando datos y motivo.",
+      description:
+        "Gestiona una urgencia médica registrando datos y motivo.",
       parameters: {
         type: "object",
         properties: {
           nombre: {
             type: "string",
-            description: "Nombre del paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Nombre del paciente (NO PUEDE ESTAR VACÍO)",
           },
           apellido: {
             type: "string",
-            description: "Apellido del paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Apellido del paciente (NO PUEDE ESTAR VACÍO)",
           },
           telefono: {
             type: "string",
-            description: "Teléfono del paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Teléfono del paciente (NO PUEDE ESTAR VACÍO)",
           },
           motivo: {
             type: "string",
-            description: "Motivo de la urgencia (NO PUEDE ESTAR VACÍO)"
-          }
+            description: "Motivo de la urgencia (NO PUEDE ESTAR VACÍO)",
+          },
         },
         required: ["nombre", "apellido", "telefono", "motivo"],
-        additionalProperties: false
+        additionalProperties: false,
       },
-      strict: true
-    }
+      strict: true,
+    },
   },
   {
     type: "function",
     function: {
       name: "escalamiento",
-      description: "Escala una solicitud o caso administrativo registrando datos y medio de contacto.",
+      description:
+        "Escala una solicitud o caso administrativo registrando datos y medio de contacto.",
       parameters: {
         type: "object",
         properties: {
           nombre: {
             type: "string",
-            description: "Nombre del paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Nombre del paciente (NO PUEDE ESTAR VACÍO)",
           },
           apellido: {
             type: "string",
-            description: "Apellido del paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Apellido del paciente (NO PUEDE ESTAR VACÍO)",
           },
           telefono: {
             type: "string",
-            description: "Teléfono del paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Teléfono del paciente (NO PUEDE ESTAR VACÍO)",
           },
           motivo: {
             type: "string",
-            description: "Motivo de la urgencia (NO PUEDE ESTAR VACÍO)"
+            description: "Motivo de la urgencia (NO PUEDE ESTAR VACÍO)",
           },
           canal_preferido: {
             type: "string",
             enum: ["llamada", "WhatsApp"],
-            description: "Canal preferido para contacto"
-          }
+            description: "Canal preferido para contacto",
+          },
         },
-        required: ["nombre", "apellido", "telefono", "motivo", "canal_preferido"],
-        additionalProperties: false
+        required: [
+          "nombre",
+          "apellido",
+          "telefono",
+          "motivo",
+          "canal_preferido",
+        ],
+        additionalProperties: false,
       },
-      strict: true
-    }
+      strict: true,
+    },
   },
   {
     type: "function",
     function: {
       name: "tarea",
-      description: "Crea una tarea administrativa registrando datos y motivo.",
+      description:
+        "Crea una tarea administrativa registrando datos y motivo.",
       parameters: {
         type: "object",
         properties: {
           nombre: {
             type: "string",
-            description: "Nombre del paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Nombre del paciente (NO PUEDE ESTAR VACÍO)",
           },
           apellido: {
             type: "string",
-            description: "Apellido del paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Apellido del paciente (NO PUEDE ESTAR VACÍO)",
           },
           telefono: {
             type: "string",
-            description: "Teléfono del paciente (NO PUEDE ESTAR VACÍO)"
+            description: "Teléfono del paciente (NO PUEDE ESTAR VACÍO)",
           },
           motivo: {
             type: "string",
-            description: "Motivo de la tarea (NO PUEDE ESTAR VACÍO)"
+            description: "Motivo de la tarea (NO PUEDE ESTAR VACÍO)",
           },
           canal_preferido: {
             type: "string",
             enum: ["llamada", "WhatsApp"],
-            description: "Canal preferido para contacto"
-          }
+            description: "Canal preferido para contacto",
+          },
         },
-        required: ["nombre", "apellido", "telefono", "motivo", "canal_preferido"],
-        additionalProperties: false
+        required: [
+          "nombre",
+          "apellido",
+          "telefono",
+          "motivo",
+          "canal_preferido",
+        ],
+        additionalProperties: false,
       },
-      strict: true
-    }
-  }
-];
+      strict: true,
+    },
+  },
+] as const;
+
+export default openaiTools;

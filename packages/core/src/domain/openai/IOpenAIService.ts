@@ -6,7 +6,6 @@ import {
   UpdateAssistantPayload,
   Assistant,
   FunctionCallPayload,
-  OpenAIMessageResponse,
   Run,
 } from "@clinickeys-agents/core/infrastructure/integrations/openai/models";
 
@@ -21,20 +20,14 @@ export interface IOpenAIService {
   // =========================== Assistants ===========================
   listAssistants(): Promise<Assistant[]>;
   getAssistant(assistantId: string): Promise<Assistant>;
-  createAssistants(
-    instructions: Record<string, string>
-  ): Promise<Record<string, string>>;
-  deleteAssistants(
-    assistantIds: Record<string, string>
-  ): Promise<void>;
+  createAssistants(instructions: Record<string, string>): Promise<Record<string, string>>;
+  createAssistant(payload: CreateAssistantPayload): Promise<Assistant>;
+  deleteAssistants(assistantIds: Record<string, string>): Promise<void>;
   syncAssistants(
     instructions: Record<string, string>,
     currentIds: Record<string, string>
   ): Promise<Record<string, string>>;
-  updateAssistant(
-    assistantId: string,
-    instructions: string
-  ): Promise<void>;
+  updateAssistant(assistantId: string, payload: UpdateAssistantPayload): Promise<Assistant>;
 
   // =========================== Messaging ===========================
   getResponseFromAssistant(
@@ -42,10 +35,7 @@ export interface IOpenAIService {
     message: string,
     threadId?: string
   ): Promise<ResponseResult>;
-  getJsonStructuredResponse(
-    systemPrompt: string,
-    userMessage: string
-  ): Promise<any>;
+  getJsonStructuredResponse(systemPrompt: string, userMessage: string): Promise<any>;
   getSchemaStructuredResponse(
     systemPrompt: string,
     userMessage: string,
@@ -54,9 +44,5 @@ export interface IOpenAIService {
   ): Promise<any>;
 
   // =========================== Helpers ===========================
-  pollUntilResolved(
-    threadId: string,
-    runId: string,
-    timeoutMs?: number
-  ): Promise<Run>;
+  pollUntilResolved(threadId: string, runId: string, timeoutMs?: number): Promise<Run>;
 }

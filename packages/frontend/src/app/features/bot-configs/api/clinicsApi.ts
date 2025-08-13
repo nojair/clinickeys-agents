@@ -1,15 +1,18 @@
 // /features/bot-configs/api/clinicsApi.ts
 
+import fetchJson from "@/app/shared/lib/fetchJson";
 import type { Clinic } from "@/app/entities/clinic/types";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+import type { ClinicDTO } from "@/app/shared/types/dto/clinic.dto";
+import { mapClinics } from "@/app/shared/lib/mappers/clinicMapper";
 
 export const clinicsApi = {
+  /**
+   * Obtiene todas las clínicas y las normaliza al tipo `Clinic`.
+   * Se devuelven ordenadas alfabéticamente por `name` para uso en selectores.
+   */
   async getClinics(): Promise<Clinic[]> {
-    const res = await fetch(`${API_BASE_URL}/clinics`);
-    if (!res.ok) throw new Error("Error al obtener clínicas");
-    const data: Clinic[] = await res.json();
-    // Ordenar por nombre alfabéticamente (por UX)
-    return data.sort((a, b) => a.name.localeCompare(b.name));
+    const raw = await fetchJson<ClinicDTO[]>("/clinics");
+    const clinics = mapClinics(raw).sort((a, b) => a.name.localeCompare(b.name));
+    return clinics;
   },
 };

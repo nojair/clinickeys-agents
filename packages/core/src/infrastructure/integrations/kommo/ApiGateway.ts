@@ -78,6 +78,16 @@ export interface KommoContactResponse {
   };
 }
 
+export interface KommoUsersResponse {
+  _embedded: {
+    users: Array<{
+      id: number;
+			name: string;
+			email: string;
+    }>;
+  };
+}
+
 // ---------- GATEWAY KOMMO PROFESIONAL ----------
 
 export interface KommoApiGatewayOptions {
@@ -112,7 +122,7 @@ export class KommoApiGateway {
   async runSalesbot({ botId, leadId }: { botId: number; leadId: number }) {
     const url = `https://${this.subdomain}.kommo.com/api/v2/salesbot/run`;
     const body = [
-      { botConfigId: botId, entity_id: leadId, entity_type: "2" },
+      { bot_id: botId, entity_id: leadId, entity_type: "2" },
     ];
     const res = await this.http.request<any>(url, {
       method: "POST",
@@ -189,6 +199,15 @@ export class KommoApiGateway {
   async getContactById({ contactId }: { contactId: number }): Promise<KommoContactResponse | null> {
     const url = `${this.baseUrl}/contacts/${contactId}`;
     const res = await this.http.request<KommoContactResponse>(url, {
+      token: this.longLivedToken,
+    });
+    if (res.status === 204) return null;
+    return res.data;
+  }
+
+  async getUsers(): Promise<KommoUsersResponse | null> {
+    const url = `${this.baseUrl}/users`;
+    const res = await this.http.request<KommoUsersResponse>(url, {
       token: this.longLivedToken,
     });
     if (res.status === 204) return null;

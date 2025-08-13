@@ -27,7 +27,7 @@ export const botConfigDynamo = new sst.aws.Dynamo(`BotConfigDynamo${SUFFIX}`, {
     // =======================
 
     /**
-     * Clave principal (hash)
+     * Clave de partición (hash)
      * Formato: "CLINIC#<clinicSource>#<clinicId>"
      */
     pk: "string",

@@ -1,7 +1,7 @@
 // packages/core/src/infrastructure/packBono/PackBonoRepositoryMySQL.ts
 
 import { IPackBonoRepository } from "@clinickeys-agents/core/domain/packBono";
-import { ejecutarConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
+import { ejecutarConReintento, ejecutarUnicoResultado, ejecutarExecConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
 
 export class PackBonoRepositoryMySQL implements IPackBonoRepository {
   /**
@@ -26,8 +26,8 @@ export class PackBonoRepositoryMySQL implements IPackBonoRepository {
       WHERE id_pack_bono = ? AND id_clinica = ?
       LIMIT 1
     `;
-    const rows = await ejecutarConReintento(query, [id_pack_bono, id_clinica]);
-    return rows[0] || undefined;
+    const row = await ejecutarUnicoResultado(query, [id_pack_bono, id_clinica]);
+    return row || undefined;
   }
 
   /**
@@ -59,6 +59,6 @@ export class PackBonoRepositoryMySQL implements IPackBonoRepository {
    */
   async procesarPackbonoPresupuestoDeCita(p_action: string, p_id_cita: number): Promise<any> {
     const query = 'CALL sp_procesar_cita_packbono_y_presupuesto(?, ?)';
-    return await ejecutarConReintento(query, [p_action, p_id_cita]);
+    return await ejecutarExecConReintento(query, [p_action, p_id_cita]);
   }
 }

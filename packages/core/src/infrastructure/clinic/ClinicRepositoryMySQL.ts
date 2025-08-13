@@ -1,6 +1,6 @@
 // packages/core/src/infrastructure/clinic/ClinicRepositoryMySQL.ts
 import { IClinicRepository, ClinicRepositoryError, ClinicNotFoundError, ClinicDTO } from "@clinickeys-agents/core/domain/clinic";
-import { ejecutarConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
+import { ejecutarConReintento, ejecutarUnicoResultado } from "@clinickeys-agents/core/infrastructure/helpers";
 
 /**
  * Repositorio MySQL para clínicas.
@@ -33,11 +33,11 @@ export class ClinicRepositoryMySQL implements IClinicRepository {
       `;
       const args = [clinicId];
 
-      const [rows] = await ejecutarConReintento(query, args)
+      const row  = await ejecutarUnicoResultado(query, args)
 
-      if (rows.length === 0) throw new ClinicNotFoundError(clinicId);
+      if (!row) throw new ClinicNotFoundError(clinicId);
 
-      return { clinicSource, ...rows[0] } as ClinicDTO;
+      return { clinicSource, ...row } as ClinicDTO;
     } catch (error: any) {
       if (error instanceof ClinicNotFoundError) throw error;
       throw new ClinicRepositoryError(error.message);
@@ -67,7 +67,7 @@ export class ClinicRepositoryMySQL implements IClinicRepository {
           nif_rep_legal     AS legalRepNif
         FROM clinicas
       `;
-      const [rows] = await ejecutarConReintento(query);
+      const rows = await ejecutarConReintento(query);
 
       return rows.map((row: any) => ({ clinicSource, ...row })) as ClinicDTO[];
     } catch (error: any) {

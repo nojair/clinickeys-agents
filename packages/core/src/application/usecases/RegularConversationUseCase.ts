@@ -1,10 +1,6 @@
-import { KommoService } from '@clinickeys-agents/core/application/services';
+import { Logger } from "@clinickeys-agents/core/infrastructure/external";
 
 interface RegularConversationInput {
-  botConfig: any;
-  leadId: number;
-  mergedCustomFields: { id: string | number; name: string; value?: string }[];
-  salesbotId: number;
   params: {
     assistantMessage: string; // texto del assistant ya listo
   };
@@ -22,20 +18,20 @@ interface RegularConversationOutput {
  * para que el orquestador lo envíe a `resolveRun` y luego a Kommo.
  */
 export class RegularConversationUseCase {
-  constructor(private readonly kommoService: KommoService) {}
+  constructor() {}
 
   public async execute(input: RegularConversationInput): Promise<RegularConversationOutput> {
-    const { botConfig, leadId, mergedCustomFields, salesbotId, params } = input;
+    const { params } = input;
+    Logger.info('[RegularConversationUseCase] Inicio de ejecución', { assistantMessage: params.assistantMessage });
 
-    // Mensaje "escribiendo…" opcional
-    await this.kommoService.sendBotInitialMessage({
-      botConfig,
-      leadId,
-      mergedCustomFields,
-      salesbotId,
-      message: 'Un momento…',
-    });
-
-    return { success: true, toolOutput: params.assistantMessage };
+    try {
+      Logger.debug('[RegularConversationUseCase] Preparando respuesta');
+      const toolOutput = params.assistantMessage;
+      Logger.info('[RegularConversationUseCase] Ejecución completada con éxito', { toolOutput });
+      return { success: true, toolOutput };
+    } catch (error) {
+      Logger.error('[RegularConversationUseCase] Error durante la ejecución', { error });
+      return { success: false, toolOutput: '' };
+    }
   }
 }

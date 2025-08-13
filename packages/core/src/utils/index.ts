@@ -1,6 +1,7 @@
 export * from './generateInstructions';
 export * from './availabilityHelpers';
 export * from './defaultPlaceholders';
+export * from './CustomFieldUtils';
 export * from './ErrorReporter';
 export * from './ErrorMapper';
 export * from './openaiTools';
@@ -9,3 +10,4 @@ export * from './constants';
 export * from './AppError';
 export * from './helpers';
 export * from './schemas';
+export * from './http';

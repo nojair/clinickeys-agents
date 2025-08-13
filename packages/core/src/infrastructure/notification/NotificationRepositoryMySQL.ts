@@ -1,6 +1,4 @@
-// packages/core/src/infrastructure/notification/NotificationRepositoryMySQL.ts
-
-import { ejecutarConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
+import { ejecutarConReintento, ejecutarExecConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
 import {
   NotificationDTO,
   NotificationState,
@@ -25,34 +23,37 @@ export class NotificationRepositoryMySQL implements INotificationRepository {
         AND id_clinica = ?
         AND fecha_envio_programada = ?
       `;
-      const args = [clinicId, fecha_envio_programada]
-      const [rows] = await ejecutarConReintento(query, args);
-      if (!rows.length) {
-        throw new NotificationNotFoundError(clinicId);
-      }
+      const args = [clinicId, fecha_envio_programada];
+      const rows = await ejecutarConReintento(query, args);
       // Mapea los resultados para transformar el payload a tipo NotificationPayload
+      console.log('rows', JSON.stringify(rows, null, 2));
       return rows.map((row: any) => ({
-        state: row.estado,
-        message: row.mensaje,
-        clinicId: row.id_clinica,
-        createdAt: row.creado_el,
-        updatedAt: row.actualizado_el,
-        type: row.tipo_notificacion,
-        realSendDate: row.fecha_envio_real,
-        recipientType: row.entidad_destino,
-        superClinicId: row.id_super_clinica,
-        notificationId: row.id_notificacion,
-        recipientId: row.id_entidad_destino,
-        triggerType: row.entidad_desencadenadora,
-        scheduledTime: row.hora_envio_programada,
-        recipientTypeId: row.id_tipo_destinatario,
-        scheduledDate: row.fecha_envio_programada,
-        triggerTypeId: row.id_entidad_desencadenadora,
-        payload: row.payload ? JSON.parse(row.payload) : undefined,
+        estado: row.estado,
+        mensaje: row.mensaje,
+        creado_el: row.creado_el,
+        id_clinica: row.id_clinica,
+        actualizado_el: row.actualizado_el,
+        id_notificacion: row.id_notificacion,
+        entidad_destino: row.entidad_destino,
+        fecha_envio_real: row.fecha_envio_real,
+        id_super_clinica: row.id_super_clinica,
+        tipo_notificacion: row.tipo_notificacion,
+        id_entidad_destino: row.id_entidad_destino,
+        id_tipo_destinatario: row.id_tipo_destinatario,
+        hora_envio_programada: row.hora_envio_programada,
+        entidad_desencadenadora: row.entidad_desencadenadora,
+        fecha_envio_programada: row.fecha_envio_programada,
+        id_entidad_desencadenadora: row.id_entidad_desencadenadora,
+        payload: row.payload
+          ? typeof row.payload === 'string'
+            ? JSON.parse(row.payload)
+            : row.payload
+          : undefined,
       }));
     } catch (error: any) {
+      console.log('Error en findPendingByClinic', JSON.stringify(error, null, 2));
       if (error instanceof NotificationNotFoundError) throw error;
-      throw new Error(error.message);
+      throw new Error(error.message || 'Error desconocido al obtener notificaciones pendientes');
     }
   }
 
@@ -60,13 +61,13 @@ export class NotificationRepositoryMySQL implements INotificationRepository {
     try {
       const query = `UPDATE notificaciones SET estado = ?, actualizado_el = CURRENT_TIMESTAMP WHERE id_notificacion = ?`;
       const args = [estado, id_notificacion];
-      const [rows] = await ejecutarConReintento(query, args);
+      const rows = await ejecutarExecConReintento(query, args);
       if (!rows || rows.affectedRows === 0) {
         throw new NotificationStateUpdateError(id_notificacion, estado);
       }
     } catch (error: any) {
       if (error instanceof NotificationStateUpdateError) throw error;
-      throw new Error(error.message);
+      throw new Error(error.message || 'Error desconocido al actualizar el estado de la notificación');
     }
   }
 }

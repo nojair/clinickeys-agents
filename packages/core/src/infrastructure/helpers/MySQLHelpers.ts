@@ -1,6 +1,7 @@
 // @clinickeys-agents/core/infrastructure/helpers/MySQLHelpers.ts
 
 import mysql, { Pool, PoolOptions } from "mysql2/promise";
+import type { OkPacket } from "mysql2";
 
 // --- Inicializador singleton del pool ---
 let pool: Pool | null = null;
@@ -8,13 +9,11 @@ let pool: Pool | null = null;
 export function createMySQLPool(config: PoolOptions): Pool {
   if (!pool) {
     pool = mysql.createPool(config);
-    // Solo usar eventos soportados por mysql2/promise Pool
-    // Nota: 'error' y 'connection' no están tipados en Pool de la versión 3.x+
-    // Por robustez y para evitar el error de TypeScript, puedes ignorar el tipo con 'any'
     (pool as any).on("connection", async (connection: any) => {
       try {
-        await connection.query("SET SESSION wait_timeout=28800");
-        await connection.query("SET SESSION interactive_timeout=28800");
+        const conn = connection.promise();
+        await conn.query("SET SESSION wait_timeout=28800");
+        await conn.query("SET SESSION interactive_timeout=28800");
       } catch (err) {
         console.error("[ERROR] No se pudo configurar los timeouts de la sesión:", err);
       }
@@ -35,7 +34,7 @@ export function getMySQLPool(): Pool {
 }
 
 /**
- * Ejecuta una consulta SQL con reintentos automáticos ante timeout de cliente.
+ * Ejecuta una consulta SQL (SELECT) con reintentos automáticos ante timeout de cliente.
  */
 export async function ejecutarConReintento(
   consulta: string,
@@ -63,6 +62,37 @@ export async function ejecutarConReintento(
     }
   }
   throw new Error("Fallo inesperado en reintentos de consulta SQL");
+}
+
+/**
+ * Ejecuta una consulta SQL (INSERT/UPDATE/DELETE) con reintentos automáticos ante timeout de cliente.
+ */
+export async function ejecutarExecConReintento(
+  consulta: string,
+  parametros: any[] = [],
+  reintentos = 3
+): Promise<OkPacket> {
+  const dbPool = getMySQLPool();
+  for (let intento = 1; intento <= reintentos; intento++) {
+    let conexion;
+    try {
+      conexion = await dbPool.getConnection();
+      const [result] = await conexion.execute<OkPacket>(consulta, parametros);
+      return result;
+    } catch (error: any) {
+      console.error(`Intento ${intento} falló:`, error);
+      if (
+        intento === reintentos ||
+        error.code !== "ER_CLIENT_INTERACTION_TIMEOUT"
+      ) {
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    } finally {
+      if (conexion) conexion.release();
+    }
+  }
+  throw new Error("Fallo inesperado en reintentos de ejecución SQL");
 }
 
 /**

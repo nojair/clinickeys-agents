@@ -1,5 +1,5 @@
 import { ITratamientoRepository } from "@clinickeys-agents/core/domain/tratamiento";
-import { ejecutarConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
+import { ejecutarConReintento, ejecutarUnicoResultado } from "@clinickeys-agents/core/infrastructure/helpers";
 
 export class TratamientoRepositoryMySQL implements ITratamientoRepository {
   /**
@@ -26,7 +26,7 @@ export class TratamientoRepositoryMySQL implements ITratamientoRepository {
   }
 
   /**
-   * Returns treatment details by treatment ID.
+   * Returns tratamiento details by tratamiento ID.
    */
   async getTreatmentDetailsById(treatmentId: number): Promise<any | undefined> {
     const query = `
@@ -43,8 +43,8 @@ export class TratamientoRepositoryMySQL implements ITratamientoRepository {
       WHERE t.id_tratamiento = ?
       LIMIT 1
     `;
-    const rows = await ejecutarConReintento(query, [treatmentId]);
-    return rows[0] || undefined;
+    const row = await ejecutarUnicoResultado(query, [treatmentId]);
+    return row || undefined;
   }
 
   /**

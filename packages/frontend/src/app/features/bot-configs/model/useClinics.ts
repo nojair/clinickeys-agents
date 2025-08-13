@@ -1,31 +1,38 @@
 // /features/bot-configs/model/useClinics.ts
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo } from 'react';
-import { clinicsApi } from '@/app/features/bot-configs/api/clinicsApi';
-import type { Clinic } from '@/app/entities/clinic/types';
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 
-const CLINICS_QUERY_KEY = ['clinics'];
+import { clinicsApi } from "@/app/features/bot-configs/api/clinicsApi";
+import type { Clinic } from "@/app/entities/clinic/types";
+import type { ApiError } from "@/app/shared/types/api";
+
+const CLINICS_QUERY_KEY = ["clinics"] as const;
 
 export function useClinics() {
-  const queryClient = useQueryClient();
-  const {
-    data,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery<Clinic[]>({
+  /* ------------------------------------------------------------------
+   * Fetch global list — una sola vez y cache infinito
+   * ------------------------------------------------------------------ */
+  const { data, isLoading, error, refetch } = useQuery<Clinic[], ApiError>({
     queryKey: CLINICS_QUERY_KEY,
     queryFn: clinicsApi.getClinics,
+    // ⚙️ Mantener en caché indefinidamente y evitar refetch automáticos
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
-  // Búsqueda local por nombre (case insensitive)
+  /* ------------------------------------------------------------------
+   * Local search helper (case‑insensitive by name)
+   * ------------------------------------------------------------------ */
   const search = useMemo(() => {
-    if (!data) return () => [];
-    return (query: string) =>
-      data.filter((clinic) =>
-        clinic.name.toLowerCase().includes(query.toLowerCase())
-      );
+    if (!data) return () => [] as Clinic[];
+
+    return (query: string): Clinic[] => {
+      const q = query.toLowerCase();
+      return data.filter((clinic) => clinic.name.toLowerCase().includes(q));
+    };
   }, [data]);
 
   return {
@@ -34,5 +41,5 @@ export function useClinics() {
     error,
     refetch,
     search,
-  };
+  } as const;
 }

@@ -1,18 +1,20 @@
 // packages/core/src/application/services/OpenAIService.ts
 
-import { IOpenAIAssistantRepository } from "@clinickeys-agents/core/domain/openai";
+import { IOpenAIAssistantRepository, IOpenAIService } from "@clinickeys-agents/core/domain/openai";
 import { Logger } from "@clinickeys-agents/core/infrastructure/external";
 import { zodTextFormat } from "openai/helpers/zod";
 import { ZodType } from "zod";
-
 import {
   CreateAssistantPayload,
   UpdateAssistantPayload,
-  OpenAIMessageResponse,
-  FunctionCallPayload,
   Assistant,
-  Run,
 } from "@clinickeys-agents/core/infrastructure/integrations/openai/models";
+
+interface FunctionCallPayload {
+  tool_call_id: string;
+  name: string;
+  arguments: Record<string, any>;
+}
 
 interface ResponseResult {
   threadId: string;
@@ -23,14 +25,11 @@ interface ResponseResult {
 
 const TIME_TO_POLL = 300000; // 5 minutos
 
-export class OpenAIService {
+export class OpenAIService implements IOpenAIService {
   private repo: IOpenAIAssistantRepository;
   private logger: typeof Logger;
 
-  constructor(
-    repo: IOpenAIAssistantRepository,
-    logger: typeof Logger
-  ) {
+  constructor(repo: IOpenAIAssistantRepository, logger: typeof Logger) {
     this.repo = repo;
     this.logger = logger;
   }
@@ -47,6 +46,11 @@ export class OpenAIService {
     return this.repo.getAssistant(assistantId);
   }
 
+  async createAssistant(payload: CreateAssistantPayload): Promise<Assistant> {
+    this.logger.info("Creando assistant único", { name: payload.name });
+    return this.repo.createAssistant(payload);
+  }
+
   async createAssistants(
     instructions: Record<string, string>
   ): Promise<Record<string, string>> {
@@ -58,7 +62,7 @@ export class OpenAIService {
         instructions: md,
         top_p: 0.01,
         temperature: 0.01,
-      } as CreateAssistantPayload);
+      });
       ids[name] = assistant.id;
     }
     return ids;
@@ -72,7 +76,10 @@ export class OpenAIService {
         this.logger.info("Eliminando assistant", { assistantId: id });
         await this.repo.deleteAssistant(id);
       } catch (error) {
-        this.logger.warn("Error eliminando assistant", { assistantId: id, error });
+        this.logger.warn("Error eliminando assistant", {
+          assistantId: id,
+          error,
+        });
       }
     }
   }
@@ -85,10 +92,7 @@ export class OpenAIService {
     for (const [name, md] of Object.entries(instructions)) {
       if (currentIds[name]) {
         this.logger.info("Actualizando assistant en sync", { name });
-        await this.repo.updateAssistant(
-          currentIds[name],
-          { instructions: md } as UpdateAssistantPayload
-        );
+        await this.repo.updateAssistant(currentIds[name], { instructions: md });
       } else {
         this.logger.info("Creando nuevo assistant en sync", { name });
         const assistant = await this.repo.createAssistant({
@@ -96,7 +100,7 @@ export class OpenAIService {
           instructions: md,
           top_p: 0.01,
           temperature: 0.01,
-        } as CreateAssistantPayload);
+        });
         result[name] = assistant.id;
       }
     }
@@ -105,13 +109,12 @@ export class OpenAIService {
 
   async updateAssistant(
     assistantId: string,
-    instructions: string
-  ): Promise<void> {
-    this.logger.info("Actualizando instrucciones de assistant", { assistantId });
-    await this.repo.updateAssistant(
+    payload: UpdateAssistantPayload
+  ): Promise<Assistant> {
+    this.logger.info("Actualizando instrucciones de assistant", {
       assistantId,
-      { instructions } as UpdateAssistantPayload
-    );
+    });
+    return this.repo.updateAssistant(assistantId, payload);
   }
 
   // =========================== Messaging ===========================
@@ -129,84 +132,107 @@ export class OpenAIService {
     }
 
     const runs = await this.repo.listRuns(tId, 1);
-    let last = runs[0];
+    let last: any = runs[0];
+
+    if (last) {
+      this.logger.info("Last run detected", { runId: last.id, status: last.status });
+    }
 
     if (last?.status === "requires_action") {
-      this.logger.warn("OpenAIService: Run requiere acción", { runId: last.id });
+      this.logger.warn("OpenAIService: Run requiere acción", {
+        runId: last.id,
+      });
       return {
-        threadId: tId, runId: last.id, functionCalls: last.required_action?.submit_tool_outputs?.tool_calls.map(
-          (tc) => ({
-            tool_call_id: tc.id,
-            name: tc.function.name,
-            arguments: JSON.parse(tc.function.arguments),
-          })
-        ) as FunctionCallPayload[]
+        threadId: tId,
+        runId: last.id,
+        functionCalls: last.required_action?.submit_tool_outputs?.tool_calls.map((tc: any) => ({
+          tool_call_id: tc.id,
+          name: tc.function.name,
+          arguments: JSON.parse(tc.function.arguments),
+        })) as FunctionCallPayload[],
       };
     }
 
     if (["in_progress", "queued", "cancelling"].includes(last?.status || "")) {
-      if (last.status !== "cancelling") {
-        await this.repo.cancelRun(tId, last.id);
+      this.logger.info("Waiting for or cancelling stale run", { runId: last.id, status: last.status });
+
+      try {
+        if (last.status !== "cancelling") {
+          await this.repo.cancelRun(tId, last.id);
+        }
+        last = await this.pollUntilResolved(tId, last.id);
+      } catch (e) {
+        this.logger.warn("Error cancelando/esperando run activo", e);
+        last = undefined;
       }
-      last = await this.pollUntilResolved(tId, last.id);
     }
 
-    const newRun = await this.repo.createRun(tId, assistantId, message);
-    return this.getResponseFromWaitingAssistant({
-      threadId: tId,
-      runId: newRun.id,
-      functionCalls: newRun.required_action?.submit_tool_outputs?.tool_calls?.map(
-        (tc) => ({
+    if (!last || ["failed", "expired", "completed"].includes(last.status)) {
+      const newRun = await this.repo.createRun(tId, assistantId, message);
+      this.logger.info("CREATED NEW RUN", { runId: newRun.id, status: newRun.status });
+      return this.getResponseFromWaitingAssistant({
+        threadId: tId,
+        runId: newRun.id,
+        functionCalls: newRun.required_action?.submit_tool_outputs?.tool_calls?.map(tc => ({
           tool_call_id: tc.id,
           name: tc.function.name,
           arguments: JSON.parse(tc.function.arguments),
-        })
-      ) as FunctionCallPayload[] || [],
-      rawOutput: message
-    });
+        })) || [],
+        rawOutput: message,
+      });
+    }
+
+    return { threadId: tId, runId: last.id, message: "" };
   }
 
-  /**
-   * Procesa llamadas a herramientas pendientes y completa el run.
-   */
   async getResponseFromWaitingAssistant({
     threadId,
     runId,
     functionCalls,
-    rawOutput
+    rawOutput,
   }: {
-    threadId: string,
-    runId: string,
-    functionCalls: FunctionCallPayload[],
-    rawOutput: unknown
+    threadId: string;
+    runId: string;
+    functionCalls: FunctionCallPayload[];
+    rawOutput: unknown;
   }): Promise<ResponseResult> {
-    this.logger.info("OpenAIService: Resolviendo run pendiente", { threadId, runId });
-    const toolOutputs = functionCalls.map(fc => ({
-      tool_call_id: fc.tool_call_id,
-      output: typeof rawOutput === 'string' ? rawOutput : JSON.stringify(rawOutput),
-    }));
-
-    await this.repo.submitToolOutputs({ runId, threadId, toolOutputs });
-    await this.repo.retrieveRun(threadId, runId);
+    this.logger.info("OpenAIService: Resolviendo run pendiente", {
+      threadId,
+      runId,
+    });
+    if (functionCalls.length > 0) {
+      const toolOutputs = functionCalls.map(fc => ({
+        tool_call_id: fc.tool_call_id,
+        output: typeof rawOutput === "string" ? rawOutput : JSON.stringify(rawOutput),
+      }));
+      await this.repo.submitToolOutputs({ runId, threadId, toolOutputs });
+    }
 
     const finished = await this.pollUntilResolved(threadId, runId);
+    this.logger.info("OpenAIService: Run finalizado", {
+      threadId,
+      runId: finished.id,
+      status: finished.status,
+    });
 
     if (finished.status === "requires_action") {
       return {
-        threadId, runId: finished.id, functionCalls: finished.required_action?.submit_tool_outputs?.tool_calls.map(
-          (tc) => ({ tool_call_id: tc.id, name: tc.function.name, arguments: JSON.parse(tc.function.arguments) })
-        ) as FunctionCallPayload[]
+        threadId,
+        runId: finished.id,
+        functionCalls: finished.required_action?.submit_tool_outputs?.tool_calls.map(tc => ({
+          tool_call_id: tc.id,
+          name: tc.function.name,
+          arguments: JSON.parse(tc.function.arguments),
+        })) as FunctionCallPayload[],
       };
     }
 
     if (finished.status === "completed") {
       const messages = await this.repo.listMessages(threadId);
-      const assistantMsg = messages.find((m: OpenAIMessageResponse) => m.role === "assistant");
+      const assistantMsg = messages.find((m: any) => m.role === "assistant");
       if (!assistantMsg) throw new Error("No assistant message found");
       const contentRaw = assistantMsg.content as any;
-      const content = Array.isArray(contentRaw)
-        ? contentRaw[0]?.text?.value
-        : contentRaw?.text?.value;
+      const content = Array.isArray(contentRaw) ? contentRaw[0]?.text?.value : contentRaw?.text?.value;
       return { threadId, runId: finished.id, message: content || "" };
     }
 
@@ -224,9 +250,11 @@ export class OpenAIService {
     systemPrompt: string,
     userMessage: string,
     schema: ZodType<any>,
-    schemaLabel: string = "schema"
+    schemaLabel = "schema"
   ): Promise<any> {
-    this.logger.info("OpenAIService: getSchemaStructuredResponse", { schemaLabel });
+    this.logger.info("OpenAIService: getSchemaStructuredResponse", {
+      schemaLabel,
+    });
     const format = zodTextFormat(schema, schemaLabel);
     return this.repo.parseResponse(systemPrompt, userMessage, format);
   }
@@ -237,17 +265,13 @@ export class OpenAIService {
     threadId: string,
     runId: string,
     timeoutMs = TIME_TO_POLL
-  ): Promise<Run> {
+  ) {
     const start = Date.now();
     while (true) {
       const run = await this.repo.retrieveRun(threadId, runId);
-      if (["completed", "requires_action", "failed", "expired"].includes(run.status)) {
-        return run;
-      }
-      if (Date.now() - start > timeoutMs) {
-        throw new Error(`Run ${runId} polling timed out`);
-      }
-      await new Promise((res) => setTimeout(res, 1000));
+      if (["completed", "requires_action", "failed", "expired"].includes(run.status)) return run;
+      if (Date.now() - start > timeoutMs) throw new Error(`Run ${runId} polling timed out`);
+      await new Promise(res => setTimeout(res, 1000));
     }
   }
 }

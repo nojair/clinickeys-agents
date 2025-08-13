@@ -1,32 +1,26 @@
-// packages/core/src/application/usecases/AddBotUseCase.ts
-
-import { BotConfigDTO, BotConfigType } from "@clinickeys-agents/core/domain/botConfig";
+import { BotConfigDTO, BotConfigType, ChatBotConfigDTO, NotificationBotConfigDTO } from "@clinickeys-agents/core/domain/botConfig";
 import { IBotConfigRepository } from "@clinickeys-agents/core/domain/botConfig";
 import { IOpenAIAssistantRepository } from "@clinickeys-agents/core/domain/openai";
 import { defaultPlaceholders, generateInstructions } from "@clinickeys-agents/core/utils";
 import path from "path";
 import fs from "fs";
+import { ulid } from "ulidx";
 
 export interface AddBotInput {
   botConfigType: BotConfigType;
-  botConfigId: string;
   clinicSource: string;
   superClinicId: number;
   clinicId: number;
   kommoSubdomain: string;
-  responsibleUserId: string;
-  longLivedToken: string;
-  salesbotId: number;
+  kommoResponsibleUserId: string;
+  kommoLongLivedToken: string;
+  kommoSalesbotId: number;
+  openaiApikey?: string;
   defaultCountry: string;
   timezone: string;
-  name: string;
   description: string;
   fieldsProfile: string;
   placeholders?: Record<string, string>;
-  openai?: {
-    apiKey: string;
-  };
-  assistantsToCreate?: string[];
 }
 
 export class AddBotUseCase {
@@ -42,24 +36,23 @@ export class AddBotUseCase {
   }
 
   async execute(input: AddBotInput): Promise<BotConfigDTO> {
+    const botConfigId = ulid();
+
     if (input.botConfigType === BotConfigType.ChatBot) {
-      // --- FLUJO PARA CHATBOT ---
-      if (!input.openai || !input.openai.apiKey) {
-        throw new Error("openai.apiKey es obligatorio para chatBot");
+      if (!input.openaiApikey) {
+        throw new Error("openaiApikey es obligatorio para chatBot");
       }
       const placeholders: Record<string, string> = { ...defaultPlaceholders, ...(input.placeholders || {}) };
 
-      const templateDir = path.resolve(__dirname, "..", "..", ".ia", "instructions", "templates");
-      let assistantFiles = fs.readdirSync(templateDir).filter((file) => file.endsWith(".md"));
-      if (input.assistantsToCreate && input.assistantsToCreate.length > 0) {
-        assistantFiles = assistantFiles.filter((file) => input.assistantsToCreate!.includes(path.basename(file, ".md")));
-      }
+      const templateDir = path.resolve(__dirname, "packages/core/src/.ia/instructions/templates");
+      const assistantFiles = fs.readdirSync(templateDir).filter((file) => file.endsWith(".md"));
       if (assistantFiles.length === 0) {
         throw new Error("No hay templates .md disponibles para crear assistants.");
       }
 
-      const assistants: Record<string, string> = {};
-      const openaiRepo = this.openaiRepoFactory(input.openai.apiKey);
+      const assistants: ChatBotConfigDTO["openai"]["assistants"] = {} as ChatBotConfigDTO["openai"]["assistants"];
+      const openaiRepo = this.openaiRepoFactory(input.openaiApikey);
+
       for (const fileName of assistantFiles) {
         const assistantKey = path.basename(fileName, ".md");
         const instructionText = generateInstructions(assistantKey, placeholders);
@@ -72,62 +65,64 @@ export class AddBotUseCase {
         assistants[assistantKey] = assistant.id;
       }
 
-      const toSave: Omit<BotConfigDTO, "pk" | "sk" | "bucket" | "createdAt" | "updatedAt"> = {
+      if (!assistants.speakingBot) {
+        throw new Error("El assistant 'speakingBot' es obligatorio en ChatBot");
+      }
+
+      const toSave: Omit<ChatBotConfigDTO, "pk" | "sk" | "bucket" | "createdAt" | "updatedAt"> = {
         botConfigType: input.botConfigType,
-        botConfigId: input.botConfigId,
+        botConfigId,
         superClinicId: input.superClinicId,
         clinicSource: input.clinicSource,
         clinicId: input.clinicId,
         kommoSubdomain: input.kommoSubdomain,
         kommo: {
-          responsibleUserId: input.responsibleUserId,
+          responsibleUserId: input.kommoResponsibleUserId,
           subdomain: input.kommoSubdomain,
-          longLivedToken: input.longLivedToken,
-          salesbotId: input.salesbotId,
+          longLivedToken: input.kommoLongLivedToken,
+          salesbotId: input.kommoSalesbotId,
         },
         defaultCountry: input.defaultCountry,
         timezone: input.timezone,
-        name: input.name,
         description: input.description,
         fieldsProfile: input.fieldsProfile,
         openai: {
-          apiKey: input.openai.apiKey,
+          apiKey: input.openaiApikey,
           assistants,
         },
         placeholders,
         isEnabled: true,
       };
+
       const savedDto = await this.botConfigRepo.create(toSave);
       return savedDto;
     }
-    // --- FLUJO PARA NOTIFICATION BOT ---
-    else if (input.botConfigType === BotConfigType.NotificationBot) {
-      const toSave: Omit<BotConfigDTO, "pk" | "sk" | "bucket" | "createdAt" | "updatedAt"> = {
+
+    if (input.botConfigType === BotConfigType.NotificationBot) {
+      const toSave: Omit<NotificationBotConfigDTO, "pk" | "sk" | "bucket" | "createdAt" | "updatedAt"> = {
         botConfigType: input.botConfigType,
-        botConfigId: input.botConfigId,
+        botConfigId,
         superClinicId: input.superClinicId,
         clinicSource: input.clinicSource,
         clinicId: input.clinicId,
         kommoSubdomain: input.kommoSubdomain,
         kommo: {
-          responsibleUserId: input.responsibleUserId,
+          responsibleUserId: input.kommoResponsibleUserId,
           subdomain: input.kommoSubdomain,
-          longLivedToken: input.longLivedToken,
-          salesbotId: input.salesbotId,
+          longLivedToken: input.kommoLongLivedToken,
+          salesbotId: input.kommoSalesbotId,
         },
         defaultCountry: input.defaultCountry,
         timezone: input.timezone,
-        name: input.name,
         description: input.description,
         fieldsProfile: input.fieldsProfile,
         isEnabled: true,
-        // NO openai, NO placeholders
       };
+
       const savedDto = await this.botConfigRepo.create(toSave);
       return savedDto;
     }
-    else {
-      throw new Error("Tipo de botConfigType no soportado en AddBotUseCase");
-    }
+
+    throw new Error("Tipo de botConfigType no soportado en AddBotUseCase");
   }
 }

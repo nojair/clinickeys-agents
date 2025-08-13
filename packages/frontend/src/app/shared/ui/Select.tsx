@@ -1,81 +1,94 @@
-// /shared/ui/Select.tsx
-
-import * as RadixSelect from '@radix-ui/react-select';
-import { Check, ChevronDown } from 'lucide-react';
-import clsx from 'clsx';
+'use client';
+import React, { useMemo } from 'react';
+import SelectLib, { ActionMeta, SingleValue, StylesConfig } from 'react-select';
 
 export interface SelectOption {
   value: string | number;
   label: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface SelectProps {
-  value: string | number | undefined;
-  onChange: (value: string | number) => void;
+  name?: string;
+  value?: string | number;
+  onChange: (value?: string | number) => void;
   options: SelectOption[];
   label?: string;
   placeholder?: string;
   disabled?: boolean;
   error?: string;
+  searchable?: boolean;
+  clearable?: boolean;
 }
 
 export function Select({
+  name = 'select',
   value,
   onChange,
   options,
   label,
-  placeholder = 'Seleccionar...',
-  disabled,
+  placeholder = 'Seleccionar…',
+  disabled = false,
   error,
+  searchable = false,
+  clearable = true,
 }: SelectProps) {
-  const valueAsString = value === undefined || value === null ? '' : String(value);
+  const selectedOption = useMemo(
+    () => options.find(opt => String(opt.value) === String(value)) || null,
+    [options, value]
+  );
+
+  const styles = useMemo<StylesConfig<SelectOption, false>>(
+    () => ({
+      control: base => ({
+        ...base,
+        borderColor: error ? '#EF4444' : base.borderColor,
+        boxShadow: error ? '0 0 0 1px #EF4444' : base.boxShadow,
+        minHeight: 38,
+        fontSize: 14,
+        backgroundColor: disabled ? '#F3F4F6' : '#fff',
+        opacity: disabled ? 0.6 : 1,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+      }),
+      option: (base, { isDisabled }) => ({
+        ...base,
+        cursor: isDisabled ? 'not-allowed' : 'pointer',
+      }),
+      menu: base => ({
+        ...base,
+        zIndex: 999,
+      }),
+    }),
+    [error, disabled]
+  );
 
   return (
     <div className="w-full">
-      {label && <label className="block mb-1 text-sm font-medium">{label}</label>}
-      <RadixSelect.Root
-        value={valueAsString}
-        onValueChange={val => {
-          const found = options.find(opt => String(opt.value) === val);
-          if (found) onChange(found.value);
-        }}
-        disabled={disabled}
-      >
-        <RadixSelect.Trigger
-          className={clsx(
-            'flex items-center justify-between w-full rounded-lg border px-3 py-2 text-sm bg-white',
-            'focus:outline-none focus:ring-2 focus:ring-blue-300',
-            disabled ? 'opacity-50 pointer-events-none' : '',
-            error ? 'border-red-500' : 'border-gray-300'
-          )}
-        >
-          <RadixSelect.Value placeholder={placeholder} />
-          <RadixSelect.Icon>
-            <ChevronDown size={18} />
-          </RadixSelect.Icon>
-        </RadixSelect.Trigger>
-        <RadixSelect.Content className="z-50 bg-white rounded-lg shadow-xl border mt-1 max-h-60 overflow-y-auto">
-          <RadixSelect.Viewport>
-            {options.map(opt => (
-              <RadixSelect.Item
-                key={opt.value}
-                value={String(opt.value)}
-                className={clsx(
-                  'flex items-center px-3 py-2 cursor-pointer select-none text-sm',
-                  'hover:bg-blue-50 focus:bg-blue-100',
-                )}
-              >
-                <RadixSelect.ItemText>{opt.label}</RadixSelect.ItemText>
-                <RadixSelect.ItemIndicator className="ml-auto">
-                  <Check size={16} />
-                </RadixSelect.ItemIndicator>
-              </RadixSelect.Item>
-            ))}
-          </RadixSelect.Viewport>
-        </RadixSelect.Content>
-      </RadixSelect.Root>
-      {error && <div className="mt-1 text-xs text-red-500">{error}</div>}
+      {label && (
+        <label htmlFor={name} className="block mb-1 text-sm font-medium text-gray-700">
+          {label}
+        </label>
+      )}
+      <SelectLib<SelectOption, false>
+        inputId={name}
+        name={name}
+        options={options}
+        value={selectedOption}
+        isSearchable={searchable}
+        placeholder={placeholder}
+        onChange={(opt: SingleValue<SelectOption>, action: ActionMeta<SelectOption>) => onChange(opt?.value)}
+        isDisabled={disabled}
+        isClearable={clearable}
+        styles={styles}
+        aria-invalid={!!error}
+        aria-describedby={error ? `${name}-error` : undefined}
+        noOptionsMessage={() => 'Sin resultados'}
+      />
+      {error && (
+        <p id={`${name}-error`} className="mt-1 text-xs text-red-500">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
