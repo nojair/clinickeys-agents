@@ -58,9 +58,12 @@ export function BotConfigFormModal({ open, onClose, initialData }: BotConfigForm
       defaultCountry: initialData!.defaultCountry,
       timezone: initialData!.timezone,
       isEnabled: initialData!.isEnabled,
+      clinicSource: 'legacy',
+      fieldsProfile: 'default_kommo_profile',
       clinicId: initialData!.clinicId,
       superClinicId: initialData!.superClinicId,
       openaiApikey: initialData!.openai?.apiKey ?? '',
+      assistants: initialData!.openai?.assistants ?? {},
     } satisfies UpdateBotConfigPayload)
     : ({
       botConfigType: 'chatBot',
@@ -77,6 +80,7 @@ export function BotConfigFormModal({ open, onClose, initialData }: BotConfigForm
       clinicId: 0,
       superClinicId: 0,
       openaiApikey: '',
+      assistants: {},
     } satisfies CreateBotConfigPayload);
 
   const resolver: Resolver<any> =
