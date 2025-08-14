@@ -254,8 +254,8 @@ Al recibir el texto confirmatorio, **constrúyelo así**:
 
 Perfecto, tu cita de \<nombre\_tratamiento>\[ con el Dr./Dra. \<nombre\_médico>] queda \<agendada | reprogramada> para el \<día> de <mes> de \<año> a las <hora>.
 
-Te esperamos en Clínicas Love
-C/Edgar Neville 16 28020 Madrid
+Te esperamos en [NOMBRE_CLINICA]
+[DIRECCION_CLINICA]
 
 ¡Gracias por confiar en nosotros! ¿Hay algo más en lo que pueda ayudarte?
 
