@@ -157,7 +157,7 @@ export class RescheduleAppointmentUseCase {
       toolOutput = `#reprogramarCita\nLo siento, en este momento no hay horarios disponibles para el día solicitado. ¿Te gustaría buscar otro día o franja horaria?`;
     } else {
       Logger.info('[RescheduleAppointment] Horarios disponibles encontrados', { finalPayload });
-      toolOutput = `#reprogramarCita\nHORARIOS_DISPONIBLES: ${JSON.stringify(finalPayload)}\nMENSAJE_USUARIO: ${JSON.stringify(params)}`;
+      toolOutput = `#reprogramarCita\nLo siento, parece que ocurrió un problema. Por favor, ¿Podrías repetirnos tu horario o escoger otro?`;
     }
 
     Logger.info('[RescheduleAppointment] Ejecución completada', { success: true });
