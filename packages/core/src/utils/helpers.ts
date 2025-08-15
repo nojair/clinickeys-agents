@@ -76,7 +76,7 @@ export function localTime(timezone: string): DateTime {
   if (!IANAZone.isValidZone(timezone)) {
     throw new Error(`Invalid timezone: ${timezone}`);
   }
-  return DateTime.now().setZone(timezone)!;
+  return DateTime.utc().setZone(timezone)!;
 }
 
 /** Convierte fecha u objeto Date a DateTime en TZ */

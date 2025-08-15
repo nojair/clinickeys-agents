@@ -12,12 +12,10 @@ import { AppError } from "@clinickeys-agents/core/utils";
 import { readFile } from 'fs/promises';
 import path from 'path';
 
-import type { DateTime } from 'luxon';
-
 interface GetAvailabilityInfoInput {
   id_clinica: number;
   id_super_clinica: number;
-  tiempo_actual: DateTime;
+  tiempo_actual: string;
   mensajeBotParlante: string;
   subdomain: string;
   kommoToken: string;

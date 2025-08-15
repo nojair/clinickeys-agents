@@ -14,7 +14,7 @@ interface CheckAvailabilityInput {
     horas: string;
     rango_dias_extra?: number;
   };
-  tiempoActual: any;
+  tiempoActual: string;
   subdomain: string;
 }
 

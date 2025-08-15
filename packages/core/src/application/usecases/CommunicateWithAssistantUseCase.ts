@@ -1,6 +1,9 @@
 // packages/core/src/application/usecases/CommunicateWithAssistantUseCase.ts
 
 import { KommoService, OpenAIService } from '@clinickeys-agents/core/application/services';
+import { Logger } from '@clinickeys-agents/core/infrastructure/external';
+import { localTime } from '@clinickeys-agents/core/utils';
+import { z } from 'zod';
 import {
   CheckReprogramAvailabilityUseCase,
   RescheduleAppointmentUseCase,
@@ -18,10 +21,8 @@ import {
   BOT_MESSAGE,
   THREAD_ID,
 } from '@clinickeys-agents/core/utils';
-import { Logger } from '@clinickeys-agents/core/infrastructure/external';
+
 import type { BotConfigDTO } from '@clinickeys-agents/core/domain/botConfig';
-import { DateTime } from 'luxon';
-import { z } from 'zod';
 
 const CitaSchema = z.object({
   id_cita: z.number(),
@@ -141,7 +142,7 @@ export class CommunicateWithAssistantUseCase {
         clinicSource: botConfig.clinicSource,
         clinicId: botConfig.clinicId,
         leadId,
-        tiempoActualDT: DateTime.utc().setZone(botConfig.timezone),
+        tiempoActualDT: localTime(botConfig.timezone),
         userMessage,
         openAIService: this.deps.openAIService,
         speakingBotId: botConfig.openai?.assistants?.speakingBot || '',
@@ -162,7 +163,7 @@ export class CommunicateWithAssistantUseCase {
             leadId,
             normalizedLeadCF,
             params: CheckAvailabilitySchema.parse(params),
-            tiempoActual: DateTime.utc().setZone(botConfig.timezone),
+            tiempoActual: localTime(botConfig.timezone).toISO() as string,
             subdomain: botConfig.kommo.subdomain,
           });
           break;
@@ -173,7 +174,7 @@ export class CommunicateWithAssistantUseCase {
             leadId,
             normalizedLeadCF,
             params: ScheduleAppointmentSchema.parse(params),
-            tiempoActual: DateTime.utc().setZone(botConfig.timezone),
+            tiempoActual: localTime(botConfig.timezone).toISO() as string,
             subdomain: botConfig.kommo.subdomain,
           });
           break;
@@ -184,7 +185,7 @@ export class CommunicateWithAssistantUseCase {
             leadId,
             normalizedLeadCF,
             params: CheckReprogramAvailabilitySchema.parse(params),
-            tiempoActual: DateTime.utc().setZone(botConfig.timezone),
+            tiempoActual: localTime(botConfig.timezone).toISO() as string,
             subdomain: botConfig.kommo.subdomain,
           });
           break;
@@ -195,7 +196,7 @@ export class CommunicateWithAssistantUseCase {
             leadId,
             normalizedLeadCF,
             params: RescheduleAppointmentSchema.parse(params),
-            tiempoActual: DateTime.utc().setZone(botConfig.timezone),
+            tiempoActual: localTime(botConfig.timezone).toISO() as string,
             subdomain: botConfig.kommo.subdomain,
           });
           break;

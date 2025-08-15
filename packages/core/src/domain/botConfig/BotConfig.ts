@@ -26,7 +26,7 @@ export class BotConfig {
   readonly kommo: {
     subdomain: string;
     longLivedToken: string;
-    responsibleUserId: string;
+    responsibleUserId: number;
     salesbotId: number;
   };
   readonly openai?: {
