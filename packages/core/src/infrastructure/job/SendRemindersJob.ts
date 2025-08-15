@@ -108,7 +108,7 @@ export class SendRemindersJob {
           const kommoService = new KommoService(kommoRepo, this.patientRepo);
 
           const now = localTime(timezone);
-          const MIN_HOUR = 0;
+          const MIN_HOUR = 10;
           const hourNow = now.hour;
 
           for (const n of notifications) {
