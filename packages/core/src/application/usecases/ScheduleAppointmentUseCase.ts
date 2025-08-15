@@ -144,11 +144,11 @@ export class ScheduleAppointmentUseCase {
           path.resolve(__dirname, 'packages/core/src/.ia/instructions/prompts/bot_extractor_de_datos.md'),
           'utf8',
         );
-        Logger.debug('[ScheduleAppointment] Ejecutando extractor de datos');
         const extractorData = await this.openAIService.getJsonStructuredResponse(
           systemPrompt,
           extractorPrompt,
         );
+        Logger.debug('[ScheduleAppointment] Extractor de datos ejecutando', extractorData);
 
         if (extractorData.success) {
           Logger.debug('[ScheduleAppointment] Datos extraídos con éxito', { extractorData });
@@ -202,7 +202,7 @@ export class ScheduleAppointmentUseCase {
       toolOutput =
         '#agendarCita\nLo siento, en este momento no hay horarios disponibles para el día solicitado. ¿Te gustaría buscar otro día o franja horaria?';
     } else {
-      toolOutput = `#agendarCita\nHORARIOS_DISPONIBLES: ${JSON.stringify(finalPayload)}\nMENSAJE_USUARIO: ${JSON.stringify(params)}`;
+      toolOutput = `#agendarCita\nLo siento, parece que ocurrió un problema. Por favor, ¿Podrías repetirnos tu horario o escoger otro?`;
     }
 
     const customFields = {
