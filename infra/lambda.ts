@@ -11,6 +11,9 @@ export const chatbotWebhookFn = new sst.aws.Function(`chatbotWebhookFn${SUFFIX}`
   environment: {
     LEADS_DEBOUNCE_QUEUE_URL: chatbotQueue.url,
   },
+  logging: {
+    retention: "5 days"
+  }
 });
 
 chatbotWebhookFn.addEnvironment({ URL: chatbotWebhookFn.url });
@@ -19,6 +22,9 @@ chatbotWebhookFn.addEnvironment({ URL: chatbotWebhookFn.url });
 chatbotQueue.subscribe({
   handler: "packages/interfaces/src/handlers/leadProcessorHandler.handler",
   timeout: "420 seconds",
+  logging: {
+    retention: "5 days"
+  },
   permissions: [
     {
       actions: ["*"],

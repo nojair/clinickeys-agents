@@ -14,6 +14,9 @@ export const botConfigApiGateway = new sst.aws.ApiGatewayV2(`BotConfigApiGateway
     allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     maxAge: "24 hours",
   },
+  accessLog: {
+    retention: "5 days"
+  },
   link: [botConfigDynamo],
 });
 

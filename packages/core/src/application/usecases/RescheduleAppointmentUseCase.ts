@@ -1,6 +1,5 @@
 import { KommoCustomFieldValueBase } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
-import { ConsultaCitaSchema } from '@clinickeys-agents/core/utils';
 import { readFile } from 'fs/promises';
 import path from 'path';
 
@@ -115,11 +114,11 @@ export class RescheduleAppointmentUseCase {
           path.resolve(__dirname, 'packages/core/src/.ia/instructions/prompts/bot_extractor_de_datos.md'),
           'utf8',
         );
-        Logger.debug('[RescheduleAppointment] Ejecutando extractor de datos');
         const extractorData = await this.openAIService.getJsonStructuredResponse(
           systemPrompt,
           extractorPrompt,
         );
+        Logger.debug('[RescheduleAppointment] Extractor de datos Ejecutado', extractorData);
 
         if (extractorData.success && extractorData.id_cita) {
           Logger.debug('[RescheduleAppointment] Datos extraídos con éxito', { extractorData });
