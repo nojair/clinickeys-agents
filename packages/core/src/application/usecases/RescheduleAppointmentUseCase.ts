@@ -110,6 +110,7 @@ export class RescheduleAppointmentUseCase {
         /* extractor para elegir horario */
         const citasPacienteStr = JSON.stringify(citas_paciente ?? []);
         const extractorPrompt = `#reprogramarCita\nLa CITAS_PACIENTE que se va a reprogramar es la siguiente: ${citasPacienteStr};\nLos HORARIOS_DISPONIBLES: ${JSON.stringify(finalPayload)}\nMENSAJE_USUARIO: ${JSON.stringify(params)}`;
+        Logger.debug('[RescheduleAppointment] Extractor prompt', extractorPrompt);
         const systemPrompt = await readFile(
           path.resolve(__dirname, 'packages/core/src/.ia/instructions/prompts/bot_extractor_de_datos.md'),
           'utf8',
