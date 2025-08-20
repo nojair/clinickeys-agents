@@ -3,6 +3,9 @@ import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 import { readFile } from 'fs/promises';
 import path from 'path';
 
+import type { FetchPatientInfoUseCase } from './FetchPatientInfoUseCase';
+type PatientInfo = Awaited<ReturnType<FetchPatientInfoUseCase['execute']>>;
+
 import {
   KommoService,
   AppointmentService,
@@ -14,16 +17,18 @@ interface RescheduleAppointmentInput {
   botConfig: any;
   leadId: number;
   normalizedLeadCF: (KommoCustomFieldValueBase & { value: any })[];
+  patientInfo: PatientInfo;
   params: {
     id_cita: number;
     id_tratamiento: number;
     tratamiento: string;
     medico?: string | null;
     id_medico?: number | null;
+    espacio?: string | null;
+    id_espacio?: number | null;
     fechas: string;
     horas: string;
     rango_dias_extra?: number;
-    citas_paciente?: Array<{ id_cita: number; [k: string]: any }>;
   };
   tiempoActual: any;
   subdomain: string;
@@ -45,8 +50,8 @@ export class RescheduleAppointmentUseCase {
   ) {}
 
   public async execute(input: RescheduleAppointmentInput): Promise<RescheduleAppointmentOutput> {
-    const { botConfig, leadId, normalizedLeadCF, params, tiempoActual, subdomain } = input;
-    const { id_cita, id_tratamiento, tratamiento, medico, id_medico, fechas, horas, citas_paciente } = params;
+    const { botConfig, leadId, normalizedLeadCF, params, tiempoActual, subdomain, patientInfo } = input;
+    const { id_cita, id_tratamiento, tratamiento, medico, id_medico, fechas, horas } = params;
 
     Logger.info('[RescheduleAppointment] Inicio', { leadId, id_cita, tratamiento, medico, id_medico, fechas, horas });
 
@@ -87,6 +92,8 @@ export class RescheduleAppointmentUseCase {
           horas: step.params.horas,
           medico: step.params.medico,
           id_medico: step.params.id_medico,
+          espacio: step.params.espacio,
+          id_espacio: step.params.id_espacio,
         }),
         subdomain,
         kommoToken: botConfig.longLivedToken,
@@ -108,7 +115,7 @@ export class RescheduleAppointmentUseCase {
         Logger.debug('[RescheduleAppointment] Disponibilidad encontrada', { finalPayload });
 
         /* extractor para elegir horario */
-        const citasPacienteStr = JSON.stringify(citas_paciente ?? []);
+        const citasPacienteStr = JSON.stringify(patientInfo.appointments ?? []);
         const extractorPrompt = `#reprogramarCita\nLa CITAS_PACIENTE que se va a reprogramar es la siguiente: ${citasPacienteStr};\nLos HORARIOS_DISPONIBLES: ${JSON.stringify(finalPayload)}\nMENSAJE_USUARIO: ${JSON.stringify(params)}`;
         Logger.debug('[RescheduleAppointment] Extractor prompt', extractorPrompt);
         const systemPrompt = await readFile(

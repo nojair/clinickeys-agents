@@ -42,6 +42,7 @@ const CitaSchema = z.object({
 const CheckAvailabilitySchema = z.object({
   tratamiento: z.string(),
   medico: z.string().nullable().optional(),
+  espacio: z.string().nullable().optional(),
   fechas: z.string(),
   horas: z.string(),
   rango_dias_extra: z.number().optional(),
@@ -59,6 +60,8 @@ const CheckReprogramAvailabilitySchema = z.object({
   tratamiento: z.string(),
   medico: z.string().nullable().optional(),
   id_medico: z.number().nullable().optional(),
+  espacio: z.string().nullable().optional(),
+  id_espacio: z.number().nullable().optional(),
   fechas: z.string(),
   horas: z.string(),
   rango_dias_extra: z.number().optional(),
@@ -147,7 +150,7 @@ export class CommunicateWithAssistantUseCase {
         threadId: threadId || undefined,
       } as any);
 
-      const { intent: intentName, params, assistantResult } = intentResult;
+      const { intent: intentName, params, assistantResult, patientInfo } = intentResult;
       const { threadId: thId, runId, functionCalls, message: assistantPlainMessage } = assistantResult || {};
       Logger.info('[CommunicateWithAssistant] Intent detectada', { intentName, thId, runId });
       Logger.debug('[CommunicateWithAssistant] Parámetros de intent', { params });
@@ -182,6 +185,7 @@ export class CommunicateWithAssistantUseCase {
             botConfig,
             leadId,
             normalizedLeadCF,
+            patientInfo,
             params: CheckReprogramAvailabilitySchema.parse(params),
             tiempoActual: localTime(botConfig.timezone).toISO() as string,
             subdomain: botConfig.kommo.subdomain,
@@ -193,6 +197,7 @@ export class CommunicateWithAssistantUseCase {
             botConfig,
             leadId,
             normalizedLeadCF,
+            patientInfo,
             params: RescheduleAppointmentSchema.parse(params),
             tiempoActual: localTime(botConfig.timezone).toISO() as string,
             subdomain: botConfig.kommo.subdomain,

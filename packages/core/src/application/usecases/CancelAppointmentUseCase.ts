@@ -1,8 +1,4 @@
-import {
-  KommoService,
-  AppointmentService,
-  PackBonoService,
-} from '@clinickeys-agents/core/application/services';
+import { KommoService, AppointmentService, PackBonoService } from '@clinickeys-agents/core/application/services';
 import { KommoCustomFieldValueBase } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 

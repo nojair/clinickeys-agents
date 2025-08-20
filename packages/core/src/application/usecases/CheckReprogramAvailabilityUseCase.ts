@@ -2,10 +2,14 @@ import { KommoCustomFieldValueBase } from '@clinickeys-agents/core/infrastructur
 import { AvailabilityService, KommoService } from '@clinickeys-agents/core/application/services';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 
+import type { FetchPatientInfoUseCase } from './FetchPatientInfoUseCase';
+type PatientInfo = Awaited<ReturnType<FetchPatientInfoUseCase['execute']>>;
+
 interface CheckReprogramAvailabilityInput {
   botConfig: any;
   leadId: number;
   normalizedLeadCF: (KommoCustomFieldValueBase & { value: any })[];
+  patientInfo: PatientInfo;
   params: {
     id_cita: number;
     id_tratamiento: number;
@@ -15,7 +19,6 @@ interface CheckReprogramAvailabilityInput {
     fechas: string;
     horas: string;
     rango_dias_extra?: number;
-    citas_paciente?: Array<{ id_cita: number; [key: string]: any }>;
   };
   tiempoActual: any;
   subdomain: string;
@@ -41,9 +44,10 @@ export class CheckReprogramAvailabilityUseCase {
       params,
       tiempoActual,
       subdomain,
+      patientInfo
     } = input;
 
-    const { tratamiento, medico, id_medico, id_tratamiento, fechas, horas, citas_paciente } = params;
+    const { tratamiento, medico, id_medico, id_tratamiento, fechas, horas } = params;
 
     Logger.info('[CheckReprogramAvailability] Inicio', { leadId, tratamiento, medico, id_medico, fechas, horas });
 
@@ -120,7 +124,7 @@ export class CheckReprogramAvailabilityUseCase {
     }
 
     // 3. Construir toolOutput para resolver run
-    const citasPacienteStr = JSON.stringify(citas_paciente ?? []);
+    const citasPacienteStr = JSON.stringify(patientInfo.appointments ?? []);
     const toolOutput = `#consultaReprogramar\nCITAS_PACIENTE: ${citasPacienteStr}\nHORARIOS_DISPONIBLES: ${JSON.stringify(finalPayload)}\nMENSAJE_USUARIO: ${JSON.stringify(params)}`;
     Logger.info('[CheckReprogramAvailability] Ejecución completada', { success: true });
 
