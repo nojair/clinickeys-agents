@@ -16,6 +16,8 @@ interface CheckReprogramAvailabilityInput {
     tratamiento: string;
     medico?: string | null;
     id_medico?: number | null;
+    espacio?: string | null;
+    id_espacio?: number | null;
     fechas: string;
     horas: string;
     rango_dias_extra?: number;
@@ -87,6 +89,8 @@ export class CheckReprogramAvailabilityUseCase {
           horas: step.params.horas,
           medico: step.params.medico,
           id_medico: step.params.id_medico,
+          espacio: step.params.espacio,
+          id_espacio: step.params.id_espacio,
         }),
         subdomain,
         kommoToken: botConfig.longLivedToken,

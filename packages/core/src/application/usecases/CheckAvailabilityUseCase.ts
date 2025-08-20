@@ -10,6 +10,7 @@ interface CheckAvailabilityInput {
   params: {
     tratamiento: string;
     medico?: string | null;
+    espacio?: string | null;
     fechas: string;
     horas: string;
     rango_dias_extra?: number;
@@ -70,6 +71,7 @@ export class CheckAvailabilityUseCase {
           fechas: fechasStep,
           horas,
           medico: step.params.medico,
+          espacio: step.params.espacio,
         }),
         subdomain,
         kommoToken: botConfig.kommo.longLivedToken,
