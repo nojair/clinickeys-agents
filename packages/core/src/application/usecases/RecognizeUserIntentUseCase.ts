@@ -12,8 +12,6 @@ type KnownIntent =
   | "consulta_reprogramar"
   | "reprogramar_cita"
   | "cancelar_cita"
-  | "urgencia"
-  | "escalamiento"
   | "tarea";
 
 export interface RecognizeUserIntentInput {

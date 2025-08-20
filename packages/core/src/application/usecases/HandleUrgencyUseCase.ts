@@ -4,7 +4,7 @@ import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 
 /**
  * Número de minutos (48 h) que tendrá el usuario interno para resolver la tarea
- * creada en Kommo cuando se detecta un caso de urgencia / escalamiento.
+ * creada en Kommo cuando se detecta un caso de tarea administrativa o de urgencia.
  */
 const TASK_DEADLINE_MINUTES = 48 * 60;
 
@@ -17,7 +17,7 @@ export interface HandleUrgencyInput {
     apellido?: string;
     telefono?: string;
     motivo?: string;
-    canal_preferido?: string;
+    canal_preferido?: string | null | undefined;
   };
 }
 
@@ -68,7 +68,7 @@ export class HandleUrgencyUseCase {
     }
 
     // 4) toolOutput para el Bot Parlante
-    const toolOutput = `#urgencia\n\nTarea creada con éxito`;
+    const toolOutput = `#tarea\n\nTarea creada con éxito`;
     Logger.info('[HandleUrgency] Ejecución completada', { leadId });
 
     return { success: true, toolOutput };

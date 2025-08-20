@@ -51,10 +51,6 @@ const ScheduleAppointmentSchema = CheckAvailabilitySchema.extend({
   nombre: z.string(),
   apellido: z.string(),
   telefono: z.string(),
-  tratamiento: z.string(),
-  medico: z.string().nullable().optional(),
-  fechas: z.string(),
-  horas: z.string(),
 });
 
 const CheckReprogramAvailabilitySchema = z.object({
@@ -69,23 +65,25 @@ const CheckReprogramAvailabilitySchema = z.object({
   citas_paciente: z.array(CitaSchema).optional(),
 });
 
-const RescheduleAppointmentSchema = CheckReprogramAvailabilitySchema;
+const RescheduleAppointmentSchema = CheckReprogramAvailabilitySchema.extend({
+  nombre: z.string(),
+  apellido: z.string(),
+  telefono: z.string(),
+});
 
 const CancelAppointmentSchema = z.object({
+  nombre: z.string(),
+  apellido: z.string(),
+  telefono: z.string(),
   id_cita: z.number(),
-  id_medico: z.number().nullable().optional(),
-  id_espacio: z.number().nullable().optional(),
-  fecha_cita: z.string().optional(),
-  hora_inicio: z.string().optional(),
-  hora_fin: z.string().optional(),
 });
 
 const HandleUrgencySchema = z.object({
-  nombre: z.string().optional(),
-  apellido: z.string().optional(),
-  telefono: z.string().optional(),
-  motivo: z.string().optional(),
-  canal_preferido: z.string().optional(),
+  nombre: z.string(),
+  apellido: z.string(),
+  telefono: z.string(),
+  motivo: z.string(),
+  canal_preferido: z.string().nullable().optional(),
 });
 
 const RegularConversationSchema = z.object({
@@ -209,10 +207,8 @@ export class CommunicateWithAssistantUseCase {
             params: CancelAppointmentSchema.parse(params),
           });
           break;
-        case 'urgencia':
-        case 'escalamiento':
         case 'tarea':
-          Logger.debug('[CommunicateWithAssistant] Ejecutando caso de urgencia/escalamiento/tarea', { params });
+          Logger.debug('[CommunicateWithAssistant] Ejecutando caso de tarea/urgencia/escalamiento', { params });
           ucResponse = await this.deps.handleUrgencyUC.execute({
             botConfig,
             leadId,
