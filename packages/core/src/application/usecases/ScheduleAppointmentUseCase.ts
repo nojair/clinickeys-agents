@@ -140,6 +140,7 @@ export class ScheduleAppointmentUseCase {
 
         // Prompt extractor
         const extractorPrompt = `#agendarCita\n\nLos HORARIOS_DISPONIBLES para citas son: ${JSON.stringify(finalPayload)}\n\nMENSAJE_USUARIO: ${JSON.stringify(params)}`;
+        Logger.debug('[ScheduleAppointment] Extractor prompt', extractorPrompt);
         const systemPrompt = await readFile(
           path.resolve(__dirname, 'packages/core/src/.ia/instructions/prompts/bot_extractor_de_datos.md'),
           'utf8',
