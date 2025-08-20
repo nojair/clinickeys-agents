@@ -113,7 +113,9 @@ export class AppointmentRepositoryMySQL {
       LEFT JOIN espacios ON citas.id_espacio = espacios.id_espacio
       LEFT JOIN tratamientos ON citas.id_tratamiento = tratamientos.id_tratamiento
       LEFT JOIN medicos ON citas.id_medico = medicos.id_medico
-      WHERE citas.id_paciente = ? AND citas.id_clinica = ?
+      WHERE citas.id_paciente = ?
+      AND citas.id_clinica = ?
+      AND citas.id_estado_cita IN (1, 7, 8, 9)
       ORDER BY citas.fecha_cita ASC, citas.hora_inicio ASC
     `;
     return await ejecutarConReintento(query, [patientId, clinicId]);
