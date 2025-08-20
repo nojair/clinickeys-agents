@@ -30,6 +30,7 @@ export interface RecognizeUserIntentInput {
 export interface RecognizeUserIntentOutput {
   intent: KnownIntent;
   params: Record<string, unknown>;
+  patientInfo: PatientInfo;
   assistantResult: {
     threadId: string;
     runId: string;
@@ -143,7 +144,8 @@ export class RecognizeUserIntentUseCase {
     return {
       intent,
       params,
-      assistantResult
+      assistantResult,
+      patientInfo
     };
   }
 }

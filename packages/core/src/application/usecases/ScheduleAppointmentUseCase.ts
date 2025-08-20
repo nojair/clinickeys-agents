@@ -4,7 +4,6 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 
 import {
-  ConsultaCitaSchema,
   formatFechaCita,
   PATIENT_FIRST_NAME,
   PATIENT_LAST_NAME,
