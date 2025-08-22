@@ -15,6 +15,7 @@ import {
   HandleUrgencyUseCase,
 } from '@clinickeys-agents/core/application/usecases';
 import {
+  PATIENT_MESSAGE_PROCESSED_CHUNK,
   PLEASE_WAIT_MESSAGE,
   REMINDER_MESSAGE,
   PATIENT_MESSAGE,
@@ -248,11 +249,11 @@ export class CommunicateWithAssistantUseCase {
       }
 
       const baseFields: Record<string, string> = {
-        [PATIENT_MESSAGE]: '',
         [REMINDER_MESSAGE]: '',
         [THREAD_ID]: thId ?? '',
         [BOT_MESSAGE]: finalMsg || '',
         [PLEASE_WAIT_MESSAGE]: 'false',
+        [PATIENT_MESSAGE_PROCESSED_CHUNK]: userMessage,
       };
 
       const customFields = { ...baseFields, ...(ucResponse.customFields ?? {}) };
@@ -264,6 +265,7 @@ export class CommunicateWithAssistantUseCase {
       });
 
       Logger.debug('[CommunicateWithAssistant] Llamando a replyToLead', { customFields });
+      console.log("[CommunicateWithAssistantUseCase.execute] UC customFields", ucResponse.customFields);
       const replyResult = await this.deps.kommoService.replyToLead({
         salesbotId: botConfig.kommo.salesbotId,
         leadId,

@@ -11,6 +11,7 @@ import {
 import {
   getCustomFieldMap,
   buildCustomFieldsValuesFromMap,
+  MESSAGE_COUNTER,
 } from '@clinickeys-agents/core/utils';
 import type {
   KommoCustomFieldMap,
@@ -202,7 +203,6 @@ export class KommoService {
     leadId: number;
     customFields: Record<string, string>;
     normalizedLeadCF: (KommoCustomFieldValueBase & { value: any })[];
-    delayMs?: number;
     salesbotId: number;
   }): Promise<{ success: boolean; aborted?: boolean }> {
     // --- Logs de diagnóstico previos ---
@@ -217,11 +217,16 @@ export class KommoService {
     });
 
     const latest = await this.kommoRepository.getLeadById({ leadId: input.leadId });
-    const initial = getCustomFieldValue(latest?.custom_fields_values || [], PATIENT_MESSAGE);
-    const ok = await shouldLambdaContinue({ latestLead: latest!, initialValue: initial, fieldName: PATIENT_MESSAGE, delayMs: input.delayMs });
+    const initialCounter = getCustomFieldValue(input.normalizedLeadCF || [], MESSAGE_COUNTER);
+    const ok = await shouldLambdaContinue({
+      latestLead: latest!,
+      initialValue: initialCounter,
+    });
     if (!ok) {
       Logger.warn('[KommoService.replyToLead] Abortado por shouldLambdaContinue=false', { leadId: input.leadId });
       return { success: false, aborted: true };
+    } else {
+      Logger.debug("[KommoService.replyToLead] La lambda continua")
     }
 
     // Intersección de claves (para detectar descalces de nombre)

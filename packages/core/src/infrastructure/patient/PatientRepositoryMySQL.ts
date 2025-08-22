@@ -1,7 +1,7 @@
 // @clinickeys-agents/core/src/infrastructure/patient/PatientRepositoryMySQL.ts
 
 import { PatientDTO, IPatientRepository } from "@clinickeys-agents/core/domain/patient";
-import { ejecutarConReintento, ejecutarUnicoResultado, ejecutarExecConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
+import { ejecutarUnicoResultado, ejecutarExecConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
 /**
  * Implementación MySQL del repositorio de pacientes.
  */

@@ -21,13 +21,17 @@ export const SPACE_NAME = "spaceName";
 export const REMINDER_MESSAGE = "reminderMessage";
 
 // Otros campos usados directamente en los perfiles:
+export const PATIENT_MESSAGE_PROCESSED_CHUNK = "patientMessageProcessedChunk";
+export const LAST_PATIENT_MESSAGE = "lastPatientMessage";
 export const TRIGGERED_BY_MACHINE = "triggeredByMachine";
 export const PLEASE_WAIT_MESSAGE = "pleaseWaitMessage";
 export const NOTIFICATION_ID = "notificationId";
 export const PATIENT_MESSAGE = "patientMessage";
+export const CONTROL_MODE = "controlMode";
 export const SALESBOT_LOG = "salesbotLog";
 export const BOT_MESSAGE = "botMessage";
 export const THREAD_ID = "threadId";
+export const MESSAGE_COUNTER = "messageCounter";
 
 // --- Profiles --- //
 export const profiles = {
