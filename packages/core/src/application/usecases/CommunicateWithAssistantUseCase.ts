@@ -18,7 +18,6 @@ import {
   PATIENT_MESSAGE_PROCESSED_CHUNK,
   PLEASE_WAIT_MESSAGE,
   REMINDER_MESSAGE,
-  PATIENT_MESSAGE,
   BOT_MESSAGE,
   THREAD_ID,
 } from '@clinickeys-agents/core/utils';

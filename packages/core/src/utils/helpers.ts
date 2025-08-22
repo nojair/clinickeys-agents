@@ -1,6 +1,6 @@
 // packages/core/src/utils/helpers.ts
 
-import { MESSAGE_COUNTER } from '@clinickeys-agents/core/utils';
+import { RANDOM_STAMP } from '@clinickeys-agents/core/utils';
 import { DateTime, IANAZone } from 'luxon';
 
 // packages/core/src/utils/helpers.ts
@@ -103,7 +103,7 @@ export async function shouldLambdaContinue({
   // Siempre comparamos el counter
   const current = getCustomFieldValue(
     latestLead.custom_fields_values || [],
-    MESSAGE_COUNTER
+    RANDOM_STAMP
   );
   // La lambda sigue solo si el counter no cambió
   return current === initialValue;

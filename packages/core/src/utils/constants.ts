@@ -28,10 +28,10 @@ export const PLEASE_WAIT_MESSAGE = "pleaseWaitMessage";
 export const NOTIFICATION_ID = "notificationId";
 export const PATIENT_MESSAGE = "patientMessage";
 export const CONTROL_MODE = "controlMode";
+export const RANDOM_STAMP = "randomStamp";
 export const SALESBOT_LOG = "salesbotLog";
 export const BOT_MESSAGE = "botMessage";
 export const THREAD_ID = "threadId";
-export const MESSAGE_COUNTER = "messageCounter";
 
 // --- Profiles --- //
 export const profiles = {

@@ -11,7 +11,7 @@ import {
 import {
   getCustomFieldMap,
   buildCustomFieldsValuesFromMap,
-  MESSAGE_COUNTER,
+  RANDOM_STAMP,
 } from '@clinickeys-agents/core/utils';
 import type {
   KommoCustomFieldMap,
@@ -217,7 +217,7 @@ export class KommoService {
     });
 
     const latest = await this.kommoRepository.getLeadById({ leadId: input.leadId });
-    const initialCounter = getCustomFieldValue(input.normalizedLeadCF || [], MESSAGE_COUNTER);
+    const initialCounter = getCustomFieldValue(input.normalizedLeadCF || [], RANDOM_STAMP);
     const ok = await shouldLambdaContinue({
       latestLead: latest!,
       initialValue: initialCounter,
