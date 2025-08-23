@@ -1,40 +1,12 @@
-// packages/core/src/domain/botConfig/BotConfigEnricher.ts
+// @clinickeys-agents/core/domain/botConfig/BotConfigEnricher.ts
 
 import { BotConfigDTO, BotConfigEnrichedDTO, BotConfigType } from '@clinickeys-agents/core/domain/botConfig';
-import { KommoCustomFieldExistence, KommoAccountUser } from "@clinickeys-agents/core/application/services";
-import { profiles } from '@clinickeys-agents/core/utils';
-
-// Custom fields requeridos por tipo de bot (subset dentro del universo de profile)
-const CHAT_BOT_CUSTOM_FIELDS = [
-  "threadId",
-  "botMessage",
-  "salesbotLog",
-  "patientPhone",
-  "patientMessage",
-  "reminderMessage",
-  "patientLastName",
-  "patientFirstName",
-  "pleaseWaitMessage",
-  "triggeredByMachine",
-] as const;
-
-const NOTIFICATION_BOT_CUSTOM_FIELDS = [
-  "spaceName",
-  "clinicName",
-  "salesbotLog",
-  "patientPhone",
-  "treatmentName",
-  "notificationId",
-  "doctorFullName",
-  "patientLastName",
-  "reminderMessage",
-  "appointmentDate",
-  "patientFirstName",
-  "appointmentEndTime",
-  "triggeredByMachine",
-  "appointmentStartTime",
-  "appointmentWeekdayName",
-] as const;
+import { KommoCustomFieldExistence } from "@clinickeys-agents/core/application/services";
+import {
+  profiles,
+  CHAT_BOT_CUSTOM_FIELDS,
+  NOTIFICATION_BOT_CUSTOM_FIELDS,
+} from '@clinickeys-agents/core/utils';
 
 // Props requeridos solo para ChatBot
 const CHAT_BOT_REQUIRED_PROPS = [
