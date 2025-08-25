@@ -14,7 +14,7 @@ export interface CreateChatBotConfigDTO {
   kommo: {
     subdomain: string;
     longLivedToken: string;
-    responsibleUserId: string;
+    responsibleUserId: number;
     salesbotId: number;
   };
   kommoSubdomain: string;
@@ -37,7 +37,7 @@ export interface CreateNotificationBotConfigDTO {
   kommo: {
     subdomain: string;
     longLivedToken: string;
-    responsibleUserId: string;
+    responsibleUserId: number;
     salesbotId: number;
   };
   kommoSubdomain: string;
@@ -82,7 +82,7 @@ export type ChatBotConfigDTO = BaseBotConfigDTO & {
   botConfigType: BotConfigType.ChatBot;
   openai: {
     apiKey: string;
-    assistants: AssistantsMap;
+    assistants?: AssistantsMap;
   };
 };
 

@@ -16,6 +16,7 @@ import {
   FetchPatientInfoUseCase,
   FetchKommoDataUseCase,
   GetBotConfigUseCase,
+  UpdatePatientMessageUseCase,
 } from "@clinickeys-agents/core/application/usecases";
 
 import {
@@ -40,7 +41,7 @@ import { PatientRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/p
 import { AppointmentRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/appointment";
 import { PresupuestoRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/presupuesto";
 import { Logger } from "@clinickeys-agents/core/infrastructure/external";
-import { PATIENT_MESSAGE, THREAD_ID } from "@clinickeys-agents/core/utils";
+import { THREAD_ID } from "@clinickeys-agents/core/utils";
 
 import { LeadQueueMessageDTO } from "@clinickeys-agents/core/domain/kommo";
 import { BotConfigType } from "@clinickeys-agents/core/domain/botConfig";
@@ -96,6 +97,7 @@ export class LeadProcessorController {
     });
     const kommoRepository = new KommoRepository(kommoGateway);
     const kommoService = new KommoService(kommoRepository, patientRepo);
+    const updatePatientMessageUC = new UpdatePatientMessageUseCase(kommoService);
 
     const openAIGateway = new OpenAIGateway({ apiKey: (botConfig as any).openai.apiKey });
     const openAIService = new OpenAIService(openAIGateway, this.logger);
@@ -169,7 +171,14 @@ export class LeadProcessorController {
     this.logger.debug("Fetched Kommo data", { kommoData });
 
     const normalizedLeadCF = kommoData.normalizedLeadCF || [];
-    const userMessage = normalizedLeadCF.find((cf) => cf.field_name === PATIENT_MESSAGE)?.value || '';
+    const updateResult = await updatePatientMessageUC.execute({
+      botConfig: botConfig as any,
+      leadId: Number(msg.kommo.leads.add?.[0]?.id ?? 0),
+      normalizedLeadCF,
+    });
+
+    const userMessage = updateResult.newPatientMessage;
+
     const threadId = normalizedLeadCF.find((cf) => cf.field_name === THREAD_ID)?.value || undefined;
     this.logger.debug("Extracted conversation context", { userMessage, threadId });
 

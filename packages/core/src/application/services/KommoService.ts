@@ -11,6 +11,7 @@ import {
 import {
   getCustomFieldMap,
   buildCustomFieldsValuesFromMap,
+  RANDOM_STAMP,
 } from '@clinickeys-agents/core/utils';
 import type {
   KommoCustomFieldMap,
@@ -122,9 +123,7 @@ export class KommoService {
 
     if (!contactId) {
       const contactFields: Record<string, string> = {
-        [PATIENT_FIRST_NAME]: patientFirstName,
-        [PATIENT_LAST_NAME]: patientLastName,
-        [PATIENT_PHONE]: patientPhone,
+        PHONE: normalizedPhone
       };
       const contactPayload = [{
         name: `${patientFirstName} ${patientLastName}`,
@@ -202,7 +201,6 @@ export class KommoService {
     leadId: number;
     customFields: Record<string, string>;
     normalizedLeadCF: (KommoCustomFieldValueBase & { value: any })[];
-    delayMs?: number;
     salesbotId: number;
   }): Promise<{ success: boolean; aborted?: boolean }> {
     // --- Logs de diagnóstico previos ---
@@ -217,11 +215,16 @@ export class KommoService {
     });
 
     const latest = await this.kommoRepository.getLeadById({ leadId: input.leadId });
-    const initial = getCustomFieldValue(latest?.custom_fields_values || [], PATIENT_MESSAGE);
-    const ok = await shouldLambdaContinue({ latestLead: latest!, initialValue: initial, fieldName: PATIENT_MESSAGE, delayMs: input.delayMs });
+    const initialCounter = getCustomFieldValue(input.normalizedLeadCF || [], RANDOM_STAMP);
+    const ok = await shouldLambdaContinue({
+      latestLead: latest!,
+      initialValue: initialCounter,
+    });
     if (!ok) {
       Logger.warn('[KommoService.replyToLead] Abortado por shouldLambdaContinue=false', { leadId: input.leadId });
       return { success: false, aborted: true };
+    } else {
+      Logger.debug("[KommoService.replyToLead] La lambda continua")
     }
 
     // Intersección de claves (para detectar descalces de nombre)

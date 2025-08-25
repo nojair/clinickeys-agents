@@ -26,21 +26,6 @@ export function getCustomFieldMap<T extends KommoCustomFieldDefinitionBase>(
 }
 
 /**
- * Obtiene información de enum de un campo personalizado por nombre o código.
- */
-export function getEnumData(
-  field: KommoCustomFieldDefinitionBase | undefined,
-  enumCode?: string
-): { enum_id?: number; enum_code?: string } {
-  if (!field || !enumCode || !Array.isArray(field.enums)) return {};
-  const enumObj = field.enums.find(
-    (e) => (e.value || '').toUpperCase() === enumCode.toUpperCase()
-  );
-  if (!enumObj) return {};
-  return { enum_id: enumObj.id, enum_code: enumObj.value };
-}
-
-/**
  * Normaliza los campos personalizados de una entidad para que siempre contengan todos los campos del catálogo.
  * Si no hay valor presente, se coloca `null`.
  */
@@ -80,7 +65,7 @@ export function buildCustomFieldsValuesFromMap(
     const def = fieldMap.byName[key] || fieldMap.byCode[key.toUpperCase()];
     if (!def) continue;
 
-    const payloadValue: { value: any; enum_id?: number; enum_code?: string } = { value };
+    const payloadValue: { value: any; } = { value };
     result.push({
       field_id: def.id,
       values: [payloadValue],

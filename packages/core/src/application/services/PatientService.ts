@@ -245,4 +245,9 @@ export class PatientService {
     Logger.info('[PatientService] getPatientInfo result', { hasPatient: !!paciente, citas: citas.length, packs: out.packsBonos.length, presupuestos: presupuestosMapped.length });
     return out;
   }
+
+  async updateKommoLeadId(patientId: number, kommoLeadId: number): Promise<void> {
+    Logger.info('[PatientService] updateKommoLeadId called', { patientId, kommoLeadId });
+    return this.patientRepo.updateKommoLeadId(patientId, kommoLeadId);
+  }
 }

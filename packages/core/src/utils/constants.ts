@@ -1,4 +1,4 @@
-// packages/core/src/utils/constants.ts
+// @clinickeys-agents/core/utils/constants.ts
 
 // --- Custom Field Constants --- //
 export const PATIENT_FIRST_NAME = "patientFirstName";
@@ -21,10 +21,14 @@ export const SPACE_NAME = "spaceName";
 export const REMINDER_MESSAGE = "reminderMessage";
 
 // Otros campos usados directamente en los perfiles:
+export const PATIENT_MESSAGE_PROCESSED_CHUNK = "patientMessageProcessedChunk";
+export const LAST_PATIENT_MESSAGE = "lastPatientMessage";
 export const TRIGGERED_BY_MACHINE = "triggeredByMachine";
 export const PLEASE_WAIT_MESSAGE = "pleaseWaitMessage";
 export const NOTIFICATION_ID = "notificationId";
 export const PATIENT_MESSAGE = "patientMessage";
+export const CONTROL_MODE = "controlMode";
+export const RANDOM_STAMP = "randomStamp";
 export const SALESBOT_LOG = "salesbotLog";
 export const BOT_MESSAGE = "botMessage";
 export const THREAD_ID = "threadId";
@@ -56,12 +60,16 @@ export const profiles = {
         { field_name: DOCTOR_FULL_NAME },
         { field_name: SPACE_NAME },
 
+        { field_name: PATIENT_MESSAGE_PROCESSED_CHUNK },
+        { field_name: LAST_PATIENT_MESSAGE },
         { field_name: TRIGGERED_BY_MACHINE },
         { field_name: PLEASE_WAIT_MESSAGE },
         { field_name: NOTIFICATION_ID },
         { field_name: PATIENT_MESSAGE },
         { field_name: TREATMENT_NAME },
+        { field_name: RANDOM_STAMP },
         { field_name: SALESBOT_LOG },
+        { field_name: CONTROL_MODE },
         { field_name: BOT_MESSAGE },
         { field_name: CLINIC_NAME },
         { field_name: THREAD_ID },
@@ -73,3 +81,39 @@ export const profiles = {
     lead: { custom_field_config: [] }
   }
 };
+
+// --- Agrupaciones por tipo de Bot --- //
+export const CHAT_BOT_CUSTOM_FIELDS = [
+  THREAD_ID,
+  BOT_MESSAGE,
+  RANDOM_STAMP, 
+  CONTROL_MODE,
+  SALESBOT_LOG,
+  PATIENT_PHONE,
+  PATIENT_MESSAGE,
+  REMINDER_MESSAGE,
+  PATIENT_LAST_NAME,
+  PATIENT_FIRST_NAME,
+  PLEASE_WAIT_MESSAGE,
+  TRIGGERED_BY_MACHINE,
+  LAST_PATIENT_MESSAGE,
+  PATIENT_MESSAGE_PROCESSED_CHUNK,
+];
+
+export const NOTIFICATION_BOT_CUSTOM_FIELDS = [
+  SPACE_NAME,
+  CLINIC_NAME,
+  SALESBOT_LOG,
+  PATIENT_PHONE,
+  TREATMENT_NAME,
+  NOTIFICATION_ID,
+  DOCTOR_FULL_NAME,
+  PATIENT_LAST_NAME,
+  REMINDER_MESSAGE,
+  APPOINTMENT_DATE,
+  PATIENT_FIRST_NAME,
+  APPOINTMENT_END_TIME,
+  TRIGGERED_BY_MACHINE,
+  APPOINTMENT_START_TIME,
+  APPOINTMENT_WEEKDAY_NAME,
+];

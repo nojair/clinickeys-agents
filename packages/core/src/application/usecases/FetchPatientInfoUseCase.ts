@@ -71,6 +71,20 @@ export class FetchPatientInfoUseCase {
       leadPhones
     );
 
+    if (patientInfo?.paciente?.id_paciente) {
+      const patientId = patientInfo.paciente.id_paciente;
+      const oldLeadId = patientInfo.paciente.kommo_lead_id;
+      if (oldLeadId !== kommoData.leadData.id) {
+        Logger.debug('[FetchPatientInfo] Actualizando kommo_lead_id en BD', {
+          patientId,
+          oldLeadId,
+          newLeadId: kommoData.leadData.id,
+        });
+        await this.patientService.updateKommoLeadId(patientId, kommoData.leadData.id);
+        patientInfo.paciente.kommo_lead_id = kommoData.leadData.id;
+      }
+    }
+
     if (!patientInfo) {
       Logger.error('[FetchPatientInfo] No se encontró información del paciente', { leadId });
       throw new AppError({

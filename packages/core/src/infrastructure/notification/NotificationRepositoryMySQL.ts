@@ -26,7 +26,6 @@ export class NotificationRepositoryMySQL implements INotificationRepository {
       const args = [clinicId, fecha_envio_programada];
       const rows = await ejecutarConReintento(query, args);
       // Mapea los resultados para transformar el payload a tipo NotificationPayload
-      console.log('rows', JSON.stringify(rows, null, 2));
       return rows.map((row: any) => ({
         estado: row.estado,
         mensaje: row.mensaje,
@@ -51,7 +50,6 @@ export class NotificationRepositoryMySQL implements INotificationRepository {
           : undefined,
       }));
     } catch (error: any) {
-      console.log('Error en findPendingByClinic', JSON.stringify(error, null, 2));
       if (error instanceof NotificationNotFoundError) throw error;
       throw new Error(error.message || 'Error desconocido al obtener notificaciones pendientes');
     }

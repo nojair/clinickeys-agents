@@ -8,11 +8,17 @@ import {
   CreateNotificationBotConfigDTO,
   IBotConfigRepository,
 } from "@clinickeys-agents/core/domain/botConfig";
-import { defaultPlaceholders, mapKommoCustomFields } from "@clinickeys-agents/core/utils";
+import {
+  defaultPlaceholders,
+  mapKommoCustomFields,
+  CHAT_BOT_CUSTOM_FIELDS,
+  NOTIFICATION_BOT_CUSTOM_FIELDS,
+} from "@clinickeys-agents/core/utils";
 import { BotConfigEnricher } from "@clinickeys-agents/core/application/services";
 import { UpdateBotConfigPayload } from "@clinickeys-agents/core/application/usecases";
 import { KommoApiGateway } from "@clinickeys-agents/core/infrastructure/integrations/kommo";
 import { KommoRepository } from "@clinickeys-agents/core/infrastructure/kommo";
+
 import type { KommoCustomFieldExistence } from "@clinickeys-agents/core/application/services";
 import type { KommoLeadCustomFieldDefinition } from "@clinickeys-agents/core/infrastructure/integrations/kommo/models";
 
@@ -39,36 +45,6 @@ type PartialNotificationBotConfigDTO = Omit<
   PartialBaseDTO & {
     botConfigType: BotConfigType.NotificationBot;
   };
-
-const CHAT_BOT_CUSTOM_FIELDS = [
-  "threadId",
-  "botMessage",
-  "salesbotLog",
-  "patientPhone",
-  "patientMessage",
-  "reminderMessage",
-  "patientLastName",
-  "patientFirstName",
-  "pleaseWaitMessage",
-  "triggeredByMachine",
-];
-const NOTIFICATION_BOT_CUSTOM_FIELDS = [
-  "spaceName",
-  "clinicName",
-  "salesbotLog",
-  "patientPhone",
-  "treatmentName",
-  "notificationId",
-  "doctorFullName",
-  "patientLastName",
-  "reminderMessage",
-  "appointmentDate",
-  "patientFirstName",
-  "appointmentEndTime",
-  "triggeredByMachine",
-  "appointmentStartTime",
-  "appointmentWeekdayName",
-];
 
 export class BotConfigService {
   constructor(private readonly repo: IBotConfigRepository) {}

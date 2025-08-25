@@ -4,6 +4,11 @@ import util from "util";
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
+// Configuración global de util.inspect
+util.inspect.defaultOptions.depth = 4 //null; // sin límite de profundidad
+util.inspect.defaultOptions.colors = true;
+util.inspect.defaultOptions.breakLength = 100;
+
 // ANSI colors
 const colors = {
   reset: "\x1b[0m",
@@ -37,7 +42,7 @@ export class Logger {
     const formatted =
       typeof message === "string"
         ? util.format(message, ...args)
-        : util.inspect(message, { depth: 4, colors: true, breakLength: 100 });
+        : util.inspect(message);
 
     // Prefijo con colores por nivel
     let levelColor;
