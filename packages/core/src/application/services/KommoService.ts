@@ -123,9 +123,7 @@ export class KommoService {
 
     if (!contactId) {
       const contactFields: Record<string, string> = {
-        [PATIENT_FIRST_NAME]: patientFirstName,
-        [PATIENT_LAST_NAME]: patientLastName,
-        [PATIENT_PHONE]: patientPhone,
+        PHONE: normalizedPhone
       };
       const contactPayload = [{
         name: `${patientFirstName} ${patientLastName}`,
