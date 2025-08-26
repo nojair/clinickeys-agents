@@ -41,7 +41,7 @@ import { PatientRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/p
 import { AppointmentRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/appointment";
 import { PresupuestoRepositoryMySQL } from "@clinickeys-agents/core/infrastructure/presupuesto";
 import { Logger } from "@clinickeys-agents/core/infrastructure/external";
-import { THREAD_ID } from "@clinickeys-agents/core/utils";
+import { THREAD_ID, REMINDER_MESSAGE } from "@clinickeys-agents/core/utils";
 
 import { LeadQueueMessageDTO } from "@clinickeys-agents/core/domain/kommo";
 import { BotConfigType } from "@clinickeys-agents/core/domain/botConfig";
@@ -178,6 +178,7 @@ export class LeadProcessorController {
     });
 
     const userMessage = updateResult.newPatientMessage;
+    const reminderMessage = normalizedLeadCF.find((cf) => cf.field_name === REMINDER_MESSAGE)?.value || undefined;
 
     const threadId = normalizedLeadCF.find((cf) => cf.field_name === THREAD_ID)?.value || undefined;
     this.logger.debug("Extracted conversation context", { userMessage, threadId });
@@ -186,6 +187,7 @@ export class LeadProcessorController {
       leadId: Number(msg.kommo.leads.add?.[0]?.id ?? 0),
       botConfig: botConfig as any,
       normalizedLeadCF,
+      reminderMessage,
       userMessage,
       threadId
     };

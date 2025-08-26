@@ -21,6 +21,7 @@ export interface RecognizeUserIntentInput {
   clinicId: number;
   leadId: number;
   tiempoActualDT: DateTime;
+  reminderMessage: string;
   userMessage: string;
   openAIService: IOpenAIService;
   speakingBotId: string;
@@ -46,11 +47,12 @@ export interface RecognizeUserIntentOutput {
 type PatientInfo = Awaited<ReturnType<FetchPatientInfoUseCase['execute']>>;
 
 type IntentContext = {
-  message: string;
-  patient: PatientInfo['patient'];
-  appointments: PatientInfo['appointments'];
-  packsBonos: PatientInfo['packsBonos'];
-  budgets: PatientInfo['budgets'];
+  MENSAJE: string;
+  TIEMPO_ACTUAL: string;
+  DATOS_DEL_PACIENTE: PatientInfo['patient'];
+  CITAS_PROGRAMADAS_DEL_PACIENTE: PatientInfo['appointments'];
+  RESUMEN_PACK_BONOS_DEL_PACIENTE: PatientInfo['packsBonos'];
+  RESUMEN_PRESUPUESTOS_DEL_PACIENTE: PatientInfo['budgets'];
 };
 
 export class RecognizeUserIntentUseCase {
@@ -68,6 +70,7 @@ export class RecognizeUserIntentUseCase {
       clinicId,
       leadId,
       tiempoActualDT,
+      reminderMessage,
       userMessage,
       openAIService,
       speakingBotId,
@@ -87,12 +90,20 @@ export class RecognizeUserIntentUseCase {
     });
     Logger.debug('[RecognizeUserIntent] Información del paciente obtenida', { hasPatient: !!patientInfo.patient });
 
+    let MENSAJE = '';
+    if (reminderMessage && Array.isArray(patientInfo.appointments) && patientInfo.appointments?.length) {
+      MENSAJE = `MENSAJE_RECORDATORIO_CITA: ${reminderMessage}. RESPUESTA_AL_MENSAJE_RECORDATORIO_CITA del paciente: ${userMessage}`;
+    } else {
+      MENSAJE = (userMessage || "").trim();
+    }
+
     const contextForAI: IntentContext = {
-      message: userMessage,
-      patient: patientInfo.patient,
-      appointments: patientInfo.appointments ?? [],
-      packsBonos: patientInfo.packsBonos ?? [],
-      budgets: patientInfo.budgets ?? []
+      MENSAJE,
+      TIEMPO_ACTUAL: tiempoActualDT.toISO() as string,
+      DATOS_DEL_PACIENTE: patientInfo.patient,
+      CITAS_PROGRAMADAS_DEL_PACIENTE: patientInfo.appointments ?? [],
+      RESUMEN_PACK_BONOS_DEL_PACIENTE: patientInfo.packsBonos ?? [],
+      RESUMEN_PRESUPUESTOS_DEL_PACIENTE: patientInfo.budgets ?? []
     };
 
     Logger.debug('[RecognizeUserIntent] Contexto para AI generado', { contextSample: { ...contextForAI } });
