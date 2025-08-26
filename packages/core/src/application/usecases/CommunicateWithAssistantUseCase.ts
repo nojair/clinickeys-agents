@@ -18,6 +18,18 @@ import {
   PATIENT_MESSAGE_PROCESSED_CHUNK,
   PLEASE_WAIT_MESSAGE,
   REMINDER_MESSAGE,
+  NOTIFICATION_ID,
+  PATIENT_FIRST_NAME,
+  PATIENT_LAST_NAME,
+  PATIENT_PHONE,
+  CLINIC_NAME,
+  APPOINTMENT_DATE,
+  APPOINTMENT_START_TIME,
+  APPOINTMENT_END_TIME,
+  APPOINTMENT_WEEKDAY_NAME,
+  DOCTOR_FULL_NAME,
+  TREATMENT_NAME,
+  SPACE_NAME,
   BOT_MESSAGE,
   THREAD_ID,
 } from '@clinickeys-agents/core/utils';
@@ -100,6 +112,7 @@ export interface CommunicateInput {
   leadId: number;
   normalizedLeadCF: (KommoCustomFieldValueBase & { value: any })[];
   userMessage: string;
+  reminderMessage: string;
   threadId?: string | null;
 }
 
@@ -131,7 +144,7 @@ export class CommunicateWithAssistantUseCase {
   constructor(private deps: CommunicateWithAssistantUseCaseDeps) { }
 
   public async execute(input: CommunicateInput): Promise<CommunicateOutput> {
-    const { botConfig, leadId, normalizedLeadCF, userMessage, threadId } = input;
+    const { botConfig, leadId, normalizedLeadCF, userMessage, reminderMessage, threadId } = input;
 
     try {
       Logger.info('[CommunicateWithAssistant] Inicio', { leadId, threadId, userMessage });
@@ -144,6 +157,7 @@ export class CommunicateWithAssistantUseCase {
         clinicId: botConfig.clinicId,
         leadId,
         tiempoActualDT: localTime(botConfig.timezone),
+        reminderMessage,
         userMessage,
         openAIService: this.deps.openAIService,
         speakingBotId: botConfig.openai?.assistants?.speakingBot || '',
@@ -248,7 +262,22 @@ export class CommunicateWithAssistantUseCase {
       }
 
       const baseFields: Record<string, string> = {
+        // custom fields for reminder
+        [APPOINTMENT_WEEKDAY_NAME]: '',
+        [APPOINTMENT_START_TIME]: '',
+        [APPOINTMENT_END_TIME]: '',
+        [PATIENT_FIRST_NAME]: '',
+        [PATIENT_LAST_NAME]: '',
+        [APPOINTMENT_DATE]: '',
         [REMINDER_MESSAGE]: '',
+        [DOCTOR_FULL_NAME]: '',
+        [NOTIFICATION_ID]: '',
+        [TREATMENT_NAME]: '',
+        [PATIENT_PHONE]: '',
+        [CLINIC_NAME]: '',
+        [SPACE_NAME]: '',
+
+        // chat custom fields
         [THREAD_ID]: thId ?? '',
         [BOT_MESSAGE]: finalMsg || '',
         [PLEASE_WAIT_MESSAGE]: 'false',

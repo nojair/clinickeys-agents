@@ -24,6 +24,10 @@ export interface UpdatePatientMessageOutput {
 export class UpdatePatientMessageUseCase {
   constructor(private readonly kommoService: KommoService) {}
 
+  private normalize(text: string): string {
+    return (text || "").replace(/\s+/g, " ").trim();
+  }
+
   public async execute(
     input: UpdatePatientMessageInput
   ): Promise<UpdatePatientMessageOutput> {
@@ -49,26 +53,42 @@ export class UpdatePatientMessageUseCase {
         patientMessageProcessedChunk,
       });
 
-      let newPatientMessage: string = `${patientMessage || ""}`.trim() + ` ${lastPatientMessage || ""}`.trim();
+      // Normalizamos todo para evitar problemas con espacios, saltos de línea, etc.
+      let newPatientMessage: string = `${this.normalize(patientMessage)} ${this.normalize(
+        lastPatientMessage
+      )}`.trim();
 
-      if (patientMessageProcessedChunk && newPatientMessage.includes(patientMessageProcessedChunk)) {
-        newPatientMessage = newPatientMessage.replace(
-          patientMessageProcessedChunk,
-          ""
-        ).trim();
+      if (patientMessageProcessedChunk) {
+        const normalizedChunk = this.normalize(patientMessageProcessedChunk);
+        const normalizedMsg = this.normalize(newPatientMessage);
+
+        if (normalizedMsg.includes(normalizedChunk)) {
+          newPatientMessage = normalizedMsg.replace(normalizedChunk, "").trim();
+        } else {
+          Logger.warn(
+            "[UpdatePatientMessageUseCase] Chunk no encontrado exactamente para reemplazo",
+            {
+              normalizedChunk,
+              normalizedMsg,
+            }
+          );
+        }
       }
 
-      Logger.debug("[UpdatePatientMessageUseCase] Nuevo patientMessage calculado", {
-        newPatientMessage,
-      });
+      Logger.debug(
+        "[UpdatePatientMessageUseCase] Nuevo patientMessage calculado",
+        {
+          newPatientMessage,
+        }
+      );
 
       await this.kommoService.updateLeadCustomFields({
         botConfig,
         leadId,
         customFields: {
-          [LAST_PATIENT_MESSAGE]: '',
+          [LAST_PATIENT_MESSAGE]: "",
           [PATIENT_MESSAGE]: newPatientMessage,
-        }
+        },
       });
 
       Logger.info("[UpdatePatientMessageUseCase] Actualización completada", {
