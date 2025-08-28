@@ -33,8 +33,6 @@ export class FetchKommoDataUseCase {
   async execute(input: FetchKommoDataInput): Promise<FetchKommoDataOutput> {
     const { botConfigType, botConfigId, clinicSource, clinicId, leadId } = input;
 
-    Logger.info('[FetchKommoData] Inicio', { botConfigType, botConfigId, clinicSource, clinicId, leadId });
-
     // 1) Obtener configuración del bot
     Logger.debug('[FetchKommoData] Obteniendo configuración del bot');
     const botConfig = await this.getBotConfigUseCase.execute(
@@ -103,11 +101,6 @@ export class FetchKommoDataUseCase {
 
     Logger.debug('[FetchKommoData] Normalizando campos personalizados del contacto');
     const normalizedContactCF = normalizeEntityCustomFields(contactDefs, contactData?.custom_fields_values || []);
-
-    Logger.info('[FetchKommoData] Proceso completado correctamente', {
-      normalizedLeadCount: normalizedLeadCF.length,
-      normalizedContactCount: normalizedContactCF.length
-    });
 
     return {
       botConfig,

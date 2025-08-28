@@ -147,9 +147,6 @@ export class CommunicateWithAssistantUseCase {
     const { botConfig, leadId, normalizedLeadCF, userMessage, reminderMessage, threadId } = input;
 
     try {
-      Logger.info('[CommunicateWithAssistant] Inicio', { leadId, threadId, userMessage });
-      Logger.debug('[CommunicateWithAssistant] NormalizedLeadCF recibido', { count: normalizedLeadCF.length });
-
       const intentResult = await this.deps.recognizeIntentUC.execute({
         botConfigType: botConfig.botConfigType,
         botConfigId: botConfig.botConfigId,

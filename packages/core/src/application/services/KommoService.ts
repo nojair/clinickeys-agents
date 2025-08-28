@@ -177,23 +177,12 @@ export class KommoService {
     customFields: Record<string, string>;
   }): Promise<void> {
     const { leadMap } = await this.loadCustomFieldMappings();
-    const keys = Object.keys(input.customFields || {});
-    Logger.info('[KommoService.updateLeadCustomFields] Inicio', {
-      leadId: input.leadId,
-      keys,
-      keyCount: keys.length,
-    });
     const values = buildCustomFieldsValuesFromMap(leadMap, input.customFields);
-    Logger.info('[KommoService.updateLeadCustomFields] Payload', {
-      items: values.length,
-      sample: values.slice(0, 5).map(v => ({ field_id: (v as any).field_id, value: (v as any).values?.[0]?.value })),
-    });
     if (!values.length) {
       Logger.warn('[KommoService.updateLeadCustomFields] custom_fields_values vacío. No se enviará PATCH.', { leadId: input.leadId });
       return;
     }
     await this.kommoRepository.patchLead({ leadId: input.leadId, payload: { custom_fields_values: values } });
-    Logger.info('[KommoService.updateLeadCustomFields] PATCH enviado', { leadId: input.leadId, count: values.length });
   }
 
   public async replyToLead(input: {
@@ -243,7 +232,7 @@ export class KommoService {
 
     Logger.info('[KommoService.replyToLead] Payload resultante', {
       items: values.length,
-      sample: values.slice(0, 5).map(v => ({ field_id: (v as any).field_id, value: (v as any).values?.[0]?.value })),
+      payload: values.map(v => ({ field_id: (v as any).field_id, value: (v as any).values?.[0]?.value })),
     });
 
     if (!values.length) {

@@ -77,6 +77,8 @@ export class ScheduleAppointmentUseCase {
       in_contact: '',
     });
 
+    Logger.debug('=== [ScheduleAppointment] patientInfo ===', patientInfo);
+
     if (patientInfo.message?.includes('[ERROR_NO_PATIENT_FOUND]')) {
       Logger.warn('[ScheduleAppointment] Paciente no encontrado, creando nuevo paciente');
       const createdId = await this.patientService.createPatient({
