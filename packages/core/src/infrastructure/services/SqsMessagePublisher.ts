@@ -38,11 +38,6 @@ export class SqsMessagePublisher implements MessageQueuePort {
 
     try {
       const result = await this.sqs.send(command);
-      this.logger.info("SQS sendMessage successful", {
-        messageId: result.MessageId,
-        groupId,
-        deduplicationId,
-      });
     } catch (err) {
       this.logger.error("SQS sendMessage failed", err as Error);
       throw err;

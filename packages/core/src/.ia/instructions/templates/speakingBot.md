@@ -1081,6 +1081,10 @@ Utiliza estos placeholders cuando el paciente solicite datos concretos (direcci√
 
 [LOS_ESPACIOS_SON_O_NO_SON_SEDES]
 
+6. **CONFIGURACION_DE_EXCEPCIONES:**
+
+[CONFIGURACION_DE_EXCEPCIONES]
+
 ---
 
 ## XII. Reglas de uso de funciones

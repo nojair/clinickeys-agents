@@ -26,12 +26,6 @@ export class LeadWebhookController {
    * Punto de entrada invocado por el handler Lambda.
    */
   async handle(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyStructuredResultV2> {
-    this.logger.info("Webhook event received", {
-      headers: event.headers,
-      isBase64Encoded: event.isBase64Encoded,
-      bodyPreview: event.body?.slice(0, 300),
-    });
-
     // ──────────────────────────────────────────────────────────────
     // 1. Decodificar el cuerpo (base64 → UTF‑8) y parsear JSON / urlencoded
     // ──────────────────────────────────────────────────────────────
