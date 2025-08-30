@@ -1,13 +1,14 @@
 // packages/core/src/infrastructure/job/SendRemindersJob.ts
 
-import { INotificationRepository } from '@clinickeys-agents/core/domain/notification';
-import { IBotConfigRepository, BotConfigType } from '@clinickeys-agents/core/domain/botConfig';
-import { IPatientRepository } from '@clinickeys-agents/core/domain/patient';
-import { KommoApiGateway } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
-import { KommoRepository } from '@clinickeys-agents/core/infrastructure/kommo';
-import { KommoService } from '@clinickeys-agents/core/application/services';
 import { localTime, safeISODate, parseClinicDate, canSendReminder } from '@clinickeys-agents/core/utils';
+import { IBotConfigRepository, BotConfigType } from '@clinickeys-agents/core/domain/botConfig';
+import { KommoApiGateway } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
+import { INotificationRepository } from '@clinickeys-agents/core/domain/notification';
+import { KommoRepository } from '@clinickeys-agents/core/infrastructure/kommo';
+import { IPatientRepository } from '@clinickeys-agents/core/domain/patient';
+import { KommoService, NotificationOmittedError } from '@clinickeys-agents/core/application/services';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
+
 import {
   SPACE_NAME,
   CLINIC_NAME,
@@ -178,9 +179,13 @@ export class SendRemindersJob {
               Logger.info('[SendRemindersJob] Notificación marcada como enviada', { id_notificacion: n.id_notificacion });
             } catch (err) {
               try {
-                await this.notificationsRepo.updateState(n.id_notificacion, 'fallido');
+                if (err instanceof NotificationOmittedError) {
+                  await this.notificationsRepo.updateState(n.id_notificacion, 'omitido');
+                } else {
+                  await this.notificationsRepo.updateState(n.id_notificacion, 'fallido');
+                }
               } catch (updateErr) {
-                Logger.error('[JOB] Error marcando notificación como fallida', { notificationId: n.id_notificacion, updateErr });
+                Logger.error('[JOB] Error marcando notificación como fallida/omitida', { notificationId: n.id_notificacion, updateErr });
               }
               Logger.error('[JOB] Error enviando recordatorio', {
                 notificationId: n.id_notificacion,
