@@ -1,13 +1,12 @@
 // packages/core/src/infrastructure/job/SendRemindersJob.ts
 
 import { localTime, safeISODate, parseClinicDate, canSendReminder } from '@clinickeys-agents/core/utils';
-import { NotificationOmittedError } from '@clinickeys-agents/core/application/services/KommoService';
 import { IBotConfigRepository, BotConfigType } from '@clinickeys-agents/core/domain/botConfig';
 import { KommoApiGateway } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import { INotificationRepository } from '@clinickeys-agents/core/domain/notification';
 import { KommoRepository } from '@clinickeys-agents/core/infrastructure/kommo';
 import { IPatientRepository } from '@clinickeys-agents/core/domain/patient';
-import { KommoService } from '@clinickeys-agents/core/application/services';
+import { KommoService, NotificationOmittedError } from '@clinickeys-agents/core/application/services';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 
 import {
