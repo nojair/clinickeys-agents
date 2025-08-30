@@ -32,6 +32,13 @@ import {
   NOTIFICATION_ID,
 } from '@clinickeys-agents/core/utils';
 
+export class NotificationOmittedError extends Error {
+  constructor(message: string = 'Notificación omitida por teléfono inválido') {
+    super(message);
+    this.name = 'NotificationOmittedError';
+  }
+}
+
 export class KommoService {
   private kommoRepository: IKommoRepository;
   private patientRepository: IPatientRepository;
@@ -92,6 +99,13 @@ export class KommoService {
     const defaultCountry = botConfig.defaultCountry as CountryCode;
     const normalizedPhone = parsePhoneNumberFromString(patientPhone, defaultCountry)?.number || patientPhone;
     Logger.info('[KommoService.ensureLead] Normalized phone', { normalizedPhone, patientId });
+
+    // validación de negocio
+    if (!normalizedPhone || normalizedPhone.trim() === '') {
+      throw new NotificationOmittedError(
+        `Normalized phone vacío para patientId=${patientId}, notificationId=${notificationId}`
+      );
+    }
 
     let existingLeadId: string | undefined;
     try {
