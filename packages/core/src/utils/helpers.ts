@@ -126,3 +126,8 @@ export function mapKommoCustomFields(requiredCustomFields: string[], allFields: 
     };
   });
 }
+
+export function sanitizeComment(input: string, maxLen = 600): string {
+  const txt = (input || "").toString().trim().replace(/\s+/g, " ");
+  return txt.length > maxLen ? txt.slice(0, maxLen - 1) + "…" : txt;
+}

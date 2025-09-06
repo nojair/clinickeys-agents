@@ -20,6 +20,7 @@ export type OpenAIFunctionTool = {
   function: {
     name: string;
     description: string;
+    summary?: string;
     parameters: JSONSchema;
     strict?: boolean;
   };
@@ -34,6 +35,8 @@ export type ToolName =
   | "consulta_reprogramar"
   | "reprogramar_cita"
   | "cancelar_cita"
+  | "confirmar_cita"
+  | "paciente_en_camino"
   | "tarea";
 
 // Colección tipada de herramientas
@@ -67,7 +70,7 @@ export const openaiTools: ReadonlyArray<OpenAITool> = [
           espacio: {
             type: ["string", "null"],
             description:
-              "SEDE solicitada. Usar null si el paciente no indicó sede o si mencionó una sala/cabina."
+              "SEDE solicitada. Usar null si el paciente no indicó sede o si mencionó una sala/cabina.",
           },
         },
         required: ["tratamiento", "medico", "espacio", "fechas", "horas"],
@@ -127,9 +130,14 @@ export const openaiTools: ReadonlyArray<OpenAITool> = [
           espacio: {
             type: ["string", "null"],
             description:
-              "SEDE solicitada. Usar null si no aplica o si el paciente indicó una sala/cabina."
+              "SEDE solicitada. Usar null si no aplica o si el paciente indicó una sala/cabina.",
+          },
+          summary: {
+            type: "string",
+            description: "Resumen breve, en un solo párrafo, de la conversación con el paciente: por qué se contactó, qué se hizo (acciones tomadas) y en qué se quedó (acuerdos/próximos pasos). Si actuó en nombre de otra persona, menciónalo. No repitas datos estructurados de la cita (IDs, fecha/hora, nombres, tratamiento) salvo que sean necesarios para entender el caso. 150–400 caracteres, sin viñetas ni formato.",
           },
         },
+        // Requeridos reales: los demás son opcionales
         required: [
           "nombre",
           "apellido",
@@ -139,6 +147,7 @@ export const openaiTools: ReadonlyArray<OpenAITool> = [
           "espacio",
           "fechas",
           "horas",
+          "summary",
           "id_pack_bono",
           "id_presupuesto",
         ],
@@ -151,8 +160,7 @@ export const openaiTools: ReadonlyArray<OpenAITool> = [
     type: "function",
     function: {
       name: "consulta_reprogramar",
-      description:
-        "Busca huecos disponibles para reprogramar una cita existente.",
+      description: "Busca huecos disponibles para reprogramar una cita existente.",
       parameters: {
         type: "object",
         properties: {
@@ -191,7 +199,7 @@ export const openaiTools: ReadonlyArray<OpenAITool> = [
           espacio: {
             type: ["string", "null"],
             description:
-              "SEDE objetivo de la reprogramación. Por defecto, la sede original; null si no se restringe por sede."
+              "SEDE objetivo de la reprogramación. Por defecto, la sede original; null si no se restringe por sede.",
           },
         },
         required: [
@@ -213,8 +221,7 @@ export const openaiTools: ReadonlyArray<OpenAITool> = [
     type: "function",
     function: {
       name: "reprogramar_cita",
-      description:
-        "Reagenda una cita existente al nuevo horario proporcionado.",
+      description: "Reagenda una cita existente al nuevo horario proporcionado.",
       parameters: {
         type: "object",
         properties: {
@@ -264,7 +271,11 @@ export const openaiTools: ReadonlyArray<OpenAITool> = [
           espacio: {
             type: ["string", "null"],
             description:
-              "SEDE final elegida para la nueva cita. Usar null si no aplica."
+              "SEDE final elegida para la nueva cita. Usar null si no aplica.",
+          },
+          summary: {
+            type: "string",
+            description: "Resumen breve, en un solo párrafo, de la conversación con el paciente: por qué se contactó, qué se hizo (acciones tomadas) y en qué se quedó (acuerdos/próximos pasos). Si actuó en nombre de otra persona, menciónalo. No repitas datos estructurados de la cita (IDs, fecha/hora, nombres, tratamiento) salvo que sean necesarios para entender el caso. 150–400 caracteres, sin viñetas ni formato.",
           },
         },
         required: [
@@ -279,6 +290,7 @@ export const openaiTools: ReadonlyArray<OpenAITool> = [
           "espacio",
           "fechas",
           "horas",
+          "summary",
         ],
         additionalProperties: false,
       },
@@ -309,8 +321,60 @@ export const openaiTools: ReadonlyArray<OpenAITool> = [
             type: "integer",
             description: "ID de la cita a cancelar (NO PUEDE ESTAR VACÍO).",
           },
+          summary: {
+            type: "string",
+            description: "Resumen breve, en un solo párrafo, de la conversación con el paciente: por qué se contactó, qué se hizo (acciones tomadas) y en qué se quedó (acuerdos/próximos pasos). Si actuó en nombre de otra persona, menciónalo. No repitas datos estructurados de la cita (IDs, fecha/hora, nombres, tratamiento) salvo que sean necesarios para entender el caso. 150–400 caracteres, sin viñetas ni formato.",
+          },
         },
-        required: ["nombre", "apellido", "telefono", "id_cita"],
+        required: ["nombre", "apellido", "telefono", "id_cita", "summary"],
+        additionalProperties: false,
+      },
+      strict: true,
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "confirmar_cita",
+      description: "Confirma una cita (actualiza estado a confirmado).",
+      parameters: {
+        type: "object",
+        properties: {
+          id_cita: {
+            type: "integer",
+            description: "ID de la cita a confirmar (NO PUEDE ESTAR VACÍO).",
+          },
+          summary: {
+            type: "string",
+            description: "Resumen breve, en un solo párrafo, de la conversación con el paciente: por qué se contactó, qué se hizo (acciones tomadas) y en qué se quedó (acuerdos/próximos pasos). Si actuó en nombre de otra persona, menciónalo. No repitas datos estructurados de la cita (IDs, fecha/hora, nombres, tratamiento) salvo que sean necesarios para entender el caso. 150–400 caracteres, sin viñetas ni formato.",
+          },
+        },
+        required: ["id_cita", "summary"],
+        additionalProperties: false,
+      },
+      strict: true,
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "paciente_en_camino",
+      description:
+        "Marca la cita con el estado 'paciente en camino' (id_estados_cita_in=10).",
+      parameters: {
+        type: "object",
+        properties: {
+          id_cita: {
+            type: "integer",
+            description:
+              "ID de la cita a marcar como 'paciente en camino' (NO PUEDE ESTAR VACÍO).",
+          },
+          summary: {
+            type: "string",
+            description: "Resumen breve, en un solo párrafo, de la conversación con el paciente: por qué se contactó, qué se hizo (acciones tomadas) y en qué se quedó (acuerdos/próximos pasos). Si actuó en nombre de otra persona, menciónalo. No repitas datos estructurados de la cita (IDs, fecha/hora, nombres, tratamiento) salvo que sean necesarios para entender el caso. 150–400 caracteres, sin viñetas ni formato.",
+          },
+        },
+        required: ["id_cita", "summary"],
         additionalProperties: false,
       },
       strict: true,
@@ -320,8 +384,7 @@ export const openaiTools: ReadonlyArray<OpenAITool> = [
     type: "function",
     function: {
       name: "tarea",
-      description:
-        "Crea una tarea administrativa registrando datos y motivo.",
+      description: "Crea una tarea administrativa registrando datos y motivo.",
       parameters: {
         type: "object",
         properties: {
@@ -344,16 +407,11 @@ export const openaiTools: ReadonlyArray<OpenAITool> = [
           canal_preferido: {
             type: ["string", "null"],
             enum: ["llamada", "WhatsApp"],
-            description: "Canal preferido para contacto (opcional, null si no aplica)",
+            description:
+              "Canal preferido para contacto (opcional, null si no aplica)",
           },
         },
-        required: [
-          "nombre",
-          "apellido",
-          "telefono",
-          "motivo",
-          "canal_preferido",
-        ],
+        required: ["nombre", "apellido", "telefono", "motivo", "canal_preferido"],
         additionalProperties: false,
       },
       strict: true,

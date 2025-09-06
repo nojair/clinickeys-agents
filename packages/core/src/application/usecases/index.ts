@@ -6,6 +6,8 @@ export * from "./UpdatePatientMessageUseCase";
 export * from "./RecognizeUserIntentUseCase";
 export * from "./RegularConversationUseCase";
 export * from "./ScheduleAppointmentUseCase";
+export * from "./MarkPatientOnTheWayUseCase";
+export * from "./ConfirmAppointmentUseCase";
 export * from "./ProcessLeadWebhookUseCase";
 export * from "./CheckAvailabilityUseCase";
 export * from "./CancelAppointmentUseCase";

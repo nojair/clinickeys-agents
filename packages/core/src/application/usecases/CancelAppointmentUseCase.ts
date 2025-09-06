@@ -13,6 +13,7 @@ interface CancelAppointmentInput {
     fecha_cita?: string;
     hora_inicio?: string;
     hora_fin?: string;
+    summary: string;
   };
 }
 
@@ -30,7 +31,7 @@ export class CancelAppointmentUseCase {
 
   public async execute(input: CancelAppointmentInput): Promise<CancelAppointmentOutput> {
     const { botConfig, leadId, normalizedLeadCF, params } = input;
-    const { id_cita } = params;
+    const { id_cita, summary } = params;
 
     Logger.info('[CancelAppointment] Inicio', { leadId, id_cita });
 
@@ -54,7 +55,7 @@ export class CancelAppointmentUseCase {
 
     // 3. Cancelar cita en BD
     Logger.debug('[CancelAppointment] Cancelando cita en base de datos', { id_cita });
-    await this.appointmentService.cancelAppointment(id_cita);
+    await this.appointmentService.cancelAppointment(id_cita, summary);
 
     // 4. Procesar packs‑bono / presupuestos
     Logger.debug('[CancelAppointment] Procesando packbono/presupuesto asociado', { id_cita });

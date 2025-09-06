@@ -1,4 +1,4 @@
-export interface AppointmentCreateParams {
+export interface CreateAppointmentInput {
   id_paciente: number;
   id_clinica: number;
   id_super_clinica: number;
@@ -10,10 +10,11 @@ export interface AppointmentCreateParams {
   hora_fin: string;
   id_presupuesto?: number | null;
   id_pack_bono?: number | null;
+  comentarios_cita: string;
   [key: string]: any;
 }
 
-export interface AppointmentUpdateParams {
+export interface UpdateAppointmentInput {
   id_cita: number;
   id_medico?: number;
   fecha_cita?: string;
@@ -21,6 +22,8 @@ export interface AppointmentUpdateParams {
   hora_fin?: string;
   id_espacio?: number;
   id_estado_cita?: number;
+  id_estados_cita_in?: number | null;
+  comentarios_cita: string;
   [key: string]: any;
 }
 
@@ -28,12 +31,12 @@ export interface IAppointmentRepository {
   /**
    * Crea una nueva cita.
    */
-  createAppointment(params: AppointmentCreateParams): Promise<number>;
+  createAppointment(params: CreateAppointmentInput): Promise<number>;
 
   /**
    * Actualiza una cita existente.
    */
-  updateAppointment(params: AppointmentUpdateParams): Promise<void>;
+  updateAppointment(params: UpdateAppointmentInput): Promise<void>;
 
   /**
    * Obtiene las citas de un paciente por clínica.
@@ -51,11 +54,6 @@ export interface IAppointmentRepository {
   getCitasDetallePorPackTratamiento(id_paciente: number, id_clinica: number): Promise<any | undefined>;
 
   /**
-   * Elimina una cita por su ID.
-   */
-  deleteAppointment(id_cita: number): Promise<void>;
-
-  /**
    * Inserta una cita asociada a un pack bono, usando stored procedure.
    */
   insertarCitaPackBonos(params: {
@@ -70,5 +68,6 @@ export interface IAppointmentRepository {
     p_fecha_cita: string;
     p_hora_inicio: string;
     p_hora_fin: string;
+    p_comentarios_cita: string;
   }): Promise<any>;
 }

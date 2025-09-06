@@ -186,6 +186,7 @@ export class PatientService {
       nombre_espacio: cita.nombre_espacio,
       nombre_tratamiento: cita.nombre_tratamiento,
       nombre_medico: cita.nombre_medico,
+      [`ultimo_resumen_cita_ID_${cita.id_cita}`]: cita.comentarios_cita,
     }));
 
     // Packs/bonos: sesiones y detalles

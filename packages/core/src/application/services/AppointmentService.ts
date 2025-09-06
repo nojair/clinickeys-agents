@@ -2,8 +2,8 @@ import { AppError } from '@clinickeys-agents/core/utils';
 
 import {
   IAppointmentRepository,
-  AppointmentCreateParams,
-  AppointmentUpdateParams
+  CreateAppointmentInput,
+  UpdateAppointmentInput
 } from "@clinickeys-agents/core/domain/appointment";
 
 export class AppointmentService {
@@ -13,11 +13,11 @@ export class AppointmentService {
     this.appointmentRepository = appointmentRepository;
   }
 
-  async createAppointment(params: AppointmentCreateParams): Promise<number> {
+  async createAppointment(params: CreateAppointmentInput): Promise<number> {
     return await this.appointmentRepository.createAppointment(params);
   }
 
-  async updateAppointment(params: AppointmentUpdateParams): Promise<void> {
+  async updateAppointment(params: UpdateAppointmentInput): Promise<void> {
     return await this.appointmentRepository.updateAppointment(params);
   }
 
@@ -29,11 +29,28 @@ export class AppointmentService {
     return await this.appointmentRepository.findById(appointmentId);
   }
 
-  async deleteAppointment(appointmentId: number): Promise<void> {
-    return await this.appointmentRepository.deleteAppointment(appointmentId);
+  async confirmAppointment(appointmentId: number, summary: string): Promise<any | undefined> {
+    const appointment = await this.getAppointmentById(appointmentId);
+    if (!appointment) {
+      throw new AppError({
+        code: 'ERR_APPOINTMENT_NOT_FOUND',
+        humanMessage: `No se encontró la cita con id ${appointmentId}`,
+        context: { appointmentId }
+      });
+    }
+
+    const CONFIRMED_STATUS_IN = 36;
+
+    await this.updateAppointment({
+      id_cita: appointmentId,
+      id_estados_cita_in: CONFIRMED_STATUS_IN,
+      comentarios_cita: summary
+    });
+
+    return await this.getAppointmentById(appointmentId);
   }
 
-  async cancelAppointment(appointmentId: number): Promise<any | undefined> {
+  async cancelAppointment(appointmentId: number, summary: string): Promise<any | undefined> {
     const appointment = await this.getAppointmentById(appointmentId);
     if (!appointment) {
       throw new AppError({
@@ -46,6 +63,7 @@ export class AppointmentService {
     await this.updateAppointment({
       id_cita: appointmentId,
       id_estado_cita: CANCELED_STATUS,
+      comentarios_cita: summary,
     });
     return await this.getAppointmentById(appointmentId);
   }
@@ -61,7 +79,8 @@ export class AppointmentService {
     p_id_pack_bono: number,
     p_fecha_cita: string,
     p_hora_inicio: string,
-    p_hora_fin: string
+    p_hora_fin: string,
+    p_comentarios_cita: string,
   }): Promise<any> {
     return await this.appointmentRepository.insertarCitaPackBonos(params);
   }

@@ -12,6 +12,8 @@ import {
   RecognizeUserIntentUseCase,
   CheckAvailabilityUseCase,
   CancelAppointmentUseCase,
+  ConfirmAppointmentUseCase,
+  MarkPatientOnTheWayUseCase,
   HandleUrgencyUseCase,
 } from '@clinickeys-agents/core/application/usecases';
 import {
@@ -64,6 +66,7 @@ const ScheduleAppointmentSchema = CheckAvailabilitySchema.extend({
   nombre: z.string(),
   apellido: z.string(),
   telefono: z.string(),
+  summary: z.string(),
 });
 
 const CheckReprogramAvailabilitySchema = z.object({
@@ -84,6 +87,7 @@ const RescheduleAppointmentSchema = CheckReprogramAvailabilitySchema.extend({
   nombre: z.string(),
   apellido: z.string(),
   telefono: z.string(),
+  summary: z.string(),
 });
 
 const CancelAppointmentSchema = z.object({
@@ -91,6 +95,17 @@ const CancelAppointmentSchema = z.object({
   apellido: z.string(),
   telefono: z.string(),
   id_cita: z.number(),
+  summary: z.string(),
+});
+
+const ConfirmAppointmentSchema = z.object({
+  id_cita: z.number(),
+  summary: z.string(),
+});
+
+const MarkOnTheWaySchema = z.object({
+  id_cita: z.number(),
+  summary: z.string(),
 });
 
 const HandleUrgencySchema = z.object({
@@ -136,6 +151,8 @@ export interface CommunicateWithAssistantUseCaseDeps {
   checkReprogramAvailabilityUC: CheckReprogramAvailabilityUseCase;
   rescheduleAppointmentUC: RescheduleAppointmentUseCase;
   cancelAppointmentUC: CancelAppointmentUseCase;
+  confirmAppointmentUC: ConfirmAppointmentUseCase;
+  markPatientOnTheWayUC: MarkPatientOnTheWayUseCase;
   handleUrgencyUC: HandleUrgencyUseCase;
   regularConversationUC: RegularConversationUseCase;
 }
@@ -230,6 +247,24 @@ export class CommunicateWithAssistantUseCase {
             leadId,
             normalizedLeadCF,
             params: HandleUrgencySchema.parse(params),
+          });
+          break;
+        case 'confirmar_cita':
+          Logger.debug('[CommunicateWithAssistant] Ejecutando confirmar_cita', { params });
+          ucResponse = await this.deps.confirmAppointmentUC.execute({
+            botConfig,
+            leadId,
+            normalizedLeadCF,
+            params: ConfirmAppointmentSchema.parse(params),
+          });
+          break;
+        case 'paciente_en_camino':
+          Logger.debug('[CommunicateWithAssistant] Ejecutando paciente_en_camino', { params });
+          ucResponse = await this.deps.markPatientOnTheWayUC.execute({
+            botConfig,
+            leadId,
+            normalizedLeadCF,
+            params: MarkOnTheWaySchema.parse(params),
           });
           break;
         default:
