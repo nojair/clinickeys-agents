@@ -22,6 +22,7 @@ export interface RecognizeUserIntentInput {
   clinicSource: string;
   clinicId: number;
   leadId: number;
+  timezone: string;
   tiempoActualDT: DateTime;
   reminderMessage: string;
   userMessage: string;
@@ -50,7 +51,7 @@ type PatientInfo = Awaited<ReturnType<FetchPatientInfoUseCase['execute']>>;
 
 type IntentContext = {
   MENSAJE: string;
-  TIEMPO_ACTUAL: string;
+  TIEMPO_ACTUAL_LOCAL: string;
   DATOS_DEL_PACIENTE: PatientInfo['patient'];
   CITAS_PROGRAMADAS_DEL_PACIENTE: PatientInfo['appointments'];
   RESUMEN_PACK_BONOS_DEL_PACIENTE: PatientInfo['packsBonos'];
@@ -71,6 +72,7 @@ export class RecognizeUserIntentUseCase {
       clinicSource,
       clinicId,
       leadId,
+      timezone,
       tiempoActualDT,
       reminderMessage,
       userMessage,
@@ -99,9 +101,16 @@ export class RecognizeUserIntentUseCase {
       MENSAJE = (userMessage || "").trim();
     }
 
+    const LANGUAGE = 'es';
+    const tiempoActualISO = (tiempoActualDT.toISO() as string).slice(0,16);
+    const weekDay = new Intl.DateTimeFormat(LANGUAGE, {
+      weekday: 'long',
+      timeZone: timezone,
+    }).format(tiempoActualDT as unknown as Date);
+
     const contextForAI: IntentContext = {
       MENSAJE,
-      TIEMPO_ACTUAL: tiempoActualDT.toISO() as string,
+      TIEMPO_ACTUAL_LOCAL: `Hoy es ${weekDay} con hora local de ${tiempoActualISO}}`,
       DATOS_DEL_PACIENTE: patientInfo.patient,
       CITAS_PROGRAMADAS_DEL_PACIENTE: patientInfo.appointments ?? [],
       RESUMEN_PACK_BONOS_DEL_PACIENTE: patientInfo.packsBonos ?? [],

@@ -170,6 +170,7 @@ export class CommunicateWithAssistantUseCase {
         clinicSource: botConfig.clinicSource,
         clinicId: botConfig.clinicId,
         leadId,
+        timezone: botConfig.timezone,
         tiempoActualDT: localTime(botConfig.timezone),
         reminderMessage,
         userMessage,
