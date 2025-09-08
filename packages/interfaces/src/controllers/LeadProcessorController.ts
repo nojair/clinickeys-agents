@@ -11,6 +11,8 @@ import {
   CheckReprogramAvailabilityUseCase,
   RescheduleAppointmentUseCase,
   CancelAppointmentUseCase,
+  ConfirmAppointmentUseCase,
+  MarkPatientOnTheWayUseCase,
   HandleUrgencyUseCase,
   RegularConversationUseCase,
   FetchPatientInfoUseCase,
@@ -140,6 +142,14 @@ export class LeadProcessorController {
       appointmentService,
       packBonoService,
     );
+    const confirmAppointmentUC = new ConfirmAppointmentUseCase(
+      kommoService,
+      appointmentService,
+    );
+    const markPatientOnTheWayUC = new MarkPatientOnTheWayUseCase(
+      kommoService,
+      appointmentService,
+    );
     const handleUrgencyUC = new HandleUrgencyUseCase(kommoService);
     const regularConversationUC = new RegularConversationUseCase();
 
@@ -152,6 +162,8 @@ export class LeadProcessorController {
       checkReprogramAvailabilityUC,
       rescheduleAppointmentUC,
       cancelAppointmentUC,
+      confirmAppointmentUC,
+      markPatientOnTheWayUC,
       handleUrgencyUC,
       regularConversationUC,
     });

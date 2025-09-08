@@ -8,6 +8,8 @@ import type { DateTime } from 'luxon';
 type KnownIntent =
   | "conversación_regular"
   | "consulta_agendar"
+  | "confirmar_cita"
+  | "paciente_en_camino"
   | "agendar_cita"
   | "consulta_reprogramar"
   | "reprogramar_cita"

@@ -1,3 +1,5 @@
+// packages/core/src/application/usecases/RescheduleAppointmentUseCase.ts
+
 import { KommoCustomFieldValueBase } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 import { readFile } from 'fs/promises';
@@ -29,6 +31,7 @@ interface RescheduleAppointmentInput {
     fechas: string;
     horas: string;
     rango_dias_extra?: number;
+    summary: string;
   };
   tiempoActual: any;
   subdomain: string;
@@ -51,7 +54,7 @@ export class RescheduleAppointmentUseCase {
 
   public async execute(input: RescheduleAppointmentInput): Promise<RescheduleAppointmentOutput> {
     const { botConfig, leadId, normalizedLeadCF, params, tiempoActual, subdomain, patientInfo } = input;
-    const { id_cita, id_tratamiento, tratamiento, medico, id_medico, fechas, horas } = params;
+    const { id_cita, id_tratamiento, tratamiento, medico, id_medico, fechas, horas, summary } = params;
 
     Logger.info('[RescheduleAppointment] Inicio', { leadId, id_cita, tratamiento, medico, id_medico, fechas, horas });
 
@@ -138,6 +141,7 @@ export class RescheduleAppointmentUseCase {
             hora_fin: extractorData.hora_fin,
             id_espacio: extractorData.id_espacio,
             id_estado_cita: ID_ESTADO_CITA_PROGRAMADA,
+            comentarios_cita: summary
           });
           citaReprogramada = { ...extractorData };
         }

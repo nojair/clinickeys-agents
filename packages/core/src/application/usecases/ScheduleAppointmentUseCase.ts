@@ -1,3 +1,5 @@
+// packages/core/src/application/usecases/ScheduleAppointmentUseCase.ts
+
 import { KommoCustomFieldValueBase } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 import { readFile } from 'fs/promises';
@@ -33,6 +35,7 @@ interface ScheduleAppointmentInput {
     fechas: string;
     horas: string;
     rango_dias_extra?: number;
+    summary: string;
   };
   tiempoActual: any;
   subdomain: string;
@@ -56,7 +59,7 @@ export class ScheduleAppointmentUseCase {
 
   public async execute(input: ScheduleAppointmentInput): Promise<ScheduleAppointmentOutput> {
     const { botConfig, leadId, normalizedLeadCF, params, tiempoActual, subdomain } = input;
-    const { nombre, apellido, telefono, tratamiento, medico, fechas, horas } = params;
+    const { nombre, apellido, telefono, tratamiento, medico, fechas, horas, summary } = params;
 
     Logger.info('[ScheduleAppointment] Inicio', { leadId, nombre, apellido, telefono, tratamiento, medico });
 
@@ -168,6 +171,7 @@ export class ScheduleAppointmentUseCase {
             p_fecha_cita: extractorData.fecha_cita,
             p_hora_inicio: extractorData.hora_inicio,
             p_hora_fin: extractorData.hora_fin,
+            p_comentarios_cita: summary,
           });
           const id_cita = spResponse?.[0]?.[0]?.id_cita;
 
