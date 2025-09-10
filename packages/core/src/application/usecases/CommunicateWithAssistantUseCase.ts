@@ -253,18 +253,14 @@ export class CommunicateWithAssistantUseCase {
         case 'confirmar_cita':
           Logger.debug('[CommunicateWithAssistant] Ejecutando confirmar_cita', { params });
           ucResponse = await this.deps.confirmAppointmentUC.execute({
-            botConfig,
             leadId,
-            normalizedLeadCF,
             params: ConfirmAppointmentSchema.parse(params),
           });
           break;
         case 'paciente_en_camino':
           Logger.debug('[CommunicateWithAssistant] Ejecutando paciente_en_camino', { params });
           ucResponse = await this.deps.markPatientOnTheWayUC.execute({
-            botConfig,
             leadId,
-            normalizedLeadCF,
             params: MarkOnTheWaySchema.parse(params),
           });
           break;

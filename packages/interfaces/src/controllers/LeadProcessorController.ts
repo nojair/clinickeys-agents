@@ -142,14 +142,8 @@ export class LeadProcessorController {
       appointmentService,
       packBonoService,
     );
-    const confirmAppointmentUC = new ConfirmAppointmentUseCase(
-      kommoService,
-      appointmentService,
-    );
-    const markPatientOnTheWayUC = new MarkPatientOnTheWayUseCase(
-      kommoService,
-      appointmentService,
-    );
+    const confirmAppointmentUC = new ConfirmAppointmentUseCase(appointmentService);
+    const markPatientOnTheWayUC = new MarkPatientOnTheWayUseCase(appointmentService);
     const handleUrgencyUC = new HandleUrgencyUseCase(kommoService);
     const regularConversationUC = new RegularConversationUseCase();
 
