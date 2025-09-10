@@ -1,16 +1,12 @@
-// packages/core/src/application/services/AvailabilityService.ts
-
-import { generarConsultasSQL, calcularDisponibilidad, ajustarDisponibilidad } from "@clinickeys-agents/core/utils";
+import { generarConsultasSQL, calcularDisponibilidad, ajustarDisponibilidad, AppError, ConsultaCitaSchema } from "@clinickeys-agents/core/utils";
 import { ejecutarConReintento } from "@clinickeys-agents/core/infrastructure/helpers";
 import { ITratamientoRepository } from "@clinickeys-agents/core/domain/tratamiento";
 import { IEspacioRepository } from "@clinickeys-agents/core/domain/espacio";
 import { IMedicoRepository } from "@clinickeys-agents/core/domain/medico";
 import { Logger } from "@clinickeys-agents/core/infrastructure/external";
-import { IOpenAIService } from '@clinickeys-agents/core/domain/openai';
-import { ConsultaCitaSchema } from '@clinickeys-agents/core/utils';
-import { AppError } from "@clinickeys-agents/core/utils";
-import { readFile } from 'fs/promises';
-import path from 'path';
+import { IOpenAIService } from "@clinickeys-agents/core/domain/openai";
+import { readFile } from "fs/promises";
+import path from "path";
 
 interface GetAvailabilityInfoInput {
   id_clinica: number;
@@ -42,7 +38,7 @@ export class AvailabilityService {
     this.treatmentRepo = treatmentRepo;
     this.doctorRepo = doctorRepo;
     this.spaceRepo = spaceRepo;
-    this.openAIService = openAIService
+    this.openAIService = openAIService;
   }
 
   /**
@@ -55,11 +51,13 @@ export class AvailabilityService {
       Logger.warn("No treatments found in the database.");
       throw AppError.TRATAMIENTOS_NO_ENCONTRADOS(tratamientosConsultados);
     }
+
     const tratamientosExactos = treatmentsFound.filter((t: any) => t.is_exact == 1);
     if (!tratamientosExactos.length) {
       Logger.warn("None of the treatments is an exact match.");
       throw AppError.TRATAMIENTOS_NO_EXACTOS(tratamientosConsultados);
     }
+
     // For each exact tratamiento, get medicos and espacios
     const result = await Promise.all(
       tratamientosExactos.map(async (tratamiento: any) => {
@@ -70,6 +68,7 @@ export class AvailabilityService {
           Logger.error(`Error getting medicos for ${tratamiento.nombre_tratamiento}:`, error);
           throw AppError.ERROR_CONSULTA_SQL(error instanceof Error ? error : new Error(String(error)));
         }
+
         const medicosConEspacios = await Promise.all(
           medicos.map(async (medico) => {
             let espacios: any[] = [];
@@ -86,6 +85,7 @@ export class AvailabilityService {
             };
           })
         );
+
         return {
           tratamiento: {
             id_tratamiento: tratamiento.id_tratamiento,
@@ -96,6 +96,7 @@ export class AvailabilityService {
         };
       })
     );
+
     return result;
   }
 
@@ -111,14 +112,17 @@ export class AvailabilityService {
         id_clinica: clinicId,
         tiempo_actual: tiempo_actual,
       } = input;
+
       // Basic validations
       if (!clinicId) throw AppError.FALTA_ID_CLINICA();
       if (!Array.isArray(tratamientosConsultados) || tratamientosConsultados.length === 0) throw AppError.NINGUN_TRATAMIENTO_SELECCIONADO();
       if (!Array.isArray(fechasSeleccionadas) || fechasSeleccionadas.length === 0) throw AppError.NINGUNA_FECHA_SELECCIONADA();
       Logger.info("Input data processed correctly.");
+
       // 1. Get base treatments
       let datosTratamientos = await this.fetchTreatmentsWithDoctorsAndSpaces({ clinicId, tratamientosConsultados });
       Logger.info("Treatments obtained:", JSON.stringify(datosTratamientos));
+
       // 2. Optional: filter by medicos
       let idsMedicosSolicitados: number[] = [];
       let tratamientosFiltrados = datosTratamientos;
@@ -126,6 +130,7 @@ export class AvailabilityService {
         const rows = await this.doctorRepo.getIdsMedicosPorNombre(medicosConsultados, clinicId);
         idsMedicosSolicitados = rows.map((f: any) => f.id_medico);
         if (idsMedicosSolicitados.length === 0) throw AppError.MEDICOS_SOLICITADOS_NO_ENCONTRADOS(medicosConsultados);
+
         const setIds = new Set(idsMedicosSolicitados);
         tratamientosFiltrados = datosTratamientos
           .map((t: any) => ({
@@ -133,16 +138,19 @@ export class AvailabilityService {
             medicos: t.medicos.filter((m: any) => setIds.has(m.id_medico)),
           }))
           .filter((t: any) => t.medicos.length > 0);
+
         if (tratamientosFiltrados.length === 0) {
           throw AppError.MEDICO_NO_ASOCIADO_A_TRATAMIENTO(medicosConsultados, tratamientosConsultados);
         }
       }
+
       // 3. Collect medico and space IDs
       const idsMedicos = idsMedicosSolicitados.length
         ? idsMedicosSolicitados
         : [
             ...new Set(tratamientosFiltrados.flatMap((t: any) => t.medicos.map((m: any) => m.id_medico)))
           ];
+
       const idsEspacios = [
         ...new Set(
           tratamientosFiltrados.flatMap((t: any) =>
@@ -150,14 +158,17 @@ export class AvailabilityService {
           )
         ),
       ];
+
       if (idsMedicos.length === 0) {
         const treatmentNamesOut = tratamientosFiltrados.map((t: any) => t.tratamiento.nombre_tratamiento);
         if (medicosConsultados.length > 0) throw AppError.MEDICO_NO_ASOCIADO_A_TRATAMIENTO(medicosConsultados, tratamientosConsultados);
         else throw AppError.NINGUN_MEDICO_ENCONTRADO(treatmentNamesOut);
       }
+
       if (idsEspacios.length === 0) {
         throw AppError.NINGUN_ESPACIO_ENCONTRADO(tratamientosFiltrados.map((t: any) => t.tratamiento.nombre_tratamiento), idsMedicos);
       }
+
       // 4. Generate SQL queries
       const consultasSQL = generarConsultasSQL({
         fechas: fechasSeleccionadas,
@@ -165,6 +176,7 @@ export class AvailabilityService {
         id_espacios: idsEspacios,
         id_clinica: clinicId,
       });
+
       // 5. Execute queries
       let citas, progMedicos, progEspacios, progMedicoEspacio;
       try {
@@ -176,13 +188,15 @@ export class AvailabilityService {
         Logger.error("Error executing SQL queries:", error);
         throw AppError.ERROR_CONSULTA_SQL(error instanceof Error ? error : new Error(String(error)));
       }
+
       if (!progMedicos?.length) {
         throw AppError.NO_PROG_MEDICOS(idsMedicos, fechasSeleccionadas.map((f: any) => f.fecha));
       }
       if (!progEspacios?.length) {
         throw AppError.NO_PROG_ESPACIOS(idsEspacios, fechasSeleccionadas.map((f: any) => f.fecha));
       }
-      // 6. Calculate availability
+
+      // 6. Calculate availability (unified pipeline under same API)
       let availability = calcularDisponibilidad({
         tratamientos: tratamientosFiltrados,
         citas_programadas: citas,
@@ -190,11 +204,13 @@ export class AvailabilityService {
         prog_espacios: progEspacios,
         prog_medico_espacio: progMedicoEspacio,
       });
+
       // 7. Final adjustment (tiempo_actual)
       const adjustedAvailability = ajustarDisponibilidad(availability, tiempo_actual);
       if (!adjustedAvailability.length) {
         throw AppError.SIN_HORARIOS_DISPONIBLES(tratamientosConsultados, fechasSeleccionadas);
       }
+
       Logger.info("Final adjusted availability:", adjustedAvailability);
       return {
         success: true,
@@ -236,9 +252,9 @@ export class AvailabilityService {
 
     // 1. Datos de contexto: tratamientos y médicos
     const tratamientos = await this.treatmentRepo.getActiveTreatmentsForClinic(id_clinica, id_super_clinica);
-    const nombresTratamientos = tratamientos.map(t => t.nombre_tratamiento);
+    const nombresTratamientos = tratamientos.map((t) => t.nombre_tratamiento);
     const medicos = await this.doctorRepo.getMedicos(id_clinica, id_super_clinica);
-    const nombresMedicos = medicos.map(m => m.nombre_medico);
+    const nombresMedicos = medicos.map((m) => m.nombre_medico);
 
     // 2. Construir prompt para OpenAI
     const consultAgendaMessage = `
@@ -253,9 +269,9 @@ Contexto:
 `;
     Logger.info('[AvailabilityService] Prompt de consulta de agenda:', consultAgendaMessage);
 
-    // 3. Cargar instrucciones del sistema
-    const promptsPath = path.resolve(__dirname, 'packages/core/src/.ia/instructions/prompts/bot_extractor_consulta_cita.md');
-    const systemPrompt = await readFile(promptsPath, 'utf8');
+    // 3. Cargar instrucciones del sistema (corrección de ruta relativa)
+    const promptsPath = path.resolve(__dirname, "../../.ia/instructions/prompts/bot_extractor_consulta_cita.md");
+    const systemPrompt = await readFile(promptsPath, "utf8");
 
     // 4. Obtener filtros estructurados desde OpenAI
     const { filters } = await this.openAIService.getSchemaStructuredResponse(
@@ -272,14 +288,14 @@ Contexto:
       medicos: filters[0]?.medicos ?? [],
       fechas: filters[0]?.fechas ?? [],
       id_clinica,
-      tiempo_actual
+      tiempo_actual,
     };
 
     if (lambdaBody.tratamientos.length === 0) {
       return {
         success: false,
         message: 'No se encontraron tratamientos disponibles en la clínica.',
-        analisis_agenda: null
+        analisis_agenda: null,
       };
     }
 
