@@ -108,6 +108,7 @@ export class AvailabilityService {
       const {
         tratamientos: tratamientosConsultados,
         medicos: medicosConsultados = [],
+        espacios: espaciosConsultados = [],
         fechas: fechasSeleccionadas,
         id_clinica: clinicId,
         tiempo_actual: tiempo_actual,
@@ -142,6 +143,26 @@ export class AvailabilityService {
         if (tratamientosFiltrados.length === 0) {
           throw AppError.MEDICO_NO_ASOCIADO_A_TRATAMIENTO(medicosConsultados, tratamientosConsultados);
         }
+      }
+
+      // 2.1 Optional: filter by espacios (names); keeps only matching espacios per médico, and prunes médicos/tratamientos vacíos
+      if (espaciosConsultados.length > 0) {
+        const setNombresEspacios = new Set(
+          espaciosConsultados.map((n: any) => String(n).trim().toLowerCase())
+        );
+        tratamientosFiltrados = tratamientosFiltrados
+          .map((t: any) => ({
+            ...t,
+            medicos: t.medicos
+              .map((m: any) => ({
+                ...m,
+                espacios: (m.espacios || []).filter(
+                  (e: any) => setNombresEspacios.has(String(e.nombre_espacio).trim().toLowerCase())
+                ),
+              }))
+              .filter((m: any) => (m.espacios && m.espacios.length > 0)),
+          }))
+          .filter((t: any) => t.medicos && t.medicos.length > 0);
       }
 
       // 3. Collect medico and space IDs
@@ -286,6 +307,7 @@ Contexto:
     const lambdaBody = {
       tratamientos: filters[0]?.tratamientos ?? [],
       medicos: filters[0]?.medicos ?? [],
+      espacios: filters[0]?.espacios ?? [],
       fechas: filters[0]?.fechas ?? [],
       id_clinica,
       tiempo_actual,
