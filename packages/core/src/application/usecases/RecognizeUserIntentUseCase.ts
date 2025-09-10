@@ -51,7 +51,7 @@ type PatientInfo = Awaited<ReturnType<FetchPatientInfoUseCase['execute']>>;
 
 type IntentContext = {
   MENSAJE: string;
-  TIEMPO_ACTUAL_LOCAL: string;
+  TIEMPO_ACTUAL: string;
   DATOS_DEL_PACIENTE: PatientInfo['patient'];
   CITAS_PROGRAMADAS_DEL_PACIENTE: PatientInfo['appointments'];
   RESUMEN_PACK_BONOS_DEL_PACIENTE: PatientInfo['packsBonos'];
@@ -102,15 +102,16 @@ export class RecognizeUserIntentUseCase {
     }
 
     const LANGUAGE = 'es';
-    const tiempoActualISO = (tiempoActualDT.toISO() as string).slice(0,16);
     const weekDay = new Intl.DateTimeFormat(LANGUAGE, {
       weekday: 'long',
       timeZone: timezone,
-    }).format(tiempoActualDT as unknown as Date);
+    }).format(tiempoActualDT.toJSDate());
+    const fechaISO = tiempoActualDT.toISODate() + "T00:00:00.000Z";
+    const hora = tiempoActualDT.toFormat("HH:mm") + ":00";
 
     const contextForAI: IntentContext = {
       MENSAJE,
-      TIEMPO_ACTUAL_LOCAL: `Hoy es ${weekDay} con hora local de ${tiempoActualISO}}`,
+      TIEMPO_ACTUAL: `Hoy es ${weekDay}, fecha ${fechaISO} y hora ${hora}`,
       DATOS_DEL_PACIENTE: patientInfo.patient,
       CITAS_PROGRAMADAS_DEL_PACIENTE: patientInfo.appointments ?? [],
       RESUMEN_PACK_BONOS_DEL_PACIENTE: patientInfo.packsBonos ?? [],
