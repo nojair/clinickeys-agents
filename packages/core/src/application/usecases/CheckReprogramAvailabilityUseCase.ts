@@ -1,6 +1,8 @@
 import { KommoCustomFieldValueBase } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import { AvailabilityService, KommoService } from '@clinickeys-agents/core/application/services';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
+import { getActualTimeForPrompts } from '@clinickeys-agents/core/utils';
+import { DateTime } from 'luxon';
 
 import type { FetchPatientInfoUseCase } from './FetchPatientInfoUseCase';
 type PatientInfo = Awaited<ReturnType<FetchPatientInfoUseCase['execute']>>;
@@ -22,7 +24,8 @@ interface CheckReprogramAvailabilityInput {
     horas: string;
     rango_dias_extra?: number;
   };
-  tiempoActual: any;
+  timezone: string;
+  tiempoActualDT: DateTime;
   subdomain: string;
 }
 
@@ -44,7 +47,8 @@ export class CheckReprogramAvailabilityUseCase {
       leadId,
       normalizedLeadCF,
       params,
-      tiempoActual,
+      timezone,
+      tiempoActualDT,
       subdomain,
       patientInfo
     } = input;
@@ -81,7 +85,7 @@ export class CheckReprogramAvailabilityUseCase {
       const availability = await this.availabilityService.getAvailabilityInfo({
         id_clinica: botConfig.clinicId,
         id_super_clinica: botConfig.superClinicId,
-        tiempo_actual: tiempoActual,
+        tiempo_actual: tiempoActualDT.toISO() as string,
         mensajeBotParlante: JSON.stringify({
           id_tratamiento: step.params.id_tratamiento,
           tratamiento: step.params.tratamiento,
@@ -128,8 +132,9 @@ export class CheckReprogramAvailabilityUseCase {
     }
 
     // 3. Construir toolOutput para resolver run
+    const actualTimeForPrompts = getActualTimeForPrompts(tiempoActualDT, timezone);
     const citasPacienteStr = JSON.stringify(patientInfo.appointments ?? []);
-    const toolOutput = `#consultaReprogramar\nCITAS_PACIENTE: ${citasPacienteStr}\nHORARIOS_DISPONIBLES: ${JSON.stringify(finalPayload)}\nMENSAJE_USUARIO: ${JSON.stringify(params)}`;
+    const toolOutput = `#consultaReprogramar\nTIEMPO_ACTUAL: ${actualTimeForPrompts}\nCITAS_PACIENTE: ${citasPacienteStr}\nHORARIOS_DISPONIBLES: ${JSON.stringify(finalPayload)}\nMENSAJE_USUARIO: ${JSON.stringify(params)}`;
     Logger.info('[CheckReprogramAvailability] Ejecución completada', { success: true });
 
     return { success: true, toolOutput };

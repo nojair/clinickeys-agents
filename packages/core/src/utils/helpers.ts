@@ -83,6 +83,18 @@ export function isAppointmentSoon(appointmentDate: string, nowISO: string, tz: s
   return diff === 0 || diff === 1;
 }
 
+export function getActualTimeForPrompts(tiempoActualDT: DateTime, timezone: string) {
+  const LANGUAGE = 'es';
+  const weekDay = new Intl.DateTimeFormat(LANGUAGE, {
+    weekday: 'long',
+    timeZone: timezone,
+  }).format(tiempoActualDT.toJSDate());
+  const fechaISO = tiempoActualDT.toISODate() + "T00:00:00.000Z";
+  const hora = tiempoActualDT.toFormat("HH:mm") + ":00";
+
+  return `Hoy es ${weekDay}, fecha ${fechaISO} y hora ${hora}`;
+}
+
 /** Convierte fecha u objeto Date a DateTime en TZ */
 export const parseClinicDate = (d: string | Date, tz: string) =>
   (typeof d === 'string' ? DateTime.fromISO(d, { zone: tz }) : DateTime.fromJSDate(d, { zone: tz }));

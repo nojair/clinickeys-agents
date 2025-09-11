@@ -2,8 +2,9 @@
 
 import { KommoCustomFieldValueBase } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
-import { isAppointmentSoon } from '@clinickeys-agents/core/utils';
+import { isAppointmentSoon, getActualTimeForPrompts } from '@clinickeys-agents/core/utils';
 import { readFile } from 'fs/promises';
+import type { DateTime } from 'luxon';
 import path from 'path';
 
 import {
@@ -38,7 +39,8 @@ interface ScheduleAppointmentInput {
     rango_dias_extra?: number;
     summary: string;
   };
-  tiempoActual: any;
+  timezone: string;
+  tiempoActualDT: DateTime;
   subdomain: string;
 }
 
@@ -61,7 +63,7 @@ export class ScheduleAppointmentUseCase {
   ) {}
 
   public async execute(input: ScheduleAppointmentInput): Promise<ScheduleAppointmentOutput> {
-    const { botConfig, leadId, normalizedLeadCF, params, tiempoActual, subdomain } = input;
+    const { botConfig, leadId, normalizedLeadCF, params, timezone, tiempoActualDT, subdomain } = input;
     const { nombre, apellido, telefono, tratamiento, medico, fechas, horas, summary } = params;
 
     Logger.info('[ScheduleAppointment] Inicio', { leadId, nombre, apellido, telefono, tratamiento, medico });
@@ -77,7 +79,7 @@ export class ScheduleAppointmentUseCase {
 
     // 2. Obtener o crear paciente
     Logger.debug('[ScheduleAppointment] Obteniendo información del paciente');
-    let patientInfo = await this.patientService.getPatientInfo(tiempoActual, botConfig.clinicId, {
+    let patientInfo = await this.patientService.getPatientInfo(tiempoActualDT, botConfig.clinicId, {
       in_conversation: telefono,
       in_field: '',
       in_contact: '',
@@ -119,7 +121,7 @@ export class ScheduleAppointmentUseCase {
       const availability = await this.availabilityService.getAvailabilityInfo({
         id_clinica: botConfig.clinicId,
         id_super_clinica: botConfig.superClinicId,
-        tiempo_actual: tiempoActual,
+        tiempo_actual: tiempoActualDT.toISO() as string,
         mensajeBotParlante: JSON.stringify({
           tratamiento: step.params.tratamiento,
           fechas: fechasStep,
@@ -148,7 +150,8 @@ export class ScheduleAppointmentUseCase {
         Logger.debug('[ScheduleAppointment] FinalPayload con horarios disponibles', { finalPayload });
 
         // Prompt extractor
-        const extractorPrompt = `#agendarCita\n\nLos HORARIOS_DISPONIBLES para citas son: ${JSON.stringify(finalPayload)}\n\nMENSAJE_USUARIO: ${JSON.stringify(params)}`;
+        const actualTimeForPrompts = getActualTimeForPrompts(tiempoActualDT, timezone);
+        const extractorPrompt = `#agendarCita\n\nTIEMPO_ACTUAL: ${actualTimeForPrompts}\n\nLos HORARIOS_DISPONIBLES para citas son: ${JSON.stringify(finalPayload)}\n\nMENSAJE_USUARIO: ${JSON.stringify(params)}`;
         Logger.debug('[ScheduleAppointment] Extractor prompt', extractorPrompt);
         const systemPrompt = await readFile(
           path.resolve(__dirname, 'packages/core/src/.ia/instructions/prompts/bot_extractor_de_datos.md'),
@@ -185,7 +188,7 @@ export class ScheduleAppointmentUseCase {
 
             const isSoon = isAppointmentSoon(
               appointmentCreated.fecha_cita,
-              tiempoActual,
+              tiempoActualDT.toISO() as string,
               botConfig.timezone
             );
             appointmentCreated.isSoon = isSoon;

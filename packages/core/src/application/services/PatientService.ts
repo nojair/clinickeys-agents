@@ -169,8 +169,13 @@ export class PatientService {
         : cita.fecha_cita;
       const hora = cita.hora_inicio || '00:00:00';
       const fechaHoraISO = `${fecha}T${hora}`;
+      Logger.debug('[PatientService] fechaHoraISO', fechaHoraISO);
       const zone = tiempoActualDT.zoneName ?? 'UTC';
+      Logger.debug('[PatientService] zone', zone);
       const citaDT = DateTime.fromISO(fechaHoraISO, { zone });
+      Logger.debug('[PatientService] citaDT', citaDT);
+      Logger.debug('[PatientService] tiempoActualDT', tiempoActualDT);
+      Logger.debug('[PatientService] citaDT > tiempoActualDT', citaDT > tiempoActualDT);
       return citaDT > tiempoActualDT;
     });
     const citas = citasFiltradas.map((cita: any) => ({

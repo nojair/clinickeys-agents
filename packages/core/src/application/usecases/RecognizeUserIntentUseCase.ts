@@ -2,7 +2,7 @@ import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 import { BotConfigType } from '@clinickeys-agents/core/domain/botConfig';
 import { IOpenAIService } from '@clinickeys-agents/core/domain/openai';
 import { FetchPatientInfoUseCase } from './FetchPatientInfoUseCase';
-import { AppError } from '@clinickeys-agents/core/utils';
+import { AppError, getActualTimeForPrompts } from '@clinickeys-agents/core/utils';
 import type { DateTime } from 'luxon';
 
 type KnownIntent =
@@ -101,17 +101,9 @@ export class RecognizeUserIntentUseCase {
       MENSAJE = (userMessage || "").trim();
     }
 
-    const LANGUAGE = 'es';
-    const weekDay = new Intl.DateTimeFormat(LANGUAGE, {
-      weekday: 'long',
-      timeZone: timezone,
-    }).format(tiempoActualDT.toJSDate());
-    const fechaISO = tiempoActualDT.toISODate() + "T00:00:00.000Z";
-    const hora = tiempoActualDT.toFormat("HH:mm") + ":00";
-
     const contextForAI: IntentContext = {
       MENSAJE,
-      TIEMPO_ACTUAL: `Hoy es ${weekDay}, fecha ${fechaISO} y hora ${hora}`,
+      TIEMPO_ACTUAL: getActualTimeForPrompts(tiempoActualDT, timezone),
       DATOS_DEL_PACIENTE: patientInfo.patient,
       CITAS_PROGRAMADAS_DEL_PACIENTE: patientInfo.appointments ?? [],
       RESUMEN_PACK_BONOS_DEL_PACIENTE: patientInfo.packsBonos ?? [],

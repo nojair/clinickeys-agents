@@ -198,7 +198,8 @@ export class CommunicateWithAssistantUseCase {
             leadId,
             normalizedLeadCF,
             params: CheckAvailabilitySchema.parse(params),
-            tiempoActual: localTime(botConfig.timezone).toISO() as string,
+            timezone: botConfig.timezone,
+            tiempoActualDT: localTime(botConfig.timezone),
             subdomain: botConfig.kommo.subdomain,
           });
           break;
@@ -210,7 +211,8 @@ export class CommunicateWithAssistantUseCase {
             leadId,
             normalizedLeadCF,
             params: scheduleParams,
-            tiempoActual: localTime(botConfig.timezone).toISO() as string,
+            timezone: botConfig.timezone,
+            tiempoActualDT: localTime(botConfig.timezone),
             subdomain: botConfig.kommo.subdomain,
           });
 
@@ -244,7 +246,8 @@ export class CommunicateWithAssistantUseCase {
             normalizedLeadCF,
             patientInfo,
             params: CheckReprogramAvailabilitySchema.parse(params),
-            tiempoActual: localTime(botConfig.timezone).toISO() as string,
+            timezone: botConfig.timezone,
+            tiempoActualDT: localTime(botConfig.timezone),
             subdomain: botConfig.kommo.subdomain,
           });
           break;
@@ -257,7 +260,8 @@ export class CommunicateWithAssistantUseCase {
             normalizedLeadCF,
             patientInfo,
             params: rescheduleParams,
-            tiempoActual: localTime(botConfig.timezone).toISO() as string,
+            timezone: botConfig.timezone,
+            tiempoActualDT: localTime(botConfig.timezone),
             subdomain: botConfig.kommo.subdomain,
           });
 
