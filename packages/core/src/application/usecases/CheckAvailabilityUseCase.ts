@@ -1,7 +1,9 @@
+import { KommoCustomFieldValueBase } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import { AvailabilityService, KommoService } from '@clinickeys-agents/core/application/services';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 import { BotConfigDTO } from '@clinickeys-agents/core/domain/botConfig';
-import { KommoCustomFieldValueBase } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
+import { getActualTimeForPrompts } from '@clinickeys-agents/core/utils';
+import type { DateTime } from 'luxon';
 
 interface CheckAvailabilityInput {
   botConfig: BotConfigDTO;
@@ -15,7 +17,8 @@ interface CheckAvailabilityInput {
     horas: string;
     rango_dias_extra?: number;
   };
-  tiempoActual: string;
+  timezone: string;
+  tiempoActualDT: DateTime;
   subdomain: string;
 }
 
@@ -32,7 +35,7 @@ export class CheckAvailabilityUseCase {
   ) {}
 
   public async execute(input: CheckAvailabilityInput): Promise<CheckAvailabilityOutput> {
-    const { botConfig, leadId, normalizedLeadCF, params, tiempoActual, subdomain } = input;
+    const { botConfig, leadId, normalizedLeadCF, params, timezone, tiempoActualDT, subdomain } = input;
     const { tratamiento, medico, fechas, horas } = params;
 
     Logger.info('[CheckAvailability] Inicio', { leadId, tratamiento, medico, fechas, horas });
@@ -65,7 +68,7 @@ export class CheckAvailabilityUseCase {
       const availability = await this.availabilityService.getAvailabilityInfo({
         id_clinica: botConfig.clinicId,
         id_super_clinica: botConfig.superClinicId,
-        tiempo_actual: tiempoActual,
+        tiempo_actual: tiempoActualDT.toISO() as string,
         mensajeBotParlante: JSON.stringify({
           tratamiento,
           fechas: fechasStep,
@@ -106,7 +109,8 @@ export class CheckAvailabilityUseCase {
     }
 
     // 3. Construir toolOutput
-    const toolOutput = `#consultaAgendar\nHORARIOS_DISPONIBLES: ${JSON.stringify(finalPayload)}\nMENSAJE_USUARIO: ${JSON.stringify(params)}`;
+    const actualTimeForPrompts = getActualTimeForPrompts(tiempoActualDT, timezone);
+    const toolOutput = `#consultaAgendar\nTIEMPO_ACTUAL: ${actualTimeForPrompts}\nHORARIOS_DISPONIBLES: ${JSON.stringify(finalPayload)}\nMENSAJE_USUARIO: ${JSON.stringify(params)}`;
     Logger.info('[CheckAvailability] Ejecución completada', { success: true });
 
     return { success: true, toolOutput };

@@ -1,7 +1,8 @@
 import { KommoCustomFieldValueBase } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
-import { isAppointmentSoon } from '@clinickeys-agents/core/utils';
+import { isAppointmentSoon, getActualTimeForPrompts } from '@clinickeys-agents/core/utils';
 import { readFile } from 'fs/promises';
+import { DateTime } from 'luxon';
 import path from 'path';
 
 import type { FetchPatientInfoUseCase } from './FetchPatientInfoUseCase';
@@ -32,7 +33,8 @@ interface RescheduleAppointmentInput {
     rango_dias_extra?: number;
     summary: string;
   };
-  tiempoActual: any;
+  timezone: string;
+  tiempoActualDT: DateTime;
   subdomain: string;
 }
 
@@ -54,7 +56,7 @@ export class RescheduleAppointmentUseCase {
   ) {}
 
   public async execute(input: RescheduleAppointmentInput): Promise<RescheduleAppointmentOutput> {
-    const { botConfig, leadId, normalizedLeadCF, params, tiempoActual, subdomain, patientInfo } = input;
+    const { botConfig, leadId, normalizedLeadCF, params, timezone, tiempoActualDT, subdomain, patientInfo } = input;
     const { id_cita, id_tratamiento, tratamiento, medico, id_medico, fechas, horas, summary } = params;
 
     Logger.info('[RescheduleAppointment] Inicio', { leadId, id_cita, tratamiento, medico, id_medico, fechas, horas });
@@ -88,7 +90,7 @@ export class RescheduleAppointmentUseCase {
       const availability = await this.availabilityService.getAvailabilityInfo({
         id_clinica: botConfig.clinicId,
         id_super_clinica: botConfig.superClinicId,
-        tiempo_actual: tiempoActual,
+        tiempo_actual: tiempoActualDT.toISO() as string,
         mensajeBotParlante: JSON.stringify({
           id_tratamiento: step.params.id_tratamiento,
           tratamiento: step.params.tratamiento,
@@ -119,8 +121,9 @@ export class RescheduleAppointmentUseCase {
         Logger.debug('[RescheduleAppointment] Disponibilidad encontrada', { finalPayload });
 
         /* extractor para elegir horario */
+        const actualTimeForPrompts = getActualTimeForPrompts(tiempoActualDT, timezone);
         const citasPacienteStr = JSON.stringify(patientInfo.appointments ?? []);
-        const extractorPrompt = `#reprogramarCita\nLa CITAS_PACIENTE que se va a reprogramar es la siguiente: ${citasPacienteStr};\nLos HORARIOS_DISPONIBLES: ${JSON.stringify(finalPayload)}\nMENSAJE_USUARIO: ${JSON.stringify(params)}`;
+        const extractorPrompt = `#reprogramarCita\n\nTIEMPO_ACTUAL: ${actualTimeForPrompts}\n\nLa CITAS_PACIENTE que se va a reprogramar es la siguiente: ${citasPacienteStr};\nLos HORARIOS_DISPONIBLES: ${JSON.stringify(finalPayload)}\nMENSAJE_USUARIO: ${JSON.stringify(params)}`;
         Logger.debug('[RescheduleAppointment] Extractor prompt', extractorPrompt);
         const systemPrompt = await readFile(
           path.resolve(__dirname, 'packages/core/src/.ia/instructions/prompts/bot_extractor_de_datos.md'),
@@ -148,7 +151,7 @@ export class RescheduleAppointmentUseCase {
 
           const isSoon = isAppointmentSoon(
             extractorData.fecha_cita,
-            tiempoActual,
+            tiempoActualDT.toISODate() as string,
             botConfig.timezone
           );
           citaReprogramada.isSoon = isSoon;
