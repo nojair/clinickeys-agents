@@ -76,6 +76,13 @@ export function localTime(timezone: string): DateTime {
   return DateTime.utc().setZone(timezone)!;
 }
 
+export function isAppointmentSoon(appointmentDate: string, nowISO: string, tz: string): boolean {
+  const now = DateTime.fromISO(nowISO, { zone: tz }).startOf('day');
+  const cita = DateTime.fromISO(appointmentDate, { zone: tz }).startOf('day');
+  const diff = cita.diff(now, 'days').days;
+  return diff === 0 || diff === 1;
+}
+
 /** Convierte fecha u objeto Date a DateTime en TZ */
 export const parseClinicDate = (d: string | Date, tz: string) =>
   (typeof d === 'string' ? DateTime.fromISO(d, { zone: tz }) : DateTime.fromJSDate(d, { zone: tz }));

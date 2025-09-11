@@ -1,3 +1,5 @@
+// packages/core/src/application/usecases/ConfirmAppointmentUseCase.ts
+
 import { AppointmentService } from '@clinickeys-agents/core/application/services';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 
