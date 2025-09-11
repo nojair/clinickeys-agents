@@ -1,3 +1,5 @@
+// packages/core/src/application/services/AppointmentService.ts
+
 import { AppError } from '@clinickeys-agents/core/utils';
 
 import {
@@ -44,6 +46,25 @@ export class AppointmentService {
     await this.updateAppointment({
       id_cita: appointmentId,
       id_estados_cita_in: CONFIRMED_STATUS_IN,
+      comentarios_cita: summary
+    });
+
+    return await this.getAppointmentById(appointmentId);
+  }
+
+  async unconfirmAppointment(appointmentId: number, summary: string): Promise<any | undefined> {
+    const appointment = await this.getAppointmentById(appointmentId);
+    if (!appointment) {
+      throw new AppError({
+        code: 'ERR_APPOINTMENT_NOT_FOUND',
+        humanMessage: `No se encontró la cita con id ${appointmentId}`,
+        context: { appointmentId }
+      });
+    }
+
+    await this.updateAppointment({
+      id_cita: appointmentId,
+      id_estados_cita_in: null, // 👈 se limpia la confirmación
       comentarios_cita: summary
     });
 

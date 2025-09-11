@@ -4,9 +4,7 @@ import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 import { KommoService, AppointmentService } from '@clinickeys-agents/core/application/services';
 
 interface MarkOnTheWayInput {
-  botConfig: any;
   leadId: number;
-  normalizedLeadCF: (KommoCustomFieldValueBase & { value: any })[];
   params: {
     id_cita: number;
     summary: string; // Comentario opcional proveniente del LLM/extractor
@@ -27,23 +25,14 @@ const ID_ESTADOS_CITA_IN_EN_CAMINO = 10;
  */
 export class MarkPatientOnTheWayUseCase {
   constructor(
-    private readonly kommoService: KommoService,
     private readonly appointmentService: AppointmentService,
   ) {}
 
   public async execute(input: MarkOnTheWayInput): Promise<MarkOnTheWayOutput> {
-    const { botConfig, leadId, normalizedLeadCF, params } = input;
+    const { leadId, params } = input;
     const { id_cita, summary } = params;
 
     Logger.info('[MarkPatientOnTheWay] Inicio', { leadId, id_cita });
-
-    // 1) Mensaje inicial (UX conversacional)
-    await this.kommoService.sendBotInitialMessage({
-      leadId,
-      normalizedLeadCF,
-      salesbotId: botConfig.kommo?.salesbotId,
-      message: '¡Perfecto! Avisaré al equipo que estás en camino. Un momento por favor.',
-    });
 
     await this.appointmentService.updateAppointment({
       id_cita,

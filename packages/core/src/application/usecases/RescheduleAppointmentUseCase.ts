@@ -1,7 +1,6 @@
-// packages/core/src/application/usecases/RescheduleAppointmentUseCase.ts
-
 import { KommoCustomFieldValueBase } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
+import { isAppointmentSoon } from '@clinickeys-agents/core/utils';
 import { readFile } from 'fs/promises';
 import path from 'path';
 
@@ -40,6 +39,8 @@ interface RescheduleAppointmentInput {
 interface RescheduleAppointmentOutput {
   success: boolean;
   toolOutput: string;
+  needsConfirmation?: boolean;
+  updatedAppointmentId?: number;
 }
 
 const ID_ESTADO_CITA_PROGRAMADA = 1; // mantiene estado programada tras mover la fecha
@@ -144,6 +145,15 @@ export class RescheduleAppointmentUseCase {
             comentarios_cita: summary
           });
           citaReprogramada = { ...extractorData };
+
+          const isSoon = isAppointmentSoon(
+            extractorData.fecha_cita,
+            tiempoActual,
+            botConfig.timezone
+          );
+          citaReprogramada.isSoon = isSoon;
+          finalPayload.needsConfirmation = isSoon;
+          finalPayload.updatedAppointmentId = extractorData.id_cita;
         }
         break;
       }
@@ -173,6 +183,11 @@ export class RescheduleAppointmentUseCase {
     }
 
     Logger.info('[RescheduleAppointment] Ejecución completada', { success: true });
-    return { success: true, toolOutput };
+    return {
+      success: true,
+      toolOutput,
+      needsConfirmation: citaReprogramada?.isSoon || false,
+      updatedAppointmentId: citaReprogramada?.id_cita,
+    };
   }
 }

@@ -1,11 +1,10 @@
-import { KommoService, AppointmentService } from '@clinickeys-agents/core/application/services';
-import { KommoCustomFieldValueBase } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
+// packages/core/src/application/usecases/ConfirmAppointmentUseCase.ts
+
+import { AppointmentService } from '@clinickeys-agents/core/application/services';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
 
 interface ConfirmAppointmentInput {
-  botConfig: any;
   leadId: number;
-  normalizedLeadCF: (KommoCustomFieldValueBase & { value: any })[];
   params: {
     id_cita: number;
     summary: string;
@@ -19,24 +18,14 @@ interface ConfirmAppointmentOutput {
 
 export class ConfirmAppointmentUseCase {
   constructor(
-    private readonly kommoService: KommoService,
     private readonly appointmentService: AppointmentService,
   ) {}
 
   public async execute(input: ConfirmAppointmentInput): Promise<ConfirmAppointmentOutput> {
-    const { botConfig, leadId, normalizedLeadCF, params } = input;
+    const { leadId, params } = input;
     const { id_cita, summary } = params;
 
     Logger.info('[ConfirmAppointment] Inicio', { leadId, id_cita });
-
-    // 1. Mensaje inicial "please‑wait"
-    Logger.debug('[ConfirmAppointment] Enviando mensaje inicial al bot');
-    await this.kommoService.sendBotInitialMessage({
-      leadId,
-      salesbotId: botConfig.kommo.salesbotId,
-      normalizedLeadCF,
-      message: 'Perfecto, voy a confirmar tu cita. Un momento por favor.',
-    });
 
     // 2. Validación mínima
     if (!id_cita) {

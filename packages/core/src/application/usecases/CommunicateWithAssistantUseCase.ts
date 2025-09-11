@@ -13,6 +13,7 @@ import {
   CheckAvailabilityUseCase,
   CancelAppointmentUseCase,
   ConfirmAppointmentUseCase,
+  UnconfirmAppointmentUseCase,
   MarkPatientOnTheWayUseCase,
   HandleUrgencyUseCase,
 } from '@clinickeys-agents/core/application/usecases';
@@ -135,6 +136,9 @@ interface UseCaseResponse {
   success: boolean;
   toolOutput: string;
   customFields?: Record<string, string>;
+  createdAppointmentId?: number;
+  needsConfirmation?: boolean;
+  updatedAppointmentId?: number;
 }
 
 interface CommunicateOutput {
@@ -152,6 +156,7 @@ export interface CommunicateWithAssistantUseCaseDeps {
   rescheduleAppointmentUC: RescheduleAppointmentUseCase;
   cancelAppointmentUC: CancelAppointmentUseCase;
   confirmAppointmentUC: ConfirmAppointmentUseCase;
+  unconfirmAppointmentUC: UnconfirmAppointmentUseCase;
   markPatientOnTheWayUC: MarkPatientOnTheWayUseCase;
   handleUrgencyUC: HandleUrgencyUseCase;
   regularConversationUC: RegularConversationUseCase;
@@ -199,14 +204,37 @@ export class CommunicateWithAssistantUseCase {
           break;
         case 'agendar_cita':
           Logger.debug('[CommunicateWithAssistant] Ejecutando agendar_cita', { params });
+          const scheduleParams = ScheduleAppointmentSchema.parse(params);
           ucResponse = await this.deps.scheduleAppointmentUC.execute({
             botConfig,
             leadId,
             normalizedLeadCF,
-            params: ScheduleAppointmentSchema.parse(params),
+            params: scheduleParams,
             tiempoActual: localTime(botConfig.timezone).toISO() as string,
             subdomain: botConfig.kommo.subdomain,
           });
+
+          if (ucResponse.success && ucResponse.createdAppointmentId) {
+            if (ucResponse.needsConfirmation) {
+              Logger.info('[CommunicateWithAssistant] Cita es hoy/mañana, confirmando automáticamente', { id_cita: ucResponse.createdAppointmentId });
+              await this.deps.confirmAppointmentUC.execute({
+                leadId,
+                params: {
+                  id_cita: ucResponse.createdAppointmentId,
+                  summary: scheduleParams.summary,
+                },
+              });
+            } else {
+              Logger.info('[CommunicateWithAssistant] Cita no es hoy/mañana, desconfirmando automáticamente', { id_cita: ucResponse.createdAppointmentId });
+              await this.deps.unconfirmAppointmentUC.execute({
+                leadId,
+                params: {
+                  id_cita: ucResponse.createdAppointmentId,
+                  summary: scheduleParams.summary,
+                },
+              });
+            }
+          }
           break;
         case 'consulta_reprogramar':
           Logger.debug('[CommunicateWithAssistant] Ejecutando consulta_reprogramar', { params });
@@ -222,15 +250,38 @@ export class CommunicateWithAssistantUseCase {
           break;
         case 'reprogramar_cita':
           Logger.debug('[CommunicateWithAssistant] Ejecutando reprogramar_cita', { params });
+          const rescheduleParams = RescheduleAppointmentSchema.parse(params);
           ucResponse = await this.deps.rescheduleAppointmentUC.execute({
             botConfig,
             leadId,
             normalizedLeadCF,
             patientInfo,
-            params: RescheduleAppointmentSchema.parse(params),
+            params: rescheduleParams,
             tiempoActual: localTime(botConfig.timezone).toISO() as string,
             subdomain: botConfig.kommo.subdomain,
           });
+
+          if (ucResponse.success && ucResponse.updatedAppointmentId) {
+            if (ucResponse.needsConfirmation) {
+              Logger.info('[CommunicateWithAssistant] Cita reprogramada para hoy/mañana, confirmando automáticamente', { id_cita: ucResponse.updatedAppointmentId });
+              await this.deps.confirmAppointmentUC.execute({
+                leadId,
+                params: {
+                  id_cita: ucResponse.updatedAppointmentId,
+                  summary: rescheduleParams.summary,
+                },
+              });
+            } else {
+              Logger.info('[CommunicateWithAssistant] Cita reprogramada no es hoy/mañana, desconfirmando automáticamente', { id_cita: ucResponse.updatedAppointmentId });
+              await this.deps.unconfirmAppointmentUC.execute({
+                leadId,
+                params: {
+                  id_cita: ucResponse.updatedAppointmentId,
+                  summary: rescheduleParams.summary,
+                },
+              });
+            }
+          }
           break;
         case 'cancelar_cita':
           Logger.debug('[CommunicateWithAssistant] Ejecutando cancelar_cita', { params });
@@ -253,18 +304,14 @@ export class CommunicateWithAssistantUseCase {
         case 'confirmar_cita':
           Logger.debug('[CommunicateWithAssistant] Ejecutando confirmar_cita', { params });
           ucResponse = await this.deps.confirmAppointmentUC.execute({
-            botConfig,
             leadId,
-            normalizedLeadCF,
             params: ConfirmAppointmentSchema.parse(params),
           });
           break;
         case 'paciente_en_camino':
           Logger.debug('[CommunicateWithAssistant] Ejecutando paciente_en_camino', { params });
           ucResponse = await this.deps.markPatientOnTheWayUC.execute({
-            botConfig,
             leadId,
-            normalizedLeadCF,
             params: MarkOnTheWaySchema.parse(params),
           });
           break;
@@ -295,7 +342,6 @@ export class CommunicateWithAssistantUseCase {
       }
 
       const baseFields: Record<string, string> = {
-        // custom fields for reminder
         [APPOINTMENT_WEEKDAY_NAME]: '',
         [APPOINTMENT_START_TIME]: '',
         [APPOINTMENT_END_TIME]: '',
@@ -310,7 +356,6 @@ export class CommunicateWithAssistantUseCase {
         [CLINIC_NAME]: '',
         [SPACE_NAME]: '',
 
-        // chat custom fields
         [THREAD_ID]: thId ?? '',
         [BOT_MESSAGE]: finalMsg || '',
         [PLEASE_WAIT_MESSAGE]: 'false',

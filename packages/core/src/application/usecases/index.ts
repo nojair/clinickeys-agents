@@ -3,6 +3,7 @@ export * from "./CommunicateWithAssistantUseCase";
 export * from "./RescheduleAppointmentUseCase";
 export * from "./ListGlobalBotConfigsUseCase";
 export * from "./UpdatePatientMessageUseCase";
+export * from "./UnconfirmAppointmentUseCase";
 export * from "./RecognizeUserIntentUseCase";
 export * from "./RegularConversationUseCase";
 export * from "./ScheduleAppointmentUseCase";

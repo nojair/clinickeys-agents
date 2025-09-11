@@ -2,6 +2,7 @@
 
 import { KommoCustomFieldValueBase } from '@clinickeys-agents/core/infrastructure/integrations/kommo';
 import { Logger } from '@clinickeys-agents/core/infrastructure/external';
+import { isAppointmentSoon } from '@clinickeys-agents/core/utils';
 import { readFile } from 'fs/promises';
 import path from 'path';
 
@@ -45,6 +46,8 @@ interface ScheduleAppointmentOutput {
   success: boolean;
   toolOutput: string;
   customFields?: Record<string, string>;
+  createdAppointmentId?: number;
+  needsConfirmation?: boolean;
 }
 
 export class ScheduleAppointmentUseCase {
@@ -179,6 +182,16 @@ export class ScheduleAppointmentUseCase {
             Logger.info('[ScheduleAppointment] Cita creada', { id_cita });
             await this.packBonoService.procesarPackbonoPresupuestoDeCita('on_crear_cita', id_cita);
             appointmentCreated = { ...extractorData, id_cita };
+
+            const isSoon = isAppointmentSoon(
+              appointmentCreated.fecha_cita,
+              tiempoActual,
+              botConfig.timezone
+            );
+            appointmentCreated.isSoon = isSoon;
+
+            finalPayload.needsConfirmation = isSoon;
+            finalPayload.createdAppointmentId = id_cita;
           }
         } else {
           Logger.error('[ScheduleAppointment] Error al extraer datos con IA', { extractorData });
@@ -221,6 +234,12 @@ export class ScheduleAppointmentUseCase {
 
     Logger.info('[ScheduleAppointment] Ejecución completada', { success: true });
 
-    return { success: true, toolOutput, customFields };
+    return {
+      success: true,
+      toolOutput,
+      customFields,
+      createdAppointmentId: appointmentCreated?.id_cita,
+      needsConfirmation: appointmentCreated?.isSoon || false,
+    };
   }
 }
