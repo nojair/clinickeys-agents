@@ -291,7 +291,7 @@ Contexto:
     Logger.info('[AvailabilityService] Prompt de consulta de agenda:', consultAgendaMessage);
 
     // 3. Cargar instrucciones del sistema (corrección de ruta relativa)
-    const promptsPath = path.resolve(__dirname, "../../.ia/instructions/prompts/bot_extractor_consulta_cita.md");
+    const promptsPath = path.resolve(__dirname, "packages/core/src/.ia/instructions/prompts/bot_extractor_consulta_cita.md");
     const systemPrompt = await readFile(promptsPath, "utf8");
 
     // 4. Obtener filtros estructurados desde OpenAI

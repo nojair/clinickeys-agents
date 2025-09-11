@@ -51,6 +51,10 @@ export class AddBotUseCase {
       }
 
       const assistants: ChatBotConfigDTO["openai"]["assistants"] = {} as ChatBotConfigDTO["openai"]["assistants"];
+      if (!assistants) {
+        throw new Error("Error al inicializar assistants");
+      }
+
       const openaiRepo = this.openaiRepoFactory(input.openaiApikey);
 
       for (const fileName of assistantFiles) {

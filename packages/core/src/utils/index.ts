@@ -1,3 +1,4 @@
+export * from './generateInstructions';
 export * from './defaultPlaceholders';
 export * from './CustomFieldUtils';
 export * from './ErrorReporter';
