@@ -100,6 +100,7 @@ CREATE TABLE `citas` (
   `id_espacio` bigint DEFAULT NULL,
   `observaciones_medicas` text,
   `comentarios_cita` text,
+  `comentario_ia` text,
   `es_pack_bono` tinyint(1) DEFAULT NULL,
   `id_pack_bono` bigint DEFAULT NULL,
   `id_presupuesto` bigint DEFAULT NULL,
@@ -129,7 +130,7 @@ CREATE TABLE `citas` (
   CONSTRAINT `citas_ibfk_5` FOREIGN KEY (`id_clinica`) REFERENCES `clinicas` (`id_clinica`),
   CONSTRAINT `citas_ibfk_8` FOREIGN KEY (`id_super_clinica`) REFERENCES `super_clinicas` (`id_super_clinica`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_citas_espacios` FOREIGN KEY (`id_espacio`) REFERENCES `espacios` (`id_espacio`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=423102 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+) ENGINE=InnoDB AUTO_INCREMENT=434558 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
 
 
 CAMBIOS EN PAYLOAD:

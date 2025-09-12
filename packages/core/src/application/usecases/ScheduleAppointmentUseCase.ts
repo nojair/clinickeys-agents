@@ -177,7 +177,7 @@ export class ScheduleAppointmentUseCase {
             p_fecha_cita: extractorData.fecha_cita,
             p_hora_inicio: extractorData.hora_inicio,
             p_hora_fin: extractorData.hora_fin,
-            p_comentarios_cita: summary,
+            p_comentario_ia: summary,
           });
           const id_cita = spResponse?.[0]?.[0]?.id_cita;
 

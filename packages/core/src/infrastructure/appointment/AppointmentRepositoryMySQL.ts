@@ -14,7 +14,7 @@ export interface CreateAppointmentInput {
   hora_fin: string;
   id_presupuesto?: number | null;
   id_pack_bono?: number | null;
-  comentarios_cita: string;
+  comentario_ia: string;
   [key: string]: any;
 }
 
@@ -27,7 +27,7 @@ export interface UpdateAppointmentInput {
   id_espacio?: number;
   id_estado_cita?: number;
   id_estados_cita_in?: number | null;
-  comentarios_cita: string;
+  comentario_ia: string;
   [key: string]: any;
 }
 
@@ -40,7 +40,7 @@ export class AppointmentRepositoryMySQL {
     INSERT INTO citas (
       id_paciente, id_clinica, id_super_clinica, id_medico,
       id_tratamiento, id_espacio, fecha_cita, hora_inicio, hora_fin,
-      id_presupuesto, id_pack_bono, comentarios_cita
+      id_presupuesto, id_pack_bono, comentario_ia
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
@@ -56,7 +56,7 @@ export class AppointmentRepositoryMySQL {
       params.hora_fin,
       params.id_presupuesto ?? null,
       params.id_pack_bono ?? null,
-      params.comentarios_cita ?? null
+      params.comentario_ia ?? null
     ];
 
     const result: any = await ejecutarExecConReintento(query, args);
@@ -94,9 +94,9 @@ export class AppointmentRepositoryMySQL {
       updates.push("id_estado_cita = ?");
       values.push(params.id_estado_cita);
     }
-    if (params.comentarios_cita !== undefined) {
-      updates.push("comentarios_cita = ?");
-      values.push(params.comentarios_cita);
+    if (params.comentario_ia !== undefined) {
+      updates.push("comentario_ia = ?");
+      values.push(params.comentario_ia);
     }
     if (params.id_estados_cita_in !== undefined) {
       updates.push("id_estados_cita_in = ?");
@@ -174,7 +174,7 @@ export class AppointmentRepositoryMySQL {
     p_id_super_clinica: number,
     p_id_pack_bono: number,
     p_id_presupuesto: number,
-    p_comentarios_cita: string,
+    p_comentario_ia: string,
   }): Promise<any> {
     const query = "CALL sp_crear_cita_con_comentario(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     const values = [
@@ -189,7 +189,7 @@ export class AppointmentRepositoryMySQL {
       params.p_id_super_clinica,
       params.p_id_pack_bono,
       params.p_id_presupuesto,
-      params.p_comentarios_cita
+      params.p_comentario_ia
     ];
     return await ejecutarExecConReintento(query, values);
   }

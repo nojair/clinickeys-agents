@@ -37,7 +37,7 @@ export class MarkPatientOnTheWayUseCase {
     await this.appointmentService.updateAppointment({
       id_cita,
       id_estados_cita_in: ID_ESTADOS_CITA_IN_EN_CAMINO,
-      comentarios_cita: summary,
+      comentario_ia: summary,
     } as any); // as any: si tu tipo no expone aún id_estados_cita_in, extiéndelo en AppointmentService
 
     Logger.info('[MarkPatientOnTheWay] Estado actualizado a EN_CAMINO', { id_cita });

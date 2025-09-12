@@ -10,7 +10,7 @@ export interface CreateAppointmentInput {
   hora_fin: string;
   id_presupuesto?: number | null;
   id_pack_bono?: number | null;
-  comentarios_cita: string;
+  comentario_ia: string;
   [key: string]: any;
 }
 
@@ -23,7 +23,7 @@ export interface UpdateAppointmentInput {
   id_espacio?: number;
   id_estado_cita?: number;
   id_estados_cita_in?: number | null;
-  comentarios_cita: string;
+  comentario_ia: string;
   [key: string]: any;
 }
 
@@ -68,6 +68,6 @@ export interface IAppointmentRepository {
     p_fecha_cita: string;
     p_hora_inicio: string;
     p_hora_fin: string;
-    p_comentarios_cita: string;
+    p_comentario_ia: string;
   }): Promise<any>;
 }
