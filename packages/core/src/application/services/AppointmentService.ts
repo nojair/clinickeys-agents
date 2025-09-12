@@ -46,7 +46,7 @@ export class AppointmentService {
     await this.updateAppointment({
       id_cita: appointmentId,
       id_estados_cita_in: CONFIRMED_STATUS_IN,
-      comentarios_cita: summary
+      comentario_ia: summary
     });
 
     return await this.getAppointmentById(appointmentId);
@@ -64,8 +64,8 @@ export class AppointmentService {
 
     await this.updateAppointment({
       id_cita: appointmentId,
-      id_estados_cita_in: null, // 👈 se limpia la confirmación
-      comentarios_cita: summary
+      id_estados_cita_in: null, // se limpia la confirmación
+      comentario_ia: summary
     });
 
     return await this.getAppointmentById(appointmentId);
@@ -84,7 +84,7 @@ export class AppointmentService {
     await this.updateAppointment({
       id_cita: appointmentId,
       id_estado_cita: CANCELED_STATUS,
-      comentarios_cita: summary,
+      comentario_ia: summary,
     });
     return await this.getAppointmentById(appointmentId);
   }
@@ -101,7 +101,7 @@ export class AppointmentService {
     p_fecha_cita: string,
     p_hora_inicio: string,
     p_hora_fin: string,
-    p_comentarios_cita: string,
+    p_comentario_ia: string,
   }): Promise<any> {
     return await this.appointmentRepository.insertarCitaPackBonos(params);
   }

@@ -145,7 +145,7 @@ export class RescheduleAppointmentUseCase {
             hora_fin: extractorData.hora_fin,
             id_espacio: extractorData.id_espacio,
             id_estado_cita: ID_ESTADO_CITA_PROGRAMADA,
-            comentarios_cita: summary
+            comentario_ia: summary
           });
           citaReprogramada = { ...extractorData };
 
