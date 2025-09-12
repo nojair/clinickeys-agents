@@ -150,3 +150,35 @@ export function sanitizeComment(input: string, maxLen = 600): string {
   const txt = (input || "").toString().trim().replace(/\s+/g, " ");
   return txt.length > maxLen ? txt.slice(0, maxLen - 1) + "…" : txt;
 }
+
+/**
+ * Devuelve una representación legible en español tipo: "Lunes, 16 de septiembre".
+ *
+ * @param isoDate Cadena ISO de fecha o fecha+hora (ej.: "2025-09-16" o "2025-09-16T10:00:00-05:00")
+ * @param zone Zona horaria IANA (ej.: "America/Lima"). Si se omite, usa "America/Lima" por defecto.
+ * @param locale Locale a usar para nombres (por defecto "es-PE").
+ */
+export function formatFechaLegible(
+  isoDate: string,
+  zone?: string,
+  locale: string = "es-PE"
+): string {
+  const z = zone ?? "America/Lima";
+  const dt = DateTime.fromISO(isoDate, { zone: z, locale });
+  if (!dt.isValid) return isoDate;
+
+  const weekday = dt.setLocale(locale).toFormat("cccc"); // lunes
+  const day = dt.toFormat("d"); // 16
+  const month = dt.setLocale(locale).toFormat("LLLL"); // septiembre
+
+  const weekdayCap = capitalizeFirst(weekday);
+  const monthLower = (month || "").toLowerCase();
+
+  return `${weekdayCap}, ${day} de ${monthLower}`;
+}
+
+function capitalizeFirst(s: string): string {
+  if (!s) return s;
+  const lower = s.toLowerCase();
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
