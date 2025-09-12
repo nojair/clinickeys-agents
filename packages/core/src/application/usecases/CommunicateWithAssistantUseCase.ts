@@ -335,6 +335,7 @@ export class CommunicateWithAssistantUseCase {
 
       if (runId && Array.isArray(functionCalls) && functionCalls.length > 0) {
         Logger.info('[CommunicateWithAssistant] Resolviendo functionCalls', { count: functionCalls.length });
+        Logger.info('[CommunicateWithAssistant] UcResponse toolOutput', ucResponse.toolOutput);
         const resolved = await this.deps.openAIService.getResponseFromWaitingAssistant({
           threadId: thId!,
           runId: runId!,
