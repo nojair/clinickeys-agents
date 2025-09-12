@@ -1,3 +1,5 @@
+// packages/core/src/utils/availability/availabilityUnified.ts
+
 /*
  * Unified availability pipeline: build windows (general + specific) → merge → subtract appointments → slots
  * No lazy patches. Clean, explicit logic.
@@ -91,6 +93,8 @@ export interface SlotDisponibilidad {
   nombre_tratamiento: string;
   duracion_tratamiento: number;  // minutos
   especifica: boolean;           // true si origen === 'especifica'
+  // Campo de presentación opcional (lo rellena ajustarDisponibilidad)
+  fecha_legible?: string;
 }
 
 // =============================
